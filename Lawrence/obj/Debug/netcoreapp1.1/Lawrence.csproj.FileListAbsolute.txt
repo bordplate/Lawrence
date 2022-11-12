@@ -1,0 +1,13 @@
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/netcoreapp1.1/Lawrence.deps.json
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/netcoreapp1.1/Lawrence.runtimeconfig.json
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/netcoreapp1.1/Lawrence.runtimeconfig.dev.json
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/netcoreapp1.1/Lawrence.dll
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/netcoreapp1.1/Lawrence.pdb
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.csproj.AssemblyReference.cache
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.GeneratedMSBuildEditorConfig.editorconfig
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.AssemblyInfoInputs.cache
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.AssemblyInfo.cs
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.csproj.CoreCompileInputs.cache
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.dll
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.pdb
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/netcoreapp1.1/Lawrence.genruntimeconfig.cache

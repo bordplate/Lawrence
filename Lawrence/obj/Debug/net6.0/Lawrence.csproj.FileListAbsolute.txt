@@ -1,0 +1,15 @@
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/net6.0/Lawrence.deps.json
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/net6.0/Lawrence.runtimeconfig.json
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/net6.0/Lawrence.dll
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/net6.0/Lawrence.pdb
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.csproj.AssemblyReference.cache
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.GeneratedMSBuildEditorConfig.editorconfig
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.AssemblyInfoInputs.cache
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.AssemblyInfo.cs
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.csproj.CoreCompileInputs.cache
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.dll
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/ref/Lawrence.dll
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.pdb
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/Lawrence.genruntimeconfig.cache
+/Users/bordplate/Projects/Lawrence/Lawrence/bin/Debug/net6.0/Lawrence
+/Users/bordplate/Projects/Lawrence/Lawrence/obj/Debug/net6.0/refint/Lawrence.dll
