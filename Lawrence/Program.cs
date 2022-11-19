@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace Lawrence
 {
@@ -14,55 +15,55 @@ namespace Lawrence
         static Dictionary<uint, Player> players = new Dictionary<uint, Player>();
         static Dictionary<uint, uint> playerIDs = new Dictionary<uint, uint>();
 
-        static List<Moby> mobys = new List<Moby>();
+        public static List<Moby> mobys = new List<Moby>();
 
         static UdpClient server = null;
 
         public static void Tick(Object info)
         {
+            Stopwatch sw = new Stopwatch();
+
+            sw.Start();
+
             foreach (var client in players.Values)
             {
-                foreach(var player in players.Values)
+               foreach (var moby in mobys)
                 {
-                    foreach (var moby in mobys)
-                    {
-                        MPPacketMobyUpdate moby_update = new MPPacketMobyUpdate();
-
-                        moby_update.uuid = moby.UUID;
-                        moby_update.oClass = 0;
-                        moby_update.x = moby.x;
-                        moby_update.y = moby.y;
-                        moby_update.z = moby.z;
-                        moby_update.rotation = moby.rot;
-
-                        MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
-
-                        //player.sendPacket(moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Packet.Endianness.BigEndian));
-                    }
-
-                    if (client.ID == player.ID)
+                    if (moby.parent == client || !moby.active)
                     {
                         continue;
                     }
 
-                    MPPacketMobyUpdate update = new MPPacketMobyUpdate();
+                    MPPacketMobyUpdate moby_update = new MPPacketMobyUpdate();
 
-                    update.oClass = 0;
-                    update.uuid = player.ID;
+                    moby_update.uuid = moby.UUID;
+                    moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
+                    moby_update.oClass = (uint)moby.oClass;
+                    moby_update.x = moby.x;
+                    moby_update.y = moby.y;
+                    moby_update.z = moby.z;
+                    moby_update.rotation = moby.rot;
+                    moby_update.animationID = moby.animationID;
 
-                    update.animationID = player.animationID;
+                    MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
 
-                    update.x = player.x;
-                    update.y = player.y;
-                    update.z = player.z;
-                    update.rotation = player.rot;
-
-                    
-
-                    MPPacketHeader header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
-                    client.sendPacket(header, Packet.StructToBytes<MPPacketMobyUpdate>(update, Packet.Endianness.BigEndian));
+                    client.sendPacket(moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Packet.Endianness.BigEndian));
                 }
+
+                client.Tick();
             }
+
+            sw.Stop();
+
+            if (sw.ElapsedMilliseconds > 16)
+            {
+                Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
+            }
+        }
+
+        public static Moby GetMoby(uint uuid)
+        {
+            return mobys[(int)uuid-1];
         }
 
         static Player NewPlayer(uint playerID, IPEndPoint endpoint)
@@ -87,12 +88,29 @@ namespace Lawrence
             return players[index];
         }
 
+        public static Moby NewMoby(Player parent = null)
+        {
+            Moby moby = new Moby(parent);
+            moby.UUID = (ushort)(mobys.Count+1);
+            mobys.Add(moby);
+
+            if (parent != null)
+            {
+                Console.WriteLine($"New moby (uid: {moby.UUID}). Parent: {parent?.ID}");
+            } else
+            {
+                Console.WriteLine($"New moby (uid: {moby.UUID})");
+            }
+
+            return moby;
+        }
+
         static void Main(string[] args)
         {
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 2407);
             server = new UdpClient(ipep);
             server.Client.Blocking = false;
-            
+                
             Moby test = new Moby();
             test.UUID = 10;
             test.x = 245.78f;
@@ -100,29 +118,60 @@ namespace Lawrence
             test.z = 140.34f;
             test.rot = -0.784f;
 
-            mobys.Add(test);
+            //mobys.Add(test);
 
+            // FIXME: We're not thread safe at all so this regularly causes crashes in things like arrays being
+            //        edited while this tick thread is iterating through them. 
             Timer tickTimer = new Timer(Program.Tick, null, 1000, 8);
 
-            Console.WriteLine("Starting Lawrence...");
-            
+            Console.WriteLine("                                       -=*####***++++++=-                  ");
+            Console.WriteLine("                                     +##%###****++====--                   ");
+            Console.WriteLine("                                   .+#%%%%%##*****+==-:                    ");
+            Console.WriteLine("                                 =#%%%%%%%%%##****+=-                      ");
+            Console.WriteLine("                                +%%%@@@%%%%%%##***=.                       ");
+            Console.WriteLine("                             .-%@@%%@@@@@%%%%%#*+:                         ");
+            Console.WriteLine("                            *%@@@@@@@@@@@@%%%#+:                           ");
+            Console.WriteLine("                           -%@@@@@@@@@@@@@%%%- ..                          ");
+            Console.WriteLine("                           .#@@@@@@@@@@@@%%%@*-=--:                      - ");
+            Console.WriteLine("                            .#%@@@@@@@@@%*:-*+===---:.                 =*- ");
+            Console.WriteLine("                             .*%@@@@@@@#:  +*++++=-+:::.             =*=-: ");
+            Console.WriteLine("                               *%@@@@%-    =***+#+-=: .=-.         -*+===-.");
+            Console.WriteLine("                                *%@%=       :***%*+*+:-===-:     -***++++=.");
+            Console.WriteLine("                                 :-         =****##%%*+=====-  :*###*####=.");
+            Console.WriteLine("                                            =******+++++++==  +##########=.");
+            Console.WriteLine("                                      .++:..  -+++==++**++%@#######%%%%#=: ");
+            Console.WriteLine("                                     -@@@%#:         .:. .*#######%%%%%+:. ");
+            Console.WriteLine("                                   -=#@@%%%%#:          =#%%%%%%%%%%%%*-.  ");
+            Console.WriteLine("                                 -###*#@@@%%%*        -#%%%%%%%%%##%#+:.   ");
+            Console.WriteLine("                               :*###*+++*%#--       -##%%%%%######%#=:.    ");
+            Console.WriteLine("             ..:::---=---:::::*###*+++****:       .#%%%%%%%%%%%%%#+-:      ");
+            Console.WriteLine("           =%@@@@@@@@@@@@@%%%%%###+++***-         .*#%%%%%%%%%@#+-:.       ");
+            Console.WriteLine("         .#@@#=------=*#%@@@@%=:=*#***=             :+#%%%%%%#+-:.         ");
+            Console.WriteLine("        -@@%=           .+%@@@+=+#%#+.                .=**+=-:.            ");
+            Console.WriteLine("       +@%*.          .:###*#%@@@%*.                                       ");
+            Console.WriteLine("     .#@%:          .:+##*+++***+.                                         ");
+            Console.WriteLine("    :%%%:          =**+++++***+.                                           ");
+            Console.WriteLine("   -@%%-         .*+=--=++**+.                                             ");
+            Console.WriteLine("  :@%%#.       .##**++++***:                                               ");
+            Console.WriteLine("  -@%%#.     .%%##*++++**=                                                 ");
+            Console.WriteLine("  +@%%*:   .#%%#**+++**+.                                                  ");
+            Console.WriteLine("  *@%%#+. .###*++++**+:                                                    ");
+            Console.WriteLine("  =@@%%**##*+++++***:                                                      ");
+            Console.WriteLine("   %@%%%#*+++++**+:                                                        ");
+            Console.WriteLine("   -@@%##%#++**+:                                                          ");
+            Console.WriteLine(" :+#@@%-:+#%**:                                                            ");
+            Console.WriteLine("-#*+*@@#*#%%-                                                              ");
+            Console.WriteLine(":#*=-=*#%#=                                                                ");
+            Console.WriteLine(" .+#*+=++                                                                  \n");
+
+            Console.WriteLine($"Started Lawrence on {ipep.ToString()}");
+
             byte[] data;
             while (true)
             {
                 if (server.Available <= 0)
                 {
                     continue;
-                }
-
-                foreach(var player in players.Values)
-                {
-                    try
-                    {
-                        //player.ReceiveData(server);
-                    } catch (SocketException e)
-                    {
-                        Console.WriteLine($"SocketException thrown.");
-                    }
                 }
 
                 if (server.Available < 8)
@@ -148,7 +197,6 @@ namespace Lawrence
 
                     if (existingPlayer)
                     {
-                        //Console.WriteLine("Shouldn't end up here dude.");
                         continue;
                     }
 

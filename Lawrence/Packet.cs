@@ -5,26 +5,37 @@ using System.Runtime.InteropServices;
 
 namespace Lawrence
 {
-    public enum MPPacketType
+    public enum MPPacketType : ushort
     {
         MP_PACKET_CONNECT = 1,
         MP_PACKET_SYN = 2,
         MP_PACKET_ACK = 3,
         MP_PACKET_MOBY_UPDATE = 4,
-        MP_PACKET_IDKU = 5
+        MP_PACKET_IDKU = 5,
+        MP_PACKET_MOBY_CREATE = 6
+    }
+
+    public enum MPPacketFlags : ushort
+    {
+        MP_PACKET_FLAG_RPC = 0x1
     }
 
     [StructLayout(LayoutKind.Explicit)]
     public struct MPPacketHeader
     {
         [FieldOffset(0x0)] public MPPacketType ptype;
+        [FieldOffset(0x2)] public MPPacketFlags flags;
         [FieldOffset(0x4)] public UInt32 size;
+        [FieldOffset(0x8)] public byte requiresAck;
+        [FieldOffset(0x9)] public byte ackCycle;
+        [FieldOffset(0xb)] public byte pad;
     }
 
     [StructLayout(LayoutKind.Explicit)]
     public struct MPPacketMobyUpdate
     {
-        [FieldOffset(0x0)] public UInt32 uuid;
+        [FieldOffset(0x0)] public ushort uuid;
+        [FieldOffset(0x2)] public ushort parent;
         [FieldOffset(0x4)] public UInt32 enabled;
         [FieldOffset(0x8)] public UInt32 oClass;
         [FieldOffset(0xc)] public Int32 animationID;
@@ -32,6 +43,12 @@ namespace Lawrence
         [FieldOffset(0x14)] public float y;
         [FieldOffset(0x18)] public float z;
         [FieldOffset(0x1c)] public float rotation;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketMobyCreate
+    {
+        [FieldOffset(0x0)] public UInt32 uuid;
     }
 
 
