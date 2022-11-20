@@ -12,10 +12,15 @@ namespace Lawrence
 {
     class Lawrence
     {
-        static Dictionary<uint, Client> players = new Dictionary<uint, Client>();
-        static Dictionary<uint, uint> playerIDs = new Dictionary<uint, uint>();
+        static int CLIENT_INACTIVE_TIMEOUT_SECONDS = 30;
+
+        static List<Client> clients = new List<Client>();
+
+        static List<uint> disconnectedClients = new List<uint>();
 
         static UdpClient server = null;
+
+        static int playerCount = 0;
 
         public static void Tick(Object info)
         {
@@ -23,9 +28,28 @@ namespace Lawrence
 
             sw.Start();
 
-            foreach (var client in players.Values)
+            foreach (var client in clients.ToArray())
             {
-               foreach (var moby in Environment.Shared().GetMobys())
+                // Check if this client is still alive
+                if (client.IsDisconnected())
+                {
+                    continue;
+                }
+
+                if (client.GetInactiveSeconds() > CLIENT_INACTIVE_TIMEOUT_SECONDS)
+                {
+                    Console.WriteLine($"Client {client.ID} inactive for more than {CLIENT_INACTIVE_TIMEOUT_SECONDS} seconds.");
+
+                    // Notify client and delete client's mobys and their children
+                    client.Disconnect();
+                    playerCount -= 1;
+                    Environment.Shared().DeleteMobys(moby => moby.parent == client);
+
+                    continue;
+                }
+
+                // Update the client on what's happening
+                foreach (var moby in Environment.Shared().GetMobys())
                 {
                     if (moby.parent == client || !moby.active || moby.level != client.GetMoby().level)
                     {
@@ -37,7 +61,7 @@ namespace Lawrence
                     moby_update.uuid = moby.UUID;
                     moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
                     moby_update.oClass = (ushort)moby.oClass;
-                    moby_update.level = moby.level;
+                    moby_update.level = moby.parent == null ? moby.level : moby.parent.GetMoby().level;
                     moby_update.x = moby.x;
                     moby_update.y = moby.y;
                     moby_update.z = moby.z;
@@ -60,26 +84,40 @@ namespace Lawrence
             }
         }
 
-        static Client NewPlayer(uint playerID, IPEndPoint endpoint)
+        public static void DistributePacket((MPPacketHeader, byte[]) packet)
         {
-            Console.WriteLine($"New player from {endpoint.ToString()}");
-
-            uint index = (uint)players.Count;
-            for (uint i = 0; i < players.Count; i++) 
+            foreach (var client in clients)
             {
-                if (players[i] == null)
+                if (client.IsDisconnected()) continue;
+                client.SendPacket(packet);
+            }
+        }
+
+        static void NewPlayer(IPEndPoint endpoint)
+        {
+            playerCount += 1;
+
+            int index = clients.Count;
+            for (int i = 0; i < clients.Count; i++) 
+            {
+                if (clients[i].IsDisconnected())
                 {
                     index = i;
                     break;
                 }
             }
 
-            players[index] = new Client(endpoint);
-            playerIDs[index] = playerID;
+            Client client = new Client(endpoint, (uint)index);
 
-            players[index].ID = index;
+            if (index >= clients.Count)
+            {
+                clients.Add(client);
+            } else
+            {
+                clients[index] = client;
+            }
 
-            return players[index];
+            Console.WriteLine($"New player {client.ID} from {endpoint.ToString()}");
         }
 
         public static void SendTo(byte[] bytes, EndPoint endpoint)
@@ -98,8 +136,9 @@ namespace Lawrence
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 2407);
             server = new UdpClient(ipep);
             server.Client.Blocking = false;
-            
-            
+            server.Client.ReceiveTimeout = 1;
+
+
             Timer tickTimer = new Timer(Lawrence.Tick, null, 1000, 8);
 
             Console.WriteLine("                                       -=*####***++++++=-                  ");
@@ -145,14 +184,13 @@ namespace Lawrence
             Console.WriteLine($"Started Lawrence on {ipep.ToString()}");
 
             byte[] data;
+            long loopCount = 0;
             while (true)
             {
-                if (server.Available <= 0)
-                {
-                    continue;
-                }
+                loopCount += 1;
+                Console.Write($"\r({playerCount} players) ");
 
-                if (server.Available < 8)
+                if (server.Available <= 0)
                 {
                     continue;
                 }
@@ -160,41 +198,35 @@ namespace Lawrence
                 try
                 {
                     IPEndPoint clientEndpoint = null;
-
                     data = server.Receive(ref clientEndpoint);
 
-                    bool existingPlayer = false;
-                    foreach (var p in players.Values)
+                    if (data.Length <= 0)
                     {
-                        if (p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
+                        Console.WriteLine("Hey, why is it 0?");
+                        continue;
+                    }
+
+                    bool existingPlayer = false;
+                    foreach (var p in clients)
+                    {
+                        if (!p.IsDisconnected() && p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
                         {
                             p.ReceiveData(data);
                             existingPlayer = true;
                         }
                     }
 
-                    if (existingPlayer)
+                    if (!existingPlayer)
                     {
-                        continue;
-                    }
-
-                    uint playerID = (uint)playerIDs.Count() + 1;
-
-                    Client player;
-                   
-                    if (!playerIDs.ContainsKey(playerID))
-                    {
-                        player = NewPlayer(playerID, clientEndpoint);
-                    }
-                    else
-                    {
-                        player = players[playerIDs[playerID]];
+                        NewPlayer(clientEndpoint);
                     }
                 } catch (SocketException e)
                 {
-
+                    //Console.WriteLine($"Socket error: {e.Message}");
                 }
             }
+
+            Console.WriteLine("Bye!");
         }
     }
 }

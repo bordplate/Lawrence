@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Lawrence
 {
@@ -7,7 +8,7 @@ namespace Lawrence
 	{
 		static Environment SharedEnvironment;
 
-        List<Moby> mobys = new List<Moby>();
+        public List<Moby> mobys = new List<Moby>();
 
         public Environment()
 		{
@@ -41,7 +42,23 @@ namespace Lawrence
         {
             Moby moby = new Moby(parent);
             moby.UUID = (ushort)(mobys.Count + 1);
-            mobys.Add(moby);
+
+            foreach (Moby m in mobys)
+            {
+                if (m.Deleted())
+                {
+                    moby.UUID = m.UUID;
+                }
+            }
+
+            if (moby.UUID-1 >= mobys.Count)
+            {
+                mobys.Add(moby);
+            } else
+            {
+                mobys[moby.UUID-1] = moby;
+            }
+            
 
             if (parent != null)
             {
@@ -53,6 +70,17 @@ namespace Lawrence
             }
 
             return moby;
+        }
+
+        public void DeleteMobys(Func<Moby, bool> value)
+        {
+            Moby[] deleteMobys = mobys.Where(value).ToArray();
+
+            foreach (var moby in deleteMobys)
+            {
+                Console.WriteLine($"Requesting clients delete moby {moby.UUID}");
+                moby.Delete();
+            }
         }
     }
 }

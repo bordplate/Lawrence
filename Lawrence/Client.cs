@@ -10,7 +10,8 @@ namespace Lawrence
     // Metadata structure for packet acknowledgement data
     public struct AckedMetadata
     {
-        public byte ack_cycle;
+        public byte ackCycle;
+        public byte ackIndex;
         public byte[] packet;
     }
     
@@ -21,14 +22,25 @@ namespace Lawrence
 
         public uint ID = 0;
 
+        long lastContact = 0;
+
+        bool disconnected = true;
+
         // All connected clients should have an associated client moby. 
         Moby clientMoby;
 
         AckedMetadata[] acked = new AckedMetadata[256];
 
-        public Client(IPEndPoint endpoint)
+        byte ackCycle = 1;
+        byte ackIndex = 1;
+        List<AckedMetadata> unacked = new List<AckedMetadata>();
+
+        public Client(IPEndPoint endpoint, uint ID)
         {
+            this.ID = ID;
             this.endpoint = endpoint;
+            this.lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
+            this.disconnected = false;
 
             clientMoby = Environment.Shared().NewMoby(this);
         }
@@ -36,6 +48,18 @@ namespace Lawrence
         public IPEndPoint GetEndpoint()
         {
             return endpoint;
+        }
+
+
+        // Amount of seconds since we last saw activity on this client.
+        public long GetInactiveSeconds()
+        {
+            return DateTimeOffset.Now.ToUnixTimeSeconds() - this.lastContact;
+        }
+
+        public bool IsDisconnected()
+        {
+            return disconnected;
         }
 
         public Moby GetMoby()
@@ -82,6 +106,22 @@ namespace Lawrence
             return;
         }
 
+        (byte, byte) NextAck()
+        {
+            if (ackIndex >= 254)
+            {
+                ackIndex = 0;
+                ackCycle++;
+            }
+
+            if (ackCycle >= 254)
+            {
+                ackCycle = 0;
+            }
+
+            return (ackIndex++, ackCycle);
+        }
+
         public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody)
         {
             var bodyLen = 0;
@@ -91,19 +131,25 @@ namespace Lawrence
             }
             byte[] packet = new byte[Marshal.SizeOf<MPPacketHeader>() + bodyLen];
 
+            // Fill ack fields if necessary
+            if (packetHeader.requiresAck == 255 && packetHeader.ackCycle == 255)
+            {
+                (packetHeader.requiresAck, packetHeader.ackCycle) = NextAck();
+            }
+
             Packet.StructToBytes<MPPacketHeader>(packetHeader, Packet.Endianness.BigEndian).CopyTo(packet, 0);
             if (packetBody != null)
             {
                 packetBody.CopyTo(packet, Marshal.SizeOf<MPPacketHeader>());
             }
 
-            // Cache ack responses
+            // Cache ack response packets
             if (packetHeader.ptype == MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0)
             {
                 var ack = acked[packetHeader.requiresAck];
-                if (ack.ack_cycle != packetHeader.ackCycle)
+                if (ack.ackCycle != packetHeader.ackCycle)
                 {
-                    ack.ack_cycle = packetHeader.ackCycle;
+                    ack.ackCycle = packetHeader.ackCycle;
                     ack.packet = packet;
                     Console.WriteLine($"Caching ack response");
                 }
@@ -111,7 +157,20 @@ namespace Lawrence
                 acked[packetHeader.requiresAck] = ack;
             }
 
+            // Cache unacked request packets
+            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0)
+            {
+                unacked.Add(new AckedMetadata { packet = packet, ackIndex = packetHeader.requiresAck, ackCycle = packetHeader.ackCycle } );
+            }
+
             Lawrence.SendTo(packet, endpoint);
+        }
+
+        public void SendPacket((MPPacketHeader packetHeader, byte[] packetBody) packet)
+        {
+            (MPPacketHeader header, byte[] body) = packet;
+
+            SendPacket(header, body);
         }
 
         public void ParsePacket(byte[] packet)
@@ -129,7 +188,7 @@ namespace Lawrence
 
                 Console.WriteLine("Player handshake complete.");
 
-                SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK }, null);
+                SendPacket(Packet.MakeAckPacket());
                 return;
             }
             else if (!handshakeCompleted)
@@ -146,22 +205,26 @@ namespace Lawrence
 
             // If this packet requires ack and is not RPC, we send ack before processing.
             // If this is RPC we only send ack here if a previous ack has been sent and cached.
-            
-            if (packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) > 0 && acked[packetHeader.requiresAck].ack_cycle == packetHeader.ackCycle)
-            {
-                Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
-            } else if(packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0)
-            {
-                MPPacketHeader ack = new MPPacketHeader
-                {
-                    ptype = MPPacketType.MP_PACKET_ACK,
-                    flags = 0,
-                    size = 0,
-                    requiresAck = packetHeader.requiresAck,
-                    ackCycle = packetHeader.ackCycle
-                };
 
-                SendPacket(ack, null);
+            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK)  // We don't ack ack messages
+            {
+                if (packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) > 0 && acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle)
+                {
+                    Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
+                }
+                else if (packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0)
+                {
+                    MPPacketHeader ack = new MPPacketHeader
+                    {
+                        ptype = MPPacketType.MP_PACKET_ACK,
+                        flags = 0,
+                        size = 0,
+                        requiresAck = packetHeader.requiresAck,
+                        ackCycle = packetHeader.ackCycle
+                    };
+
+                    SendPacket(ack, null);
+                }
             }
 
 
@@ -172,6 +235,15 @@ namespace Lawrence
                         SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
                         break;
                     }
+                case MPPacketType.MP_PACKET_ACK:
+                    foreach (var unacked in this.unacked.ToArray())
+                    {
+                        if (unacked.ackCycle == packetHeader.ackCycle && unacked.ackIndex == packetHeader.requiresAck)
+                        {
+                            this.unacked.Remove(unacked);
+                        }
+                    }
+                    break;
                 case MPPacketType.MP_PACKET_MOBY_UPDATE:
                     {
                         MPPacketMobyUpdate update = Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, Packet.Endianness.BigEndian);
@@ -227,11 +299,28 @@ namespace Lawrence
 
         int recvIndex = 0;
         byte[] recvBuffer = new byte[(1024 * 8) + 12];
-        public bool recvLock = false;
+        bool recvLock = false;
         public void ReceiveData(byte[] data)
         {
+            if (disconnected)
+            {
+                return;
+            }
+
             // FIXME: This is potentially super slow. Idk if there's a better way to do multi-threading like this
-            while(recvLock) {}
+            int lockCounter = 0;
+            while (recvLock)
+            {
+                lockCounter++;
+                if (lockCounter > 10000000)
+                {
+                    // Something has gone wrong, we just force unlock and hope it's ok.
+                    Console.WriteLine($"Disconnected: {ID}");
+                    recvLock = false;
+                }
+            }
+
+            this.lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
 
             recvLock = true;
 
@@ -272,6 +361,7 @@ namespace Lawrence
             if (header.size > recvIndex-Marshal.SizeOf<MPPacketHeader>())
             {
                 // We don't have the full packet payload
+                recvLock = false;
                 return null;
             }
 
@@ -289,13 +379,38 @@ namespace Lawrence
 
         public void Tick()
         {
+            if (disconnected)
+            {
+                return;
+            }
+
             var packet = DrainPacket();
-            while (packet != null)
+            int processedPackets = 0;
+            while (packet != null && processedPackets < 10)
             {
                 ParsePacket(packet);
+                processedPackets += 1;
 
                 packet = DrainPacket();
             }
+
+            // Resend unacked packets
+            foreach (var unacked in this.unacked)
+            {
+                Lawrence.SendTo(unacked.packet, endpoint);
+            }
+        }
+
+        public void Disconnect()
+        {
+            if (disconnected)
+            {
+                return;
+            }
+
+            // Send a disconnect packet. Don't really care if they receive it.
+            SendPacket(Packet.MakeDisconnectPacket());
+            disconnected = true;
         }
     }
 }

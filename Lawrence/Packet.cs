@@ -7,12 +7,14 @@ namespace Lawrence
 {
     public enum MPPacketType : ushort
     {
-        MP_PACKET_CONNECT = 1,
+        MP_PACKET_CONNECT = 1,      // Not used
         MP_PACKET_SYN = 2,
         MP_PACKET_ACK = 3,
         MP_PACKET_MOBY_UPDATE = 4,
         MP_PACKET_IDKU = 5,
-        MP_PACKET_MOBY_CREATE = 6
+        MP_PACKET_MOBY_CREATE = 6,
+        MP_PACKET_DISCONNECTED = 7,
+        MP_PACKET_MOBY_DELETE = 8
     }
 
     public enum MPPacketFlags : ushort
@@ -54,27 +56,51 @@ namespace Lawrence
 
 
     public class Packet
-	{
-		public Packet()
-		{
-		}
+    {
+        public Packet()
+        {
+        }
 
-        public static byte[] makeAckPacket()
+        public static (MPPacketHeader, byte[]) MakeAckPacket()
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_ACK;
 
-            return headerToBytes(header);
+            return (header, null);
         }
 
-        public static byte[] makeIDKUPacket()
+        public static byte[] MakeIDKUPacket()
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_IDKU;
 
             return headerToBytes(header);
         }
-        
+
+        public static (MPPacketHeader, byte[]) MakeDisconnectPacket()
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_DISCONNECTED;
+            header.size = 0;
+
+            return (header, null);
+        }
+
+        public static (MPPacketHeader, byte[]) MakeDeleteMobyPacket(ushort mobyUUID)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_MOBY_DELETE;
+            header.requiresAck = 255;  // 255 represents unfilled fields that the client will fill before sending
+            header.ackCycle = 255; 
+
+            MPPacketMobyCreate body = new MPPacketMobyCreate();
+            body.uuid = mobyUUID;
+
+            header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
+
+            return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
+        }
+
         public static byte[] headerToBytes(MPPacketHeader header)
         {
             return Packet.StructToBytes<MPPacketHeader>(header, Endianness.BigEndian);

@@ -22,9 +22,28 @@ namespace Lawrence
 
         public Client parent;
 
+        bool deleted = false;
+
         public Moby(Client parent = null)
-		{
+        {
             this.parent = parent;
-		}
+        }
+
+        public bool Deleted()
+        {
+            return deleted;
+        }
+
+        public void Delete()
+        {
+            Lawrence.DistributePacket(Packet.MakeDeleteMobyPacket(UUID));
+
+            deleted = true;
+            active = false;
+            level = 0;
+            parent = null;
+            oClass = 0;
+            animationID = 0;
+        }
 	}
 }
