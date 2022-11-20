@@ -10,12 +10,10 @@ using System.Diagnostics;
 
 namespace Lawrence
 {
-    class Program
+    class Lawrence
     {
-        static Dictionary<uint, Player> players = new Dictionary<uint, Player>();
+        static Dictionary<uint, Client> players = new Dictionary<uint, Client>();
         static Dictionary<uint, uint> playerIDs = new Dictionary<uint, uint>();
-
-        public static List<Moby> mobys = new List<Moby>();
 
         static UdpClient server = null;
 
@@ -27,7 +25,7 @@ namespace Lawrence
 
             foreach (var client in players.Values)
             {
-               foreach (var moby in mobys)
+               foreach (var moby in Environment.Shared().GetMobys())
                 {
                     if (moby.parent == client || !moby.active)
                     {
@@ -47,7 +45,7 @@ namespace Lawrence
 
                     MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
 
-                    client.sendPacket(moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Packet.Endianness.BigEndian));
+                    client.SendPacket(moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Packet.Endianness.BigEndian));
                 }
 
                 client.Tick();
@@ -61,12 +59,7 @@ namespace Lawrence
             }
         }
 
-        public static Moby GetMoby(uint uuid)
-        {
-            return mobys[(int)uuid-1];
-        }
-
-        static Player NewPlayer(uint playerID, IPEndPoint endpoint)
+        static Client NewPlayer(uint playerID, IPEndPoint endpoint)
         {
             Console.WriteLine($"New player from {endpoint.ToString()}");
 
@@ -80,7 +73,7 @@ namespace Lawrence
                 }
             }
 
-            players[index] = new Player(endpoint);
+            players[index] = new Client(endpoint);
             playerIDs[index] = playerID;
 
             players[index].ID = index;
@@ -88,21 +81,15 @@ namespace Lawrence
             return players[index];
         }
 
-        public static Moby NewMoby(Player parent = null)
+        public static void SendTo(byte[] bytes, EndPoint endpoint)
         {
-            Moby moby = new Moby(parent);
-            moby.UUID = (ushort)(mobys.Count+1);
-            mobys.Add(moby);
-
-            if (parent != null)
+            try
             {
-                Console.WriteLine($"New moby (uid: {moby.UUID}). Parent: {parent?.ID}");
-            } else
+                server.Client.SendTo(bytes, endpoint);
+            } catch (Exception e)
             {
-                Console.WriteLine($"New moby (uid: {moby.UUID})");
-            }
-
-            return moby;
+                Console.WriteLine($"Error sending packet: {e.Message}");
+            } 
         }
 
         static void Main(string[] args)
@@ -110,19 +97,9 @@ namespace Lawrence
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 2407);
             server = new UdpClient(ipep);
             server.Client.Blocking = false;
-                
-            Moby test = new Moby();
-            test.UUID = 10;
-            test.x = 245.78f;
-            test.y = 149.57f;
-            test.z = 140.34f;
-            test.rot = -0.784f;
-
-            //mobys.Add(test);
-
-            // FIXME: We're not thread safe at all so this regularly causes crashes in things like arrays being
-            //        edited while this tick thread is iterating through them. 
-            Timer tickTimer = new Timer(Program.Tick, null, 1000, 8);
+            
+            
+            Timer tickTimer = new Timer(Lawrence.Tick, null, 1000, 8);
 
             Console.WriteLine("                                       -=*####***++++++=-                  ");
             Console.WriteLine("                                     +##%###****++====--                   ");
@@ -162,7 +139,7 @@ namespace Lawrence
             Console.WriteLine(" :+#@@%-:+#%**:                                                            ");
             Console.WriteLine("-#*+*@@#*#%%-                                                              ");
             Console.WriteLine(":#*=-=*#%#=                                                                ");
-            Console.WriteLine(" .+#*+=++                                                                  \n");
+            Console.WriteLine(" .+#*+=++                                                                \n");
 
             Console.WriteLine($"Started Lawrence on {ipep.ToString()}");
 
@@ -188,7 +165,7 @@ namespace Lawrence
                     bool existingPlayer = false;
                     foreach (var p in players.Values)
                     {
-                        if (p.endpoint.Address.Address == clientEndpoint.Address.Address && p.endpoint.Port == clientEndpoint.Port)
+                        if (p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
                         {
                             p.ReceiveData(data);
                             existingPlayer = true;
@@ -202,12 +179,11 @@ namespace Lawrence
 
                     uint playerID = (uint)playerIDs.Count() + 1;
 
-                    Player player;
+                    Client player;
                    
                     if (!playerIDs.ContainsKey(playerID))
                     {
                         player = NewPlayer(playerID, clientEndpoint);
-                        player.server = server;
                     }
                     else
                     {

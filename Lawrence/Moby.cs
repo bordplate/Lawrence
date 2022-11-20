@@ -18,9 +18,9 @@ namespace Lawrence
 
         public bool active = false;
 
-        public Player parent;
+        public Client parent;
 
-        public Moby(Player parent = null)
+        public Moby(Client parent = null)
 		{
             this.parent = parent;
 		}

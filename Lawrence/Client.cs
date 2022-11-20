@@ -7,49 +7,45 @@ using System.Runtime.InteropServices;
 
 namespace Lawrence
 {
+    // Metadata structure for packet acknowledgement data
     public struct AckedMetadata
     {
         public byte ack_cycle;
         public byte[] packet;
     }
     
-    public class Player
+    public class Client
     {
-        public IPEndPoint endpoint;
-        public bool handshakeCompleted = false;
+        IPEndPoint endpoint;
+        bool handshakeCompleted = false;
 
         public uint ID = 0;
 
-        public int animationID = 0;
+        // All connected clients should have an associated client moby. 
+        Moby clientMoby;
 
-        public float x = 0.0f;
-        public float y = 0.0f;
-        public float z = 0.0f;
-        public float rot = 0.0f;
+        AckedMetadata[] acked = new AckedMetadata[256];
 
-        Moby playerMoby;
-
-        public UdpClient server;
-
-        public AckedMetadata[] acked = new AckedMetadata[256];
-
-        byte state = 0;
-
-        public Player(IPEndPoint endpoint)
+        public Client(IPEndPoint endpoint)
         {
             this.endpoint = endpoint;
 
-            playerMoby = Program.NewMoby(this);
+            clientMoby = Environment.Shared().NewMoby(this);
+        }
+
+        public IPEndPoint GetEndpoint()
+        {
+            return endpoint;
         }
 
         public Moby GetMoby()
         {
-            return playerMoby;
+            return clientMoby;
         }
 
-        public void updateMoby(MPPacketMobyUpdate update)
+        public void UpdateMoby(MPPacketMobyUpdate update)
         {
-            Moby moby = Program.GetMoby(update.uuid);
+            Moby moby = Environment.Shared().GetMoby(update.uuid);
 
             if (moby == null)
             {
@@ -85,7 +81,7 @@ namespace Lawrence
             return;
         }
 
-        public void sendPacket(MPPacketHeader packetHeader, byte[] packetBody)
+        public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody)
         {
             var bodyLen = 0;
             if (packetBody != null)
@@ -114,16 +110,10 @@ namespace Lawrence
                 acked[packetHeader.requiresAck] = ack;
             }
 
-            try
-            {
-                server.Client.SendTo(packet, endpoint);
-            } catch (System.NullReferenceException e)
-            {
-                Console.WriteLine("Wow it's null");
-            }
+            Lawrence.SendTo(packet, endpoint);
         }
 
-        public void parsePacket(byte[] packet)
+        public void ParsePacket(byte[] packet)
         {
             MPPacketHeader packetHeader = Packet.makeHeader(packet.Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
             byte[] packetBody = packet.Skip(Marshal.SizeOf<MPPacketHeader>()).Take((int)packetHeader.size).ToArray();
@@ -138,12 +128,12 @@ namespace Lawrence
 
                 Console.WriteLine("Player handshake complete.");
 
-                sendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK }, null);
+                SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK }, null);
                 return;
             }
             else if (!handshakeCompleted)
             {
-                sendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_IDKU }, null);
+                SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_IDKU }, null);
                 return;
             }
 
@@ -158,14 +148,7 @@ namespace Lawrence
             
             if (packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) > 0 && acked[packetHeader.requiresAck].ack_cycle == packetHeader.ackCycle)
             {
-                try
-                {
-                    server.Client.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
-                }
-                catch (System.NullReferenceException e)
-                {
-                    Console.WriteLine("Wow it's null in ack");
-                }
+                Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
             } else if(packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0)
             {
                 MPPacketHeader ack = new MPPacketHeader
@@ -177,7 +160,7 @@ namespace Lawrence
                     ackCycle = packetHeader.ackCycle
                 };
 
-                sendPacket(ack, null);
+                SendPacket(ack, null);
             }
 
 
@@ -185,7 +168,7 @@ namespace Lawrence
             {
                 case MPPacketType.MP_PACKET_SYN:
                     {
-                        sendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
+                        SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
                         break;
                     }
                 case MPPacketType.MP_PACKET_MOBY_UPDATE:
@@ -194,26 +177,24 @@ namespace Lawrence
 
                         if (update.uuid != 0)
                         {
-                            updateMoby(update);
+                            UpdateMoby(update);
 
                             break;
                         }
 
-                        this.playerMoby.active = true;
+                        this.clientMoby.active = true;
                                                 
-                        this.playerMoby.x = update.x;
-                        this.playerMoby.y = update.y;
-                        this.playerMoby.z = update.z;
-                        this.playerMoby.rot = update.rotation;
-                        this.playerMoby.animationID = update.animationID;
-
-                        //Console.WriteLine($"Player pos {playerMoby.x},{playerMoby.y},{playerMoby.z}");
+                        this.clientMoby.x = update.x;
+                        this.clientMoby.y = update.y;
+                        this.clientMoby.z = update.z;
+                        this.clientMoby.rot = update.rotation;
+                        this.clientMoby.animationID = update.animationID;
 
                         break;
                     }
                 case MPPacketType.MP_PACKET_MOBY_CREATE:
                     {
-                        Moby moby = Program.NewMoby(this);
+                        Moby moby = Environment.Shared().NewMoby(this);
 
                         MPPacketMobyCreate createPacket = new MPPacketMobyCreate
                         {
@@ -230,7 +211,7 @@ namespace Lawrence
 
                         Console.WriteLine($"Player({this.ID}) created moby (uuid: {moby.UUID})");
 
-                        sendPacket(header, Packet.StructToBytes<MPPacketMobyCreate>(createPacket, Packet.Endianness.BigEndian));
+                        SendPacket(header, Packet.StructToBytes<MPPacketMobyCreate>(createPacket, Packet.Endianness.BigEndian));
 
                         break;
                     }
@@ -240,8 +221,6 @@ namespace Lawrence
                         break;
                     }
             }
-
-            //Console.WriteLine($"Processed packet {packetHeader.ptype} with size: {packetSize}.");
         }
 
         int recvIndex = 0;
@@ -311,7 +290,7 @@ namespace Lawrence
             var packet = DrainPacket();
             while (packet != null)
             {
-                parsePacket(packet);
+                ParsePacket(packet);
 
                 packet = DrainPacket();
             }
