@@ -37,7 +37,8 @@ namespace Lawrence
         [FieldOffset(0x0)] public ushort uuid;
         [FieldOffset(0x2)] public ushort parent;
         [FieldOffset(0x4)] public UInt32 enabled;
-        [FieldOffset(0x8)] public UInt32 oClass;
+        [FieldOffset(0x8)] public ushort oClass;
+        [FieldOffset(0xa)] public ushort level;
         [FieldOffset(0xc)] public Int32 animationID;
         [FieldOffset(0x10)] public float x;
         [FieldOffset(0x14)] public float y;

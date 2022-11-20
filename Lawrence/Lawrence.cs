@@ -27,7 +27,7 @@ namespace Lawrence
             {
                foreach (var moby in Environment.Shared().GetMobys())
                 {
-                    if (moby.parent == client || !moby.active)
+                    if (moby.parent == client || !moby.active || moby.level != client.GetMoby().level)
                     {
                         continue;
                     }
@@ -36,7 +36,8 @@ namespace Lawrence
 
                     moby_update.uuid = moby.UUID;
                     moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
-                    moby_update.oClass = (uint)moby.oClass;
+                    moby_update.oClass = (ushort)moby.oClass;
+                    moby_update.level = moby.level;
                     moby_update.x = moby.x;
                     moby_update.y = moby.y;
                     moby_update.z = moby.z;

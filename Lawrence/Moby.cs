@@ -16,6 +16,8 @@ namespace Lawrence
 
         public int animationID;
 
+        public ushort level;
+
         public bool active = false;
 
         public Client parent;

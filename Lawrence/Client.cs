@@ -75,6 +75,7 @@ namespace Lawrence
             moby.x = update.x;
             moby.y = update.y;
             moby.z = update.z;
+            moby.level = update.level;
             moby.animationID = update.animationID;
             moby.rot = update.rotation;
 
@@ -187,6 +188,7 @@ namespace Lawrence
                         this.clientMoby.x = update.x;
                         this.clientMoby.y = update.y;
                         this.clientMoby.z = update.z;
+                        this.clientMoby.level = update.level;
                         this.clientMoby.rot = update.rotation;
                         this.clientMoby.animationID = update.animationID;
 
