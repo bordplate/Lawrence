@@ -14,7 +14,8 @@ namespace Lawrence
         MP_PACKET_IDKU = 5,
         MP_PACKET_MOBY_CREATE = 6,
         MP_PACKET_DISCONNECTED = 7,
-        MP_PACKET_MOBY_DELETE = 8
+        MP_PACKET_MOBY_DELETE = 8,
+        MP_PACKET_MOBY_COLLISION = 9
     }
 
     public enum MPPacketFlags : ushort
@@ -54,6 +55,12 @@ namespace Lawrence
         [FieldOffset(0x0)] public UInt32 uuid;
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketMobyCollision
+    {
+        [FieldOffset(0x0)] public ushort uuid;
+        [FieldOffset(0x4)] public ushort collidedWith;
+    }
 
     public class Packet
     {
@@ -99,6 +106,25 @@ namespace Lawrence
             header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
 
             return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeMobyUpdatePacket(Moby moby)
+        {
+            MPPacketMobyUpdate moby_update = new MPPacketMobyUpdate();
+
+            moby_update.uuid = moby.UUID;
+            moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
+            moby_update.oClass = (ushort)moby.oClass;
+            moby_update.level = moby.parent == null ? moby.level : moby.parent.GetMoby().level;
+            moby_update.x = moby.x;
+            moby_update.y = moby.y;
+            moby_update.z = moby.z;
+            moby_update.rotation = moby.rot;
+            moby_update.animationID = moby.animationID;
+
+            MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
+
+            return (moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Endianness.BigEndian));
         }
 
         public static byte[] headerToBytes(MPPacketHeader header)
@@ -147,7 +173,7 @@ namespace Lawrence
 
                 var effectiveOffset = startOffset + offset;
 
-                if (subFields.Length == 0)
+                if (subFields.Length == 0 && offset <= Marshal.SizeOf(fieldType))
                 {
                     Array.Reverse(data, effectiveOffset, Marshal.SizeOf(fieldType));
                 }

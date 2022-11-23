@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Microsoft.VisualBasic;
 
 namespace Lawrence
 {
@@ -28,6 +29,8 @@ namespace Lawrence
 
             sw.Start();
 
+            Environment.Shared().Tick();
+
             foreach (var client in clients.ToArray())
             {
                 // Check if this client is still alive
@@ -48,31 +51,6 @@ namespace Lawrence
                     continue;
                 }
 
-                // Update the client on what's happening
-                foreach (var moby in Environment.Shared().GetMobys())
-                {
-                    if (moby.parent == client || !moby.active || moby.level != client.GetMoby().level)
-                    {
-                        continue;
-                    }
-
-                    MPPacketMobyUpdate moby_update = new MPPacketMobyUpdate();
-
-                    moby_update.uuid = moby.UUID;
-                    moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
-                    moby_update.oClass = (ushort)moby.oClass;
-                    moby_update.level = moby.parent == null ? moby.level : moby.parent.GetMoby().level;
-                    moby_update.x = moby.x;
-                    moby_update.y = moby.y;
-                    moby_update.z = moby.z;
-                    moby_update.rotation = moby.rot;
-                    moby_update.animationID = moby.animationID;
-
-                    MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
-
-                    client.SendPacket(moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Packet.Endianness.BigEndian));
-                }
-
                 client.Tick();
             }
 
@@ -84,11 +62,14 @@ namespace Lawrence
             }
         }
 
-        public static void DistributePacket((MPPacketHeader, byte[]) packet)
+        public static void DistributePacket((MPPacketHeader, byte[]) packet, int level = -1, List<Client> ignoring = null)
         {
             foreach (var client in clients)
             {
                 if (client.IsDisconnected()) continue;
+                if (ignoring != null && ignoring.Contains(client)) continue;
+                if (level != -1 && client.GetMoby().level != level) continue;
+
                 client.SendPacket(packet);
             }
         }

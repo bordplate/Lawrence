@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Lawrence
 {
@@ -41,6 +42,7 @@ namespace Lawrence
         public Moby NewMoby(Client parent = null)
         {
             Moby moby = new Moby(parent);
+            // Moby UUIDs start at 1, not 0.
             moby.UUID = (ushort)(mobys.Count + 1);
 
             foreach (Moby m in mobys)
@@ -80,6 +82,27 @@ namespace Lawrence
             {
                 Console.WriteLine($"Requesting clients delete moby {moby.UUID}");
                 moby.Delete();
+            }
+        }
+
+        public void Tick()
+        {
+            foreach (var moby in mobys)
+            {
+                if (!moby.active)
+                {
+                    continue;
+                }
+
+                moby.Tick();
+
+                List<Client> ignoring = null;
+                if (moby.parent != null)
+                {
+                    ignoring = new List<Client> { moby.parent };
+                }
+
+                Lawrence.DistributePacket(Packet.MakeMobyUpdatePacket(moby), moby.level, ignoring);
             }
         }
     }

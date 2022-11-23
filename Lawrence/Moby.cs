@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+
 namespace Lawrence
 {
 	public class Moby
 	{
+        static ushort COLLIDE_TICKS = 10;
+
         public ushort UUID = 0;
 
         public int oClass = 0;
@@ -24,6 +28,8 @@ namespace Lawrence
 
         bool deleted = false;
 
+        Dictionary<ushort, ushort> colliders = new Dictionary<ushort, ushort>();
+
         public Moby(Client parent = null)
         {
             this.parent = parent;
@@ -44,6 +50,35 @@ namespace Lawrence
             parent = null;
             oClass = 0;
             animationID = 0;
+        }
+
+        public void AddCollider(ushort uuid)
+        {
+            if (!colliders.ContainsKey(uuid))
+            {
+                colliders.Add(uuid, Moby.COLLIDE_TICKS);
+                Console.WriteLine($"New collision between {this.UUID} and {uuid}");
+                // Notify stuff that new collision has happened
+            } else
+            {
+                colliders[uuid] = Moby.COLLIDE_TICKS;
+            }
+        }
+
+        public void Tick()
+        {
+            // Collision debouncing
+            foreach(var key in colliders.Keys)
+            {
+                colliders[key] -= 1;
+
+                if (colliders[key] <= 0)
+                {
+                    colliders.Remove(key);
+                    Console.WriteLine($"Collision ended between {this.UUID} and {key}");
+                    // Notify stuff that collision has ended
+                }
+            }
         }
 	}
 }

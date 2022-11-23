@@ -95,6 +95,7 @@ namespace Lawrence
             }
 
             moby.oClass = (int)update.oClass;
+
             moby.active = update.enabled != 0;
             moby.x = update.x;
             moby.y = update.y;
@@ -264,6 +265,16 @@ namespace Lawrence
                         this.clientMoby.rot = update.rotation;
                         this.clientMoby.animationID = update.animationID;
 
+                        if (clientMoby.oClass == 0)
+                        {
+                            //clientMoby.oClass = 0x23e;
+                        }
+
+                        if (clientMoby.animationID > 2)
+                        {
+                            //clientMoby.animationID = 2;
+                        }
+
                         break;
                     }
                 case MPPacketType.MP_PACKET_MOBY_CREATE:
@@ -286,6 +297,18 @@ namespace Lawrence
                         Console.WriteLine($"Player({this.ID}) created moby (uuid: {moby.UUID})");
 
                         SendPacket(header, Packet.StructToBytes<MPPacketMobyCreate>(createPacket, Packet.Endianness.BigEndian));
+
+                        break;
+                    }
+                case MPPacketType.MP_PACKET_MOBY_COLLISION:
+                    {
+                        MPPacketMobyCollision collision = Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, Packet.Endianness.BigEndian);
+
+                        Moby moby = Environment.Shared().GetMoby(collision.uuid);
+                        if (moby != null)
+                        {
+                            moby.AddCollider(collision.collidedWith);
+                        }
 
                         break;
                     }
