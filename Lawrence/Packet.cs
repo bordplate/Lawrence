@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -15,7 +16,15 @@ namespace Lawrence
         MP_PACKET_MOBY_CREATE = 6,
         MP_PACKET_DISCONNECTED = 7,
         MP_PACKET_MOBY_DELETE = 8,
-        MP_PACKET_MOBY_COLLISION = 9
+        MP_PACKET_MOBY_COLLISION = 9,
+        MP_PACKET_SET_STATE = 10
+    }
+
+    public enum MPStateType : uint
+    {
+        MP_STATE_TYPE_DAMAGE = 1,
+        MP_STATE_TYPE_PLAYER =  2,
+        MP_STATE_TYPE_POSITION = 3
     }
 
     public enum MPPacketFlags : ushort
@@ -58,8 +67,28 @@ namespace Lawrence
     [StructLayout(LayoutKind.Explicit)]
     public struct MPPacketMobyCollision
     {
-        [FieldOffset(0x0)] public ushort uuid;
-        [FieldOffset(0x4)] public ushort collidedWith;
+        [FieldOffset(0x0)] public uint flags;
+        [FieldOffset(0x4)] public ushort uuid;
+        [FieldOffset(0x6)] public ushort collidedWith;
+        [FieldOffset(0x8)] public float x;
+        [FieldOffset(0xc)] public float y;
+        [FieldOffset(0x10)] public float z;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketSetState
+    {
+        [FieldOffset(0x0)] public MPStateType stateType;
+        [FieldOffset(0x4)] public uint offset;
+        [FieldOffset(0x8)] public uint value;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketSetStateFloat
+    {
+        [FieldOffset(0x0)] public MPStateType stateType;
+        [FieldOffset(0x4)] public uint offset;
+        [FieldOffset(0x8)] public float value;
     }
 
     public class Packet
@@ -91,6 +120,31 @@ namespace Lawrence
             header.size = 0;
 
             return (header, null);
+        }
+
+        public static (MPPacketHeader, byte[]) MakeDamagePacket(uint damage)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetState bonkState = new MPPacketSetState();
+            bonkState.stateType = MPStateType.MP_STATE_TYPE_PLAYER;
+            bonkState.value = 0x16;
+
+            //MPPacketSetState damageState = new MPPacketSetState();
+            //damageState.stateType = MPStateType.MP_STATE_TYPE_DAMAGE;
+            //damageState.value = 1;  // Damage player by 1 health
+
+            var size = Marshal.SizeOf(bonkState);// + Marshal.SizeOf(damageState);
+            header.size = (uint)size;
+            List<byte> bytes = new List<byte>();
+            
+            bytes.AddRange(StructToBytes<MPPacketSetState>(bonkState, Endianness.BigEndian));
+            //bytes.AddRange(StructToBytes<MPPacketSetState>(damageState, Endianness.BigEndian));
+
+            return (header, bytes.ToArray());
         }
 
         public static (MPPacketHeader, byte[]) MakeDeleteMobyPacket(ushort mobyUUID)
@@ -173,7 +227,7 @@ namespace Lawrence
 
                 var effectiveOffset = startOffset + offset;
 
-                if (subFields.Length == 0 && offset <= Marshal.SizeOf(fieldType))
+                if (subFields.Length == 0/* && offset <= Marshal.SizeOf(fieldType)*/)
                 {
                     Array.Reverse(data, effectiveOffset, Marshal.SizeOf(fieldType));
                 }

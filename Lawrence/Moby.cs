@@ -52,13 +52,27 @@ namespace Lawrence
             animationID = 0;
         }
 
-        public void AddCollider(ushort uuid)
+        public void AddCollider(ushort uuid, uint collisionFlags)
         {
             if (!colliders.ContainsKey(uuid))
             {
                 colliders.Add(uuid, Moby.COLLIDE_TICKS);
                 Console.WriteLine($"New collision between {this.UUID} and {uuid}");
                 // Notify stuff that new collision has happened
+
+                if (collisionFlags > 0)
+                {
+                    // We hit someone, so we get their moby and tell them they're hurt
+                    Moby victim = Environment.Shared().GetMoby(uuid);
+                    if (victim != null && victim.parent != null)
+                    {
+                        Console.WriteLine($"Moby {UUID} hit {uuid} for 1 damage.");
+                        victim.parent.SendPacket(Packet.MakeDamagePacket(1));
+                    } else
+                    {
+                        Console.WriteLine($"Moby {UUID} hit null-moby {uuid}");
+                    }
+                }
             } else
             {
                 colliders[uuid] = Moby.COLLIDE_TICKS;

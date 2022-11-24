@@ -35,6 +35,11 @@ namespace Lawrence
 
         public Moby GetMoby(uint uuid)
         {
+            if (uuid > mobys.Count)
+            {
+                return null;
+            }
+
             return mobys[(int)uuid - 1];
         }
 

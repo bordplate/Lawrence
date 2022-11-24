@@ -152,7 +152,6 @@ namespace Lawrence
                 {
                     ack.ackCycle = packetHeader.ackCycle;
                     ack.packet = packet;
-                    Console.WriteLine($"Caching ack response");
                 }
 
                 acked[packetHeader.requiresAck] = ack;
@@ -304,10 +303,32 @@ namespace Lawrence
                     {
                         MPPacketMobyCollision collision = Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, Packet.Endianness.BigEndian);
 
-                        Moby moby = Environment.Shared().GetMoby(collision.uuid);
+                        ushort uuid = collision.uuid;
+                        ushort collidedWith = collision.collidedWith;
+
+                        if (uuid == 0)
+                        {
+                            uuid = clientMoby.UUID;
+                        }
+
+                        if (collidedWith == 0)
+                        {
+                            collidedWith = clientMoby.UUID;
+                        }
+
+                        if (uuid == collidedWith)
+                        {
+                            Console.WriteLine($"Player {ID} just told us they collided with themselves.");
+                            return;
+                        }
+
+                        Moby moby = Environment.Shared().GetMoby(uuid);
                         if (moby != null)
                         {
-                            moby.AddCollider(collision.collidedWith);
+                            moby.AddCollider(collidedWith, collision.flags);
+                        } else
+                        {
+                            Console.WriteLine($"Player {ID} claims they hit null-moby {uuid}");
                         }
 
                         break;
