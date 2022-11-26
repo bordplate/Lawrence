@@ -82,7 +82,10 @@ namespace Lawrence
         public void Tick()
         {
             // Collision debouncing
-            foreach(var key in colliders.Keys)
+            ushort[] keys = new ushort[colliders.Keys.Count];
+            colliders.Keys.CopyTo(keys, 0);
+
+            foreach(var key in keys)
             {
                 colliders[key] -= 1;
 

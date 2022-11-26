@@ -23,12 +23,8 @@ namespace Lawrence
 
         static int playerCount = 0;
 
-        public static void Tick(Object info)
+        public static void Tick()
         {
-            Stopwatch sw = new Stopwatch();
-
-            sw.Start();
-
             Environment.Shared().Tick();
 
             foreach (var client in clients.ToArray())
@@ -52,13 +48,6 @@ namespace Lawrence
                 }
 
                 client.Tick();
-            }
-
-            sw.Stop();
-
-            if (sw.ElapsedMilliseconds > 16)
-            {
-                Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
             }
         }
 
@@ -109,7 +98,7 @@ namespace Lawrence
             } catch (Exception e)
             {
                 Console.WriteLine($"Error sending packet: {e.Message}");
-            } 
+            }
         }
 
         static void Main(string[] args)
@@ -120,7 +109,30 @@ namespace Lawrence
             server.Client.ReceiveTimeout = 1;
 
 
-            Timer tickTimer = new Timer(Lawrence.Tick, null, 1000, 8);
+            new Thread(() =>
+            {
+                //Thread.CurrentThread.IsBackground = true;
+
+                while (true)
+                {
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
+
+                    Tick();
+
+                    sw.Stop();
+
+                    if (sw.ElapsedMilliseconds > 16)
+                    {
+                        Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
+                    }
+                    else
+                    {
+                        Thread.Sleep((int)(16 - sw.ElapsedMilliseconds));
+                    }
+                }
+            }).Start();
 
             Console.WriteLine("                                       -=*####***++++++=-                  ");
             Console.WriteLine("                                     +##%###****++====--                   ");
@@ -203,11 +215,9 @@ namespace Lawrence
                     }
                 } catch (SocketException e)
                 {
-                    //Console.WriteLine($"Socket error: {e.Message}");
+                    
                 }
             }
-
-            Console.WriteLine("Bye!");
         }
     }
 }

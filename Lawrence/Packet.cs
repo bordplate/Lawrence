@@ -24,7 +24,8 @@ namespace Lawrence
     {
         MP_STATE_TYPE_DAMAGE = 1,
         MP_STATE_TYPE_PLAYER =  2,
-        MP_STATE_TYPE_POSITION = 3
+        MP_STATE_TYPE_POSITION = 3,
+        MP_STATE_TYPE_PLANET = 4
     }
 
     public enum MPPacketFlags : ushort
@@ -179,6 +180,21 @@ namespace Lawrence
             MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
 
             return (moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeGoToPlanetPacket(int planet)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+
+            MPPacketSetState destinationPlanetState = new MPPacketSetState();
+            destinationPlanetState.stateType = MPStateType.MP_STATE_TYPE_PLANET;
+            destinationPlanetState.value = (uint)planet;
+
+            var size = Marshal.SizeOf(destinationPlanetState);// + Marshal.SizeOf(damageState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetState>(destinationPlanetState, Endianness.BigEndian));
         }
 
         public static byte[] headerToBytes(MPPacketHeader header)

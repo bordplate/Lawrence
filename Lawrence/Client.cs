@@ -73,7 +73,7 @@ namespace Lawrence
 
             if (moby == null)
             {
-                Console.WriteLine($"Player {this.ID} tried to update null moby {moby.UUID}.");
+                Console.WriteLine($"Player {this.ID} tried to update null moby {update.uuid}.");
                 return;
             }
 
@@ -173,10 +173,14 @@ namespace Lawrence
             SendPacket(header, body);
         }
 
+        // Parse and process a packet
         public void ParsePacket(byte[] packet)
         {
+            // Start out by reading the header
             MPPacketHeader packetHeader = Packet.makeHeader(packet.Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
             byte[] packetBody = packet.Skip(Marshal.SizeOf<MPPacketHeader>()).Take((int)packetHeader.size).ToArray();
+
+            // Check if handshake is complete, otherwise start completing it. 
 
             // TODO: Implement some sort of protection against anyone spoofing others.
             //       Ideally the handshake should start a session that the client can
@@ -193,10 +197,14 @@ namespace Lawrence
             }
             else if (!handshakeCompleted)
             {
+                // Client has sent a packet that is not a handshake packet.
+                // We tell the client we don't know it and it should reset state and
+                // start handshake. 
                 SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_IDKU }, null);
                 return;
             }
 
+            // Get size of packet body 
             var packetSize = 0;
             if (packetHeader.size > 0 && packetHeader.size < 1024 * 8)
             {
@@ -205,7 +213,6 @@ namespace Lawrence
 
             // If this packet requires ack and is not RPC, we send ack before processing.
             // If this is RPC we only send ack here if a previous ack has been sent and cached.
-
             if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK)  // We don't ack ack messages
             {
                 if (packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) > 0 && acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle)
@@ -255,7 +262,14 @@ namespace Lawrence
                             break;
                         }
 
-                        this.clientMoby.active = true;
+                        this.clientMoby.active = update.enabled == 1;
+
+                        if (!clientMoby.active)
+                        {
+                            Console.WriteLine("Sending player to a planet\n");
+                            SendPacket(Packet.MakeGoToPlanetPacket(9));
+                            break;
+                        }
                                                 
                         this.clientMoby.x = update.x;
                         this.clientMoby.y = update.y;
@@ -263,16 +277,6 @@ namespace Lawrence
                         this.clientMoby.level = update.level;
                         this.clientMoby.rot = update.rotation;
                         this.clientMoby.animationID = update.animationID;
-
-                        if (clientMoby.oClass == 0)
-                        {
-                            //clientMoby.oClass = 0x23e;
-                        }
-
-                        if (clientMoby.animationID > 2)
-                        {
-                            //clientMoby.animationID = 2;
-                        }
 
                         break;
                     }
@@ -372,7 +376,7 @@ namespace Lawrence
 
             if (recvIndex+received > recvBuffer.Length)
             {
-                Console.WriteLine($"Player's ({this.ID} buffer offset + received data higher than buffer size. Resetting.");
+                Console.WriteLine($"Player {this.ID} buffer offset + received data higher than buffer size. Resetting.");
                 recvIndex = 0;
             }
 
@@ -439,7 +443,7 @@ namespace Lawrence
             }
 
             // Resend unacked packets
-            foreach (var unacked in this.unacked)
+            foreach (var unacked in this.unacked.ToArray())
             {
                 Lawrence.SendTo(unacked.packet, endpoint);
             }
