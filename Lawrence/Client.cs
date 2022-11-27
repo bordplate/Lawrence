@@ -345,7 +345,6 @@ namespace Lawrence
                 default:
                     {
                         Console.WriteLine($"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.ptype} with size: {packetSize}. Resetting receive buffer.");
-                        //recvIndex = 0;
                         break;
                     }
             }
@@ -395,7 +394,7 @@ namespace Lawrence
 
             recvLock.ReleaseMutex();
 
-            if (recvBuffer.Count > 50)
+            if (recvBuffer.Count > 99)
             {
                 Console.WriteLine($"(Player {ID}) has a shit ton of packets lmao");
                 recvBuffer = new List<byte[]>(100);

@@ -116,8 +116,6 @@ namespace Lawrence
         {
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 2407);
             server = new UdpClient(ipep);
-            server.Client.Blocking = false;
-            server.Client.ReceiveTimeout = 1;
 
             Console.WriteLine("                                       -=*####***++++++=-                  ");
             Console.WriteLine("                                     +##%###****++====--                   ");
@@ -164,8 +162,6 @@ namespace Lawrence
 
             new Thread(() =>
             {
-                Thread.CurrentThread.IsBackground = true;
-
                 byte[] data;
                 long loopCount = 0;
                 long dataReceived = 0;
@@ -173,12 +169,11 @@ namespace Lawrence
                 while (true)
                 {
                     loopCount += 1;
-                    Console.Write($"\r({BytesToString(dataReceived)})\r");
-
-                    Thread.Yield();
+                    Console.Write($"\r({BytesToString(dataReceived)})          \r");
 
                     if (server.Available <= 0)
                     {
+                        Thread.Sleep(1);
                         continue;
                     }
 
@@ -215,7 +210,7 @@ namespace Lawrence
                     }
                     catch (SocketException e)
                     {
-
+                        Console.WriteLine($"Receive error: {e.Message}");
                     }
                 }
             }).Start();
