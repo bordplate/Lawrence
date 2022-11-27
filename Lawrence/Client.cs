@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading;
+using Force.Crc32;
 
 namespace Lawrence
 {
@@ -43,6 +45,8 @@ namespace Lawrence
             this.disconnected = false;
 
             clientMoby = Environment.Shared().NewMoby(this);
+
+            recvLock = new Mutex();
         }
 
         public IPEndPoint GetEndpoint()
@@ -213,13 +217,14 @@ namespace Lawrence
 
             // If this packet requires ack and is not RPC, we send ack before processing.
             // If this is RPC we only send ack here if a previous ack has been sent and cached.
-            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK)  // We don't ack ack messages
+            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0)  // We don't ack ack messages
             {
-                if (packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) > 0 && acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle)
+                // If this is an RPC packet and we've already processed and cached it, we use the cached response. 
+                if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 && acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle)
                 {
                     Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
                 }
-                else if (packetHeader.requiresAck != 0 && (packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0)
+                else if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) // If it's not RPC, we just ack the packet and process the packet
                 {
                     MPPacketHeader ack = new MPPacketHeader
                     {
@@ -267,7 +272,7 @@ namespace Lawrence
                         if (!clientMoby.active)
                         {
                             Console.WriteLine("Sending player to a planet\n");
-                            SendPacket(Packet.MakeGoToPlanetPacket(9));
+                            SendPacket(Packet.MakeGoToPlanetPacket(11));
                             break;
                         }
                                                 
@@ -339,15 +344,17 @@ namespace Lawrence
                     }
                 default:
                     {
-                        Console.WriteLine($"Player sent unknown packet {packetHeader.ptype} with size: {packetSize}.");
+                        Console.WriteLine($"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.ptype} with size: {packetSize}. Resetting receive buffer.");
+                        //recvIndex = 0;
                         break;
                     }
             }
         }
 
-        int recvIndex = 0;
-        byte[] recvBuffer = new byte[(1024 * 8) + 12];
-        bool recvLock = false;
+        Mutex recvLock;
+        bool resetBuffer = false;
+        List<byte[]> recvBuffer = new List<byte[]>(100);
+        List<uint> lastHashes = new List<uint>(10);
         public void ReceiveData(byte[] data)
         {
             if (disconnected)
@@ -355,74 +362,73 @@ namespace Lawrence
                 return;
             }
 
-            // FIXME: This is potentially super slow. Idk if there's a better way to do multi-threading like this
-            int lockCounter = 0;
-            while (recvLock)
-            {
-                lockCounter++;
-                if (lockCounter > 10000000)
-                {
-                    // Something has gone wrong, we just force unlock and hope it's ok.
-                    Console.WriteLine($"Disconnected: {ID}");
-                    recvLock = false;
-                }
-            }
-
             this.lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
 
-            recvLock = true;
+            recvLock.WaitOne();
 
-            int received = data.Length;
-
-            if (recvIndex+received > recvBuffer.Length)
+            if (resetBuffer)
             {
-                Console.WriteLine($"Player {this.ID} buffer offset + received data higher than buffer size. Resetting.");
-                recvIndex = 0;
+                recvBuffer = new List<byte[]>(100);
             }
 
-            if (recvIndex < 0)
+            uint currentHash = Crc32Algorithm.Compute(data);
+
+            // Throw away duplicate packets
+            if (lastHashes.Contains(currentHash))
             {
-                Console.WriteLine($"recvIndex was {recvIndex}. Setting to 0");
-                recvIndex = 0;
+                recvLock.ReleaseMutex();
+                return;
             }
 
-            data.CopyTo(recvBuffer, recvIndex);
+            // We store the crc32 sum of the last 10 packets
+            // So we can discard future packets if they are the same sum
+            // We send a lot of duplicate packets and we should be able to endure
+            // any packet loss. So this should help us not process a bunch of redundant packets.
+            if (lastHashes.Count >= 10)
+            {
+                lastHashes.Remove(0);
+            }
 
-            recvIndex += received;
+            lastHashes.Add(currentHash);
 
-            recvLock = false;
+            recvBuffer.Add(data);
+
+            recvLock.ReleaseMutex();
+
+            if (recvBuffer.Count > 50)
+            {
+                Console.WriteLine($"(Player {ID}) has a shit ton of packets lmao");
+                recvBuffer = new List<byte[]>(100);
+            }
         }
 
-        // Returns and drains the receive buffer if a full packet is available.
-        byte[] DrainPacket()
+        List<byte[]> DrainPackets()
         {
-            if (recvLock || recvIndex < Marshal.SizeOf<MPPacketHeader>())
+            if (recvBuffer.Count <= 0)
             {
                 // We don't have enough bytes to build a header
                 return null;
             }
 
-            recvLock = true;
+            // We take at max 50 packets out of the buffer
+            int takePackets = Math.Min(50, recvBuffer.Count);
 
-            MPPacketHeader header = Packet.makeHeader(recvBuffer.Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
-
-            if (header.size > recvIndex-Marshal.SizeOf<MPPacketHeader>())
+            if (takePackets <= 0)
             {
-                // We don't have the full packet payload
-                recvLock = false;
+                // No packets in buffer
                 return null;
             }
 
-            int packetSize = (int)(Marshal.SizeOf<MPPacketHeader>() + header.size);
+            // Make sure the networking receive thread isn't working with the buffer
+            recvLock.WaitOne();
 
-            // NOTE: These Take(), CopyTo(), Skip(), and ToArray() calls are expensive. Easy optimization
-            byte[] packet = recvBuffer.Take(packetSize).ToArray();
-            recvBuffer.Skip(packetSize).ToArray().CopyTo(recvBuffer, 0);
-            recvIndex -= packetSize;
+            // Drain packets from buffer
+            List<byte[]> packets = recvBuffer.Take(takePackets).ToList();
+            recvBuffer.RemoveRange(0, takePackets);
 
-            recvLock = false;
+            recvLock.ReleaseMutex();
 
-            return packet;
+            return packets;
         }
 
         public void Tick()
@@ -432,14 +438,13 @@ namespace Lawrence
                 return;
             }
 
-            var packet = DrainPacket();
-            int processedPackets = 0;
-            while (packet != null && processedPackets < 10)
+            var packets = DrainPackets();
+            if (packets != null)
             {
-                ParsePacket(packet);
-                processedPackets += 1;
-
-                packet = DrainPacket();
+                foreach (var packet in packets)
+                {
+                    ParsePacket(packet);
+                }
             }
 
             // Resend unacked packets

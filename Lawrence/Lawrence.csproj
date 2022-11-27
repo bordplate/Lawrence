@@ -10,8 +10,10 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="NLua" />
+    <None Remove="Crc32.NET" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NLua" Version="1.6.0" />
+    <PackageReference Include="Crc32.NET" Version="1.2.0" />
   </ItemGroup>
 </Project>

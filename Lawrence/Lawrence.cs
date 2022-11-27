@@ -101,38 +101,23 @@ namespace Lawrence
             }
         }
 
+        static String BytesToString(long byteCount)
+        {
+            string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+            if (byteCount == 0)
+                return "0" + suf[0];
+            long bytes = Math.Abs(byteCount);
+            int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+            double num = Math.Round(bytes / Math.Pow(1024, place), 1);
+            return (Math.Sign(byteCount) * num).ToString() + suf[place];
+        }
+
         static void Main(string[] args)
         {
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 2407);
             server = new UdpClient(ipep);
             server.Client.Blocking = false;
             server.Client.ReceiveTimeout = 1;
-
-
-            new Thread(() =>
-            {
-                //Thread.CurrentThread.IsBackground = true;
-
-                while (true)
-                {
-                    Stopwatch sw = new Stopwatch();
-
-                    sw.Start();
-
-                    Tick();
-
-                    sw.Stop();
-
-                    if (sw.ElapsedMilliseconds > 16)
-                    {
-                        Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
-                    }
-                    else
-                    {
-                        Thread.Sleep((int)(16 - sw.ElapsedMilliseconds));
-                    }
-                }
-            }).Start();
 
             Console.WriteLine("                                       -=*####***++++++=-                  ");
             Console.WriteLine("                                     +##%###****++====--                   ");
@@ -176,46 +161,82 @@ namespace Lawrence
 
             Console.WriteLine($"Started Lawrence on {ipep.ToString()}");
 
-            byte[] data;
-            long loopCount = 0;
-            while (true)
+
+            new Thread(() =>
             {
-                loopCount += 1;
-                Console.Write($"\r({playerCount} players) ");
+                Thread.CurrentThread.IsBackground = true;
 
-                if (server.Available <= 0)
+                byte[] data;
+                long loopCount = 0;
+                long dataReceived = 0;
+
+                while (true)
                 {
-                    continue;
-                }
+                    loopCount += 1;
+                    Console.Write($"\r({BytesToString(dataReceived)})\r");
 
-                try
-                {
-                    IPEndPoint clientEndpoint = null;
-                    data = server.Receive(ref clientEndpoint);
+                    Thread.Yield();
 
-                    if (data.Length <= 0)
+                    if (server.Available <= 0)
                     {
-                        Console.WriteLine("Hey, why is it 0?");
                         continue;
                     }
 
-                    bool existingPlayer = false;
-                    foreach (var p in clients)
+                    try
                     {
-                        if (!p.IsDisconnected() && p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
+                        IPEndPoint clientEndpoint = null;
+                        data = server.Receive(ref clientEndpoint);
+                        dataReceived += data.Length;
+
+                        if (data.Length <= 0)
                         {
-                            p.ReceiveData(data);
-                            existingPlayer = true;
+                            Console.WriteLine("Hey, why is it 0?");
+                            continue;
+                        }
+                        if (data.Length > 100)
+                        {
+                            Console.WriteLine("Wow that's a large packet you've got there.");
+                        }
+
+                        bool existingPlayer = false;
+                        foreach (var p in clients)
+                        {
+                            if (!p.IsDisconnected() && p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
+                            {
+                                p.ReceiveData(data);
+                                existingPlayer = true;
+                            }
+                        }
+
+                        if (!existingPlayer)
+                        {
+                            NewPlayer(clientEndpoint);
                         }
                     }
-
-                    if (!existingPlayer)
+                    catch (SocketException e)
                     {
-                        NewPlayer(clientEndpoint);
+
                     }
-                } catch (SocketException e)
+                }
+            }).Start();
+
+            while (true)
+            {
+                Stopwatch sw = new Stopwatch();
+
+                sw.Start();
+
+                Tick();
+
+                sw.Stop();
+
+                if (sw.ElapsedMilliseconds > 16)
                 {
-                    
+                    Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
+                }
+                else
+                {
+                    Thread.Sleep((int)(16 - sw.ElapsedMilliseconds));
                 }
             }
         }
