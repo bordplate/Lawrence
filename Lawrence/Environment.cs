@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+
+using NLua;
 
 namespace Lawrence
 {
@@ -10,11 +13,66 @@ namespace Lawrence
 		static Environment SharedEnvironment;
 
         public List<Moby> mobys = new List<Moby>();
+        List<Behavior> behaviors = new List<Behavior>();
+
+        Lua state;
+
+        string[] behaviorScripts;
 
         public Environment()
 		{
-
+            behaviorScripts = Directory.GetFiles("behaviors/");
 		}
+
+        void Initialize()
+        {
+            foreach (var script in behaviorScripts)
+            {
+                if (!script.EndsWith(".lua")) continue;
+
+                Console.WriteLine($"Starting script at {script}");
+
+                try
+                {
+                    behaviors.Add(new Behavior(script));
+                } catch (ApplicationException exception)
+                {
+                    Console.WriteLine(exception.Message);
+                }
+            }
+        }
+
+        public Lua State()
+        {
+            if (state == null) {
+                state = new Lua();
+
+                state.LoadCLRPackage();
+                state["Environment"] = this;
+            }
+
+            return state;
+        }
+
+        public string Execute(string eval)
+        {
+            string output = "";
+
+            try
+            {
+                object[] result = State().DoString(eval);
+
+                foreach (object obj in result)
+                {
+                    output += $"\n{obj.ToString()}";
+                }
+            } catch (Exception e)
+            {
+                output = e.Message;
+            }
+
+            return output;
+        }
 
 		// Get shared environment singleton
 		public static Environment Shared()
@@ -22,12 +80,54 @@ namespace Lawrence
 			if (Environment.SharedEnvironment == null)
 			{
 				Environment.SharedEnvironment = new Environment();
+                Environment.SharedEnvironment.Initialize();
 			}
 
 			return Environment.SharedEnvironment;
 		}
 
-		public List<Moby> GetMobys()
+        public void Tick()
+        {
+            foreach (var behavior in behaviors)
+            {
+                behavior.Tick();
+            }
+
+            foreach (var moby in mobys)
+            {
+                if (!moby.active)
+                {
+                    continue;
+                }
+
+                if (moby.parent != null && moby.parent.IsActive())
+                {
+                    foreach (var behavior in behaviors)
+                    {
+                        behavior.PlayerTick(moby.parent);
+                    }
+                }
+
+                moby.Tick();
+
+                List<Client> ignoring = null;
+                if (moby.parent != null)
+                {
+                    ignoring = new List<Client> { moby.parent };
+                }
+
+                if (moby.onlyVisibleToTeam)
+                {
+                    Lawrence.DistributePacket(Packet.MakeMobyUpdatePacket(moby), moby.level, ignoring, moby.team);
+                }
+                else
+                {
+                    Lawrence.DistributePacket(Packet.MakeMobyUpdatePacket(moby), moby.level, ignoring);
+                }
+            }
+        }
+
+        public List<Moby> Mobys()
 		{
 			return mobys;
 		}
@@ -42,7 +142,6 @@ namespace Lawrence
 
             return mobys[(int)uuid - 1];
         }
-
 
         public Moby NewMoby(Client parent = null)
         {
@@ -79,6 +178,14 @@ namespace Lawrence
             return moby;
         }
 
+        public Moby SpawnMoby(int oClass)
+        {
+            Moby moby = NewMoby();
+            moby.oClass = oClass;
+
+            return moby;
+        }
+
         public void DeleteMobys(Func<Moby, bool> value)
         {
             Moby[] deleteMobys = mobys.Where(value).ToArray();
@@ -90,24 +197,117 @@ namespace Lawrence
             }
         }
 
-        public void Tick()
+        public void DeleteMoby(ushort uuid)
         {
-            foreach (var moby in mobys)
+            foreach (Moby moby in mobys)
             {
-                if (!moby.active)
+                if (moby.UUID == uuid)
                 {
-                    continue;
+                    moby.Delete();
+                    return;
                 }
+            }
+        }
 
-                moby.Tick();
+        public int PlayerCount()
+        {
+            int players = 0;
 
-                List<Client> ignoring = null;
-                if (moby.parent != null)
+            foreach (Client client in Lawrence.GetClients())
+            {
+                if (client.IsActive())
                 {
-                    ignoring = new List<Client> { moby.parent };
+                    players += 1;
                 }
+            }
 
-                Lawrence.DistributePacket(Packet.MakeMobyUpdatePacket(moby), moby.level, ignoring);
+            return players;
+        }
+
+        public Client GetPlayer(ushort ID)
+        {
+            return Lawrence.GetClient((int)ID);
+        }
+
+        public List<Client> GetPlayers()
+        {
+            return Lawrence.GetClients().Where((Client client) =>
+            {
+                return client.IsActive();
+            }).ToList();
+        }
+
+        public void DrawText(ushort id, string text, ushort x, ushort y, uint color = 0xC0FFA888)
+        {
+            Lawrence.DistributePacket(Packet.MakeSetHUDTextPacket(id, text, x, y, color));
+        }
+
+        public void DrawTextForPlayer(int playerID, ushort id, string text, ushort x, ushort y, uint color = 0xC0FFA888)
+        {
+            Lawrence.GetClient(playerID).SendPacket(Packet.MakeSetHUDTextPacket(id, text, x, y, color));
+        }
+
+        public void DeleteText(ushort id)
+        {
+            Lawrence.DistributePacket(Packet.MakeDeleteHUDTextPacket(id));
+        }
+
+        public void DeleteTextForPlayer(int playerID, ushort id)
+        {
+            Lawrence.GetClient(playerID).SendPacket(Packet.MakeDeleteHUDTextPacket(id));
+        }
+
+        public void GiveItemToPlayer(int playerID, ushort item)
+        {
+            Lawrence.GetClient(playerID).SendPacket(Packet.MakeSetItemPacket(item, true));
+        }
+
+        public void SendPlayerToPlanet(int playerID, int planet)
+        {
+            Lawrence.GetClient(playerID).SendPacket(Packet.MakeGoToPlanetPacket(planet));
+        }
+
+        public void OnPlayerConnect(Client client)
+        {
+            LuaFunction function = state.GetFunction("on_player_connect");
+            if (function != null)
+            {
+                function.Call(new object[] { client });
+            }
+        }
+
+        public void OnCollision(Moby collider, Moby collidee, uint flags)
+        {
+            LuaFunction function = state.GetFunction("on_collision");
+            if (function != null) { 
+                function.Call(new object[] { collider, collidee, flags });
+            }
+        }
+
+        public void OnCollisionEnd(Moby collider, Moby collidee)
+        {
+            LuaFunction function = state.GetFunction("on_collision_end");
+            if (function != null)
+            {
+                function.Call(new object[] { collider, collidee });
+            }
+        }
+
+        public void PlayerPressedButtons(Client client, ControllerInput pressedButtons)
+        {
+            LuaFunction function = state.GetFunction("on_player_input");
+            if (function != null)
+            {
+                function.Call(new object[] { client, ((int)pressedButtons) });
+            }
+        }
+
+        public void OnPlayerGameStateChange(Client client, GameState gameState)
+        {
+            LuaFunction function = state.GetFunction("on_player_game_state_change");
+            if (function != null)
+            {
+                function.Call(new object[] { client, (uint)gameState });
             }
         }
     }

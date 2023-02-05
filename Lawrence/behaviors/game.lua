@@ -1,0 +1,231 @@
+------
+-- Game mode functions
+------
+
+current_game = 0
+countdown = 0
+
+game_started = false
+game_ticks = 0
+
+game_mobys = {}
+
+game_players = {}
+
+players = {}
+
+countdown_text_id = 1
+placement_text_id = 2
+rankings_text_ids = {
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14   
+}
+
+CONTROLLER_BUTTON = {
+   L2 = 1,
+   R2 = 2,
+   L1 = 4,
+   R1 = 8,
+   Triangle = 16,
+   Circle = 32,
+   Cross = 64,
+   Square = 128,
+   Select = 256,
+   L3 = 512,
+   R3 = 1024,
+   Start = 2048,
+   Up = 4096,
+   Right = 8192,
+   Down = 16384,
+   Left = 32768
+}
+
+start_race_text_id = 15
+
+test_moby = nil
+
+editor_mode = false
+
+-- Spawns the mobys needed for this race level
+function spawn_level_mobys(level)
+   local level_file = open("levelfile")
+   
+   local moby_descs = level_file.split("\n")
+   for moby_desc in moby_descs do
+      local class, x, y, z = table.unpack(moby_desc.split(","))
+      
+      local moby = Environment:SpawnMoby(class)
+      moby.x = x
+      moby.y = y
+      moby.z = z
+      
+      moby.active = true
+      
+      game_mobys[#game_mobys+1] = moby
+   end
+end
+
+-- Starts the race start countdown
+function start_countdown()
+   countdown = 3
+   game_started = true
+end
+
+-- Picks a level decided by a fair dice roll
+function pick_level()
+   current_game = 1 
+end
+
+function start_game() 
+   game_ticks = 0
+   game_mobys = {}
+    
+   if current_game == 0 then
+      pick_level()
+   end
+   
+   start_countdown()
+end
+
+function register_checkpoint(collidee)
+    
+end
+
+function spawn_test_moby()
+   test_moby = Environment:SpawnMoby(0x424)
+   test_moby.collision = false
+   test_moby.active = true
+   
+   test_moby.x = 263.88892
+   test_moby.y = 117.64792
+   test_moby.z = 56
+end
+
+------
+-- Engine callback functions
+------
+
+-- Called when the script is loaded
+function on_load()
+   local the_moby = Environment:SpawnMoby(0xb) -- Vendor
+   
+   the_moby.x = 263.88892
+   the_moby.y = 117.64792
+   the_moby.z = 55
+   the_moby.level = 3
+   
+   the_moby.active = true
+   the_moby.collision = true
+end
+
+-- When a player connects
+function on_player_connect(player)
+   Environment:SendPlayerToPlanet(player.ID, 3)
+end
+
+-- When a player disconnects
+function on_player_disconnect(player)
+   for i, player in enumerate(players) do
+      if player.ID == client.ID then
+         players[i] = nil
+      end
+   end
+end
+
+-- Called when a player collides with a game object
+function on_collision(collider, collidee, flags)
+   -- We only care about collisions with players
+   if collidee.parent == null then
+      return
+   end
+   
+   if flags > 0 then
+      collidee:Damage(1)
+   else
+      print("Collided with " .. collider.oClass)
+      if collider.oClass == 0xba then
+         print("Pick up")
+         Environment:DeleteMoby(collider.UUID);
+         Environment:GiveItemToPlayer(collidee.parent.ID, 0xc) -- Swingshot
+      end
+   end
+   
+   --for moby in game_mobys do
+   --   if moby.UUID == collider then
+   --      local collidee_moby = Environment:GetMoby(collidee)
+   --      if collidee_moby.parent ~= nil then
+   --         register_checkpoint(collidee) 
+   --      end
+   --   end
+   --end
+end
+
+function on_collision_end(collider, collidee)
+   
+end
+
+-- Called when a player attacks another player or attackable game object
+function on_attacked(attacker, victim)
+    -- Not implemented
+end
+
+-- When a player presses a button
+function on_player_input(player, input)
+   if player:GameState() == 3 then
+      print("Controller input: " .. input)
+      if input == CONTROLLER_BUTTON.Circle then
+         Environment:DrawTextForPlayer(player.ID, 1, "Joining", 50, 50, 0xff9e26e4)
+      end
+   end
+end
+
+function on_player_game_state_change(player, game_state)
+   if game_state == 3 then
+      Environment:DrawTextForPlayer(player.ID, 1, "\x11 Join races", 50, 50, 0xff9e26e4)
+   else
+      Environment:DeleteTextForPlayer(player.ID, 1)
+   end
+end
+
+ticks = 0
+
+-- Called every tick, which means typically 60 times per second
+function tick()
+   ticks = ticks + 1
+
+   if Environment:PlayerCount() <= 0 then
+      return
+   end
+   
+   if game_started then
+      game_ticks = game_ticks + 1
+      
+      if countdown > 0 then
+         Environment:DrawText(countdown_text_id, "{countdown}!", 200, 200)
+         
+         if (game_ticks % 60) == 0 then
+            countdown = countdown - 1
+         end
+         
+         return
+      end
+   end
+   
+   Environment:DrawText(start_race_text_id, "s_tick: " .. ticks, 0, 400, 0xff9e26e4)
+end
+
+function player_tick(player)
+   Environment:DrawTextForPlayer(player.ID, 14, "x: " .. player:GetMoby().x, 400, 360, 0xff9e26e4)
+   Environment:DrawTextForPlayer(player.ID, 13, "y: " .. player:GetMoby().y, 400, 380, 0xff9e26e4)
+   Environment:DrawTextForPlayer(player.ID, 12, "z: " .. player:GetMoby().z, 400, 400, 0xff9e26e4)
+end

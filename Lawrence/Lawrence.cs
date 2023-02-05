@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Microsoft.VisualBasic;
 
+using Terminal.Gui;
+
 namespace Lawrence
 {
     class Lawrence
@@ -22,6 +24,19 @@ namespace Lawrence
         static UdpClient server = null;
 
         static int playerCount = 0;
+
+        static bool directoryMode = false;
+        static ServerDirectory directory = null;
+
+        public static bool DirectoryMode()
+        {
+            return directoryMode;
+        }
+
+        public static ServerDirectory Directory()
+        {
+            return directory;
+        }
 
         public static void Tick()
         {
@@ -51,19 +66,20 @@ namespace Lawrence
             }
         }
 
-        public static void DistributePacket((MPPacketHeader, byte[]) packet, int level = -1, List<Client> ignoring = null)
+        public static void DistributePacket((MPPacketHeader, byte[]) packet, int level = -1, List<Client> ignoring = null, byte team = 0)
         {
-            foreach (var client in clients)
+            foreach (var client in clients.ToArray())
             {
-                if (client.IsDisconnected()) continue;
+                if (client.IsDisconnected() || !client.IsActive() || client.GetMoby() == null) continue;
                 if (ignoring != null && ignoring.Contains(client)) continue;
                 if (level != -1 && client.GetMoby().level != level) continue;
+                if (team != 0 && client.GetMoby().team != team) continue;
 
                 client.SendPacket(packet);
             }
         }
 
-        static void NewPlayer(IPEndPoint endpoint)
+        static void NewPlayer(IPEndPoint endpoint, byte[] data = null)
         {
             playerCount += 1;
 
@@ -88,6 +104,12 @@ namespace Lawrence
             }
 
             Console.WriteLine($"New player {client.ID} from {endpoint.ToString()}");
+
+            // Receive their first packet
+            if (data != null)
+            {
+                client.ReceiveData(data);
+            }
         }
 
         public static void SendTo(byte[] bytes, EndPoint endpoint)
@@ -101,9 +123,27 @@ namespace Lawrence
             }
         }
 
+        public static Client GetClient(int ID)
+        {
+            foreach(Client client in clients)
+            {
+                if (client.ID == ID)
+                {
+                    return client;
+                }
+            }
+
+            return null;
+        }
+
+        public static List<Client> GetClients()
+        {
+            return clients;
+        }
+
         static String BytesToString(long byteCount)
         {
-            string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+            string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; // Longs run out around EB
             if (byteCount == 0)
                 return "0" + suf[0];
             long bytes = Math.Abs(byteCount);
@@ -114,6 +154,16 @@ namespace Lawrence
 
         static void Main(string[] args)
         {
+            if (Array.IndexOf(args, "--directory") >= 0)
+            {
+                directoryMode = true;
+                directory = new ServerDirectory();
+
+                directory.RegisterServer("10.0.0.16", 2407, "Vetle's server", 20, 0);
+                directory.RegisterServer("127.0.0.1", 2407, "localhost", 20, 0);
+                directory.RegisterServer("10.9.0.5", 2407, "Someone's server", 3000, 1368);
+            }
+
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 2407);
             server = new UdpClient(ipep);
 
@@ -159,6 +209,10 @@ namespace Lawrence
 
             Console.WriteLine($"Started Lawrence on {ipep.ToString()}");
 
+            if (directoryMode)
+            {
+                Console.WriteLine($"Directory mode enabled!");
+            }
 
             new Thread(() =>
             {
@@ -169,7 +223,6 @@ namespace Lawrence
                 while (true)
                 {
                     loopCount += 1;
-                    Console.Write($"\r({BytesToString(dataReceived)})          \r");
 
                     if (server.Available <= 0)
                     {
@@ -205,7 +258,7 @@ namespace Lawrence
 
                         if (!existingPlayer)
                         {
-                            NewPlayer(clientEndpoint);
+                            NewPlayer(clientEndpoint, data);
                         }
                     }
                     catch (SocketException e)
@@ -215,24 +268,40 @@ namespace Lawrence
                 }
             }).Start();
 
+            new Thread(() =>
+            { 
+                while (true)
+                {
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
+
+                    Tick();
+
+                    sw.Stop();
+
+                    if (sw.ElapsedMilliseconds > 16)
+                    {
+                        Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
+                    }
+                    else
+                    {
+                        Thread.Sleep((int)(16 - sw.ElapsedMilliseconds));
+                    }
+                }
+            }).Start();
+
             while (true)
             {
-                Stopwatch sw = new Stopwatch();
+                Console.Write("\r> ");
+                string command = Console.ReadLine();
 
-                sw.Start();
-
-                Tick();
-
-                sw.Stop();
-
-                if (sw.ElapsedMilliseconds > 16)
+                if (command != null)
                 {
-                    Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
+                    Console.WriteLine(Environment.Shared().Execute(command));
                 }
-                else
-                {
-                    Thread.Sleep((int)(16 - sw.ElapsedMilliseconds));
-                }
+
+                Thread.Yield();
             }
         }
     }

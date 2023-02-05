@@ -18,11 +18,16 @@ namespace Lawrence
         public float z = 0.0f;
         public float rot = 0.0f;
 
-        public int animationID;
+        public int animationID = 0;
+        public int animationDuration = 0;
 
-        public ushort level;
+        public ushort level = 0;
+        public byte team = 0;
 
+        public bool onlyVisibleToTeam = false;
         public bool active = false;
+        public bool mpUpdateFunc = true;
+        public bool collision = true;
 
         public Client parent;
 
@@ -42,6 +47,7 @@ namespace Lawrence
 
         public void Delete()
         {
+            // FIXME: Make it so this doesn't delete all teams' mobys if it shouldn't
             Lawrence.DistributePacket(Packet.MakeDeleteMobyPacket(UUID));
 
             deleted = true;
@@ -52,6 +58,14 @@ namespace Lawrence
             animationID = 0;
         }
 
+        public void Damage(int damage)
+        {
+            if (parent != null)
+            {
+                parent.SendPacket(Packet.MakeDamagePacket(1));
+            }
+        }
+
         public void AddCollider(ushort uuid, uint collisionFlags)
         {
             if (!colliders.ContainsKey(uuid))
@@ -60,19 +74,8 @@ namespace Lawrence
                 Console.WriteLine($"New collision between {this.UUID} and {uuid}");
                 // Notify stuff that new collision has happened
 
-                if (collisionFlags > 0)
-                {
-                    // We hit someone, so we get their moby and tell them they're hurt
-                    Moby victim = Environment.Shared().GetMoby(uuid);
-                    if (victim != null && victim.parent != null)
-                    {
-                        Console.WriteLine($"Moby {UUID} hit {uuid} for 1 damage.");
-                        victim.parent.SendPacket(Packet.MakeDamagePacket(1));
-                    } else
-                    {
-                        Console.WriteLine($"Moby {UUID} hit null-moby {uuid}");
-                    }
-                }
+                Moby victim = Environment.Shared().GetMoby(uuid);
+                Environment.Shared().OnCollision(this, victim, collisionFlags);
             } else
             {
                 colliders[uuid] = Moby.COLLIDE_TICKS;
@@ -94,6 +97,7 @@ namespace Lawrence
                     colliders.Remove(key);
                     Console.WriteLine($"Collision ended between {this.UUID} and {key}");
                     // Notify stuff that collision has ended
+                    Environment.Shared().OnCollisionEnd(this, Environment.Shared().GetMoby(key));
                 }
             }
         }

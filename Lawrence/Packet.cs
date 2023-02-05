@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
+using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Lawrence
 {
@@ -17,7 +20,10 @@ namespace Lawrence
         MP_PACKET_DISCONNECTED = 7,
         MP_PACKET_MOBY_DELETE = 8,
         MP_PACKET_MOBY_COLLISION = 9,
-        MP_PACKET_SET_STATE = 10
+        MP_PACKET_SET_STATE = 10,
+        MP_PACKET_SET_HUD_TEXT = 11,
+        MP_PACKET_QUERY_GAME_SERVERS = 12,
+        MP_PACKET_CONTROLLER_INPUT = 13
     }
 
     public enum MPStateType : uint
@@ -25,12 +31,27 @@ namespace Lawrence
         MP_STATE_TYPE_DAMAGE = 1,
         MP_STATE_TYPE_PLAYER =  2,
         MP_STATE_TYPE_POSITION = 3,
-        MP_STATE_TYPE_PLANET = 4
+        MP_STATE_TYPE_PLANET = 4,
+        MP_STATE_TYPE_GAME = 5,
+        MP_STATE_TYPE_ITEM = 6
     }
 
     public enum MPPacketFlags : ushort
     {
         MP_PACKET_FLAG_RPC = 0x1
+    }
+
+    public enum MPMobyFlags : ushort
+    {
+        MP_MOBY_FLAG_ACTIVE = 0x1,
+        MP_MOBY_NO_COLLISION = 0x2,
+        MP_MOBY_FLAG_ORIG_UDPATE_FUNC = 0x4,
+    }
+
+    public enum MPControllerInputFlags : ushort
+    {
+        MP_CONTROLLER_FLAGS_PRESSED = 0x1,
+        MP_CONTROLLER_FLAGS_HELD = 0x2,
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -49,14 +70,17 @@ namespace Lawrence
     {
         [FieldOffset(0x0)] public ushort uuid;
         [FieldOffset(0x2)] public ushort parent;
-        [FieldOffset(0x4)] public UInt32 enabled;
+        [FieldOffset(0x4)] public byte team;
+        [FieldOffset(0x5)] public byte reserved;
+        [FieldOffset(0x6)] public MPMobyFlags flags;
         [FieldOffset(0x8)] public ushort oClass;
         [FieldOffset(0xa)] public ushort level;
         [FieldOffset(0xc)] public Int32 animationID;
-        [FieldOffset(0x10)] public float x;
-        [FieldOffset(0x14)] public float y;
-        [FieldOffset(0x18)] public float z;
-        [FieldOffset(0x1c)] public float rotation;
+        [FieldOffset(0x10)] public Int32 animationDuration;
+        [FieldOffset(0x14)] public float x;
+        [FieldOffset(0x18)] public float y;
+        [FieldOffset(0x1c)] public float z;
+        [FieldOffset(0x20)] public float rotation;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -91,6 +115,36 @@ namespace Lawrence
         [FieldOffset(0x4)] public uint offset;
         [FieldOffset(0x8)] public float value;
     }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketSetHUDText
+    {
+        [FieldOffset(0x0)] public ushort id;
+        [FieldOffset(0x2)] public ushort x;
+        [FieldOffset(0x4)] public ushort y;
+        [FieldOffset(0x6)] public ushort flags;
+        [FieldOffset(0x8)] public uint color;
+        [FieldOffset(0xc)] public ushort box_height;
+        [FieldOffset(0x10)] public ushort box_width;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketQueryResponseServer
+    {
+        [FieldOffset(0x0)] public uint ip;
+        [FieldOffset(0x4)] public ushort port;
+        [FieldOffset(0x6)] public ushort maxPlayers;
+        [FieldOffset(0x8)] public ushort playerCount;
+        [FieldOffset(0xa)] public ushort nameLength;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketControllerInput
+    {
+        [FieldOffset(0x0)] public ushort input;
+        [FieldOffset(0x2)] public MPControllerInputFlags flags;
+    }
+
 
     public class Packet
     {
@@ -148,6 +202,57 @@ namespace Lawrence
             return (header, bytes.ToArray());
         }
 
+        public static (MPPacketHeader, byte[]) MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color)
+        {
+            if (text.Length >= 50)
+            {
+                return (new MPPacketHeader(), null);
+            }
+
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_HUD_TEXT;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetHUDText hudText = new MPPacketSetHUDText();
+            hudText.x = x;
+            hudText.y = y;
+            hudText.color = color;
+            hudText.flags = 1;  // Drop shadow
+            hudText.id = id;
+
+            header.size = (uint)Marshal.SizeOf(hudText) + 50;
+
+            //List<byte> buffer = new List<byte>((int)header.size);
+            byte[] buffer = new byte[(int)header.size];
+            StructToBytes<MPPacketSetHUDText>(hudText, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+            //text.ToList().CopyTo(buffer, Marshal.SizeOf(hudText));
+            Encoding.ASCII.GetBytes(text).CopyTo(buffer, Marshal.SizeOf(hudText));
+            
+
+            return (header, buffer);
+        }
+
+        public static (MPPacketHeader, byte[]) MakeDeleteHUDTextPacket(ushort id)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_HUD_TEXT;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetHUDText hudText = new MPPacketSetHUDText();
+            hudText.id = id;
+            hudText.flags = 2;  // Delete
+
+            header.size = (uint)Marshal.SizeOf(hudText) + 50;
+
+            byte[] buffer = new byte[(int)header.size];
+            StructToBytes<MPPacketSetHUDText>(hudText, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+
+
+            return (header, buffer);
+        }
+
         public static (MPPacketHeader, byte[]) MakeDeleteMobyPacket(ushort mobyUUID)
         {
             MPPacketHeader header = new MPPacketHeader();
@@ -168,6 +273,11 @@ namespace Lawrence
             MPPacketMobyUpdate moby_update = new MPPacketMobyUpdate();
 
             moby_update.uuid = moby.UUID;
+
+            moby_update.flags |= moby.active ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
+            moby_update.flags |= moby.collision ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
+            moby_update.flags |= moby.mpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
+
             moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
             moby_update.oClass = (ushort)moby.oClass;
             moby_update.level = moby.parent == null ? moby.level : moby.parent.GetMoby().level;
@@ -195,6 +305,55 @@ namespace Lawrence
             header.size = (uint)size;
 
             return (header, StructToBytes<MPPacketSetState>(destinationPlanetState, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeQuerySerserResponsePacket(List<Server> servers, byte ackId, byte ackCycle)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_ACK;
+            header.requiresAck = ackId;
+            header.ackCycle = ackCycle;
+
+            List<byte> bytes = new List<byte>();
+
+            foreach (Server server in servers)
+            {
+                IPAddress ipAddress;
+                if (IPAddress.TryParse(server.IP, out ipAddress))
+                {
+                    // If the parsing is successful, get the 32-bit integer representation of the IP address
+                    uint addr = SwapEndianness((uint)ipAddress.Address);
+
+                    MPPacketQueryResponseServer packet = new MPPacketQueryResponseServer();
+                    packet.ip = addr;
+                    packet.port = (ushort)server.Port;
+                    packet.maxPlayers = (ushort)server.MaxPlayers;
+                    packet.playerCount = (ushort)server.PlayerCount;
+                    packet.nameLength = (ushort)Encoding.UTF8.GetBytes(server.Name).Length;
+
+                    bytes.AddRange(Packet.StructToBytes(packet, Endianness.BigEndian));
+                    bytes.AddRange(Encoding.UTF8.GetBytes(server.Name));
+                }
+            }
+
+            header.size = (uint)bytes.Count;
+
+            return (header, bytes.ToArray());
+        }
+
+        public static (MPPacketHeader, byte[]) MakeSetItemPacket(ushort item, bool give)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+
+            MPPacketSetState setItemState = new MPPacketSetState();
+            setItemState.stateType = MPStateType.MP_STATE_TYPE_ITEM;
+            setItemState.value = ((uint)(give ? 1 : 0) << 16) | (uint)item;
+
+            var size = Marshal.SizeOf(setItemState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetState>(setItemState, Endianness.BigEndian));
         }
 
         public static byte[] headerToBytes(MPPacketHeader header)
@@ -295,6 +454,13 @@ namespace Lawrence
             return rawData;
         }
 
+        static uint SwapEndianness(uint x)
+        {
+            return ((x & 0x000000ff) << 24) +  // First byte
+                   ((x & 0x0000ff00) << 8) +   // Second byte
+                   ((x & 0x00ff0000) >> 8) +   // Third byte
+                   ((x & 0xff000000) >> 24);   // Fourth byte
+        }
     }
 }
 

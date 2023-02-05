@@ -15,10 +15,52 @@ namespace Lawrence
         public byte ackCycle;
         public byte ackIndex;
         public byte[] packet;
+        public int resendTimer;
+        public long timestamp;
     }
-    
+
+    public enum ControllerInput
+    {
+        L2 = 1,
+        R2 = 2,
+        L1 = 4,
+        R1 = 8,
+        Triangle = 16,
+        Circle = 32,
+        Cross = 64,
+        Square = 128,
+        Select = 256,
+        L3 = 512,
+        R3 = 1024,
+        Start = 2048,
+        Up = 4096,
+        Right = 8192,
+        Down = 16384,
+        Left = 32768
+    }
+
+    public enum GameState
+    {
+        PlayerControl = 0x0,
+        Movie = 0x1,
+        CutScene = 0x2,
+        Menu = 0x3,
+        Prompt = 0x4,
+        Vendor = 0x5,
+        Loading = 0x6,
+        Cinematic = 0x7,
+        UnkFF = 0xff,
+    }
+
     public class Client
     {
+        // Packet types in this list are allowed to be sent before a handshake
+        static List<MPPacketType> allowedAnonymous = new List<MPPacketType>
+        {
+            MPPacketType.MP_PACKET_SYN,
+            MPPacketType.MP_PACKET_QUERY_GAME_SERVERS       // Only used in directory mode.
+        };
+
         IPEndPoint endpoint;
         bool handshakeCompleted = false;
 
@@ -27,6 +69,11 @@ namespace Lawrence
         long lastContact = 0;
 
         bool disconnected = true;
+
+        public ControllerInput heldButtons = (ControllerInput)0;
+        public ControllerInput pressedButtons = (ControllerInput)0;
+
+        public GameState gameState = (GameState)0;
 
         // All connected clients should have an associated client moby. 
         Moby clientMoby;
@@ -44,8 +91,6 @@ namespace Lawrence
             this.lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
             this.disconnected = false;
 
-            clientMoby = Environment.Shared().NewMoby(this);
-
             recvLock = new Mutex();
         }
 
@@ -61,14 +106,29 @@ namespace Lawrence
             return DateTimeOffset.Now.ToUnixTimeSeconds() - this.lastContact;
         }
 
+        public int UnackedPacketsCount()
+        {
+            return unacked.Count;
+        }
+
         public bool IsDisconnected()
         {
             return disconnected;
         }
 
+        public bool IsActive()
+        {
+            return !disconnected && handshakeCompleted;
+        }
+
         public Moby GetMoby()
         {
             return clientMoby;
+        }
+
+        public uint GameState()
+        {
+            return (uint)gameState;
         }
 
         public void UpdateMoby(MPPacketMobyUpdate update)
@@ -87,7 +147,7 @@ namespace Lawrence
                 return;
             }
 
-            if (update.enabled != 0 && !moby.active && moby.state == 0)
+            if (update.flags != 0 && !moby.active && moby.state == 0)
             {
                 moby.active = true;
                 moby.state = 1;
@@ -100,12 +160,13 @@ namespace Lawrence
 
             moby.oClass = (int)update.oClass;
 
-            moby.active = update.enabled != 0;
+            moby.active = update.flags != 0;
             moby.x = update.x;
             moby.y = update.y;
             moby.z = update.z;
             moby.level = update.level;
             moby.animationID = update.animationID;
+            moby.animationDuration = update.animationDuration;
             moby.rot = update.rotation;
 
             return;
@@ -124,7 +185,7 @@ namespace Lawrence
                 ackCycle = 0;
             }
 
-            return (ackIndex++, ackCycle);
+            return (++ackIndex, ackCycle);
         }
 
         public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody)
@@ -164,7 +225,13 @@ namespace Lawrence
             // Cache unacked request packets
             if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0)
             {
-                unacked.Add(new AckedMetadata { packet = packet, ackIndex = packetHeader.requiresAck, ackCycle = packetHeader.ackCycle } );
+                if (unacked.Count >= 256)
+                {
+                    //Console.WriteLine($"Player {ID} has more than 256 unacked packets. We should probably boot this client.");
+                    unacked.Clear();
+                }
+
+                unacked.Add(new AckedMetadata { packet = packet, ackIndex = packetHeader.requiresAck, ackCycle = packetHeader.ackCycle, resendTimer = 30, timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds() } );
             }
 
             Lawrence.SendTo(packet, endpoint);
@@ -190,16 +257,7 @@ namespace Lawrence
             //       Ideally the handshake should start a session that the client can
             //          easily use to identify itself. Ideally without much computational
             //          overhead. 
-            if ((!handshakeCompleted) && packetHeader.ptype == MPPacketType.MP_PACKET_SYN)
-            {
-                handshakeCompleted = true;
-
-                Console.WriteLine("Player handshake complete.");
-
-                SendPacket(Packet.MakeAckPacket());
-                return;
-            }
-            else if (!handshakeCompleted)
+            if (!handshakeCompleted && !allowedAnonymous.Contains(packetHeader.ptype))
             {
                 // Client has sent a packet that is not a handshake packet.
                 // We tell the client we don't know it and it should reset state and
@@ -244,7 +302,20 @@ namespace Lawrence
             {
                 case MPPacketType.MP_PACKET_SYN:
                     {
-                        SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
+                        if (!handshakeCompleted)
+                        {
+                            handshakeCompleted = true;
+
+                            Console.WriteLine("Player handshake complete.");
+
+                            SendPacket(Packet.MakeAckPacket());
+
+                            Environment.Shared().OnPlayerConnect(this);
+                        }
+                        else
+                        {
+                            SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
+                        }
                         break;
                     }
                 case MPPacketType.MP_PACKET_ACK:
@@ -260,6 +331,9 @@ namespace Lawrence
                     {
                         MPPacketMobyUpdate update = Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, Packet.Endianness.BigEndian);
 
+                        // If it's not moby uuid 0, then the player is sending an update for a moby it controls.
+                        // This could be heli-pack, weapons, etc.
+                        // When player updates UUID 0, that means it wants to update it's main hero moby
                         if (update.uuid != 0)
                         {
                             UpdateMoby(update);
@@ -267,12 +341,15 @@ namespace Lawrence
                             break;
                         }
 
-                        this.clientMoby.active = update.enabled == 1;
+                        if (clientMoby == null && (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0)
+                        {
+                            clientMoby = Environment.Shared().NewMoby(this);
+                        }
+
+                        this.clientMoby.active = (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0;
 
                         if (!clientMoby.active)
                         {
-                            Console.WriteLine("Sending player to a planet\n");
-                            SendPacket(Packet.MakeGoToPlanetPacket(11));
                             break;
                         }
                                                 
@@ -282,6 +359,7 @@ namespace Lawrence
                         this.clientMoby.level = update.level;
                         this.clientMoby.rot = update.rotation;
                         this.clientMoby.animationID = update.animationID;
+                        this.clientMoby.animationDuration = update.animationDuration;
 
                         break;
                     }
@@ -342,6 +420,54 @@ namespace Lawrence
 
                         break;
                     }
+                case MPPacketType.MP_PACKET_SET_STATE:
+                    {
+                        MPPacketSetState state = Packet.BytesToStruct<MPPacketSetState>(packetBody, Packet.Endianness.BigEndian);
+
+                        if (state.stateType == MPStateType.MP_STATE_TYPE_GAME)
+                        {
+                            gameState = (GameState)state.value;
+                            Environment.Shared().OnPlayerGameStateChange(this, gameState);
+                        }
+
+                        break;
+                    }
+                case MPPacketType.MP_PACKET_QUERY_GAME_SERVERS:
+                    {
+                        if (Lawrence.DirectoryMode())
+                        {
+                            List<Server> servers = Lawrence.Directory().Servers();
+
+                            SendPacket(Packet.MakeQuerySerserResponsePacket(servers, packetHeader.requiresAck, packetHeader.ackCycle));
+                        } else
+                        {
+                            Console.WriteLine($"(Player {ID}) tried to query us as directory, but we're not a directory server.");
+                        }
+
+                        Disconnect();
+
+                        break;
+                    }
+                case MPPacketType.MP_PACKET_CONTROLLER_INPUT:
+                    {
+                        MPPacketControllerInput input = Packet.BytesToStruct<MPPacketControllerInput>(packetBody, Packet.Endianness.BigEndian);
+                        if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0)
+                        {
+                            this.heldButtons = (ControllerInput)input.input;
+                        }
+
+                        if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0)
+                        {
+                            this.pressedButtons = (ControllerInput)input.input;
+
+                            Environment.Shared().PlayerPressedButtons(this, this.pressedButtons);
+
+                            Console.WriteLine("Player pressed a button");
+                        }
+
+
+                        break;
+                    }
                 default:
                     {
                         Console.WriteLine($"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.ptype} with size: {packetSize}. Resetting receive buffer.");
@@ -353,7 +479,7 @@ namespace Lawrence
         Mutex recvLock;
         bool resetBuffer = false;
         List<byte[]> recvBuffer = new List<byte[]>(100);
-        List<uint> lastHashes = new List<uint>(10);
+        Dictionary<uint, long> lastHashes = new Dictionary<uint, long>(10);
         public void ReceiveData(byte[] data)
         {
             if (disconnected)
@@ -361,7 +487,9 @@ namespace Lawrence
                 return;
             }
 
-            this.lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
+            long timeNow = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            this.lastContact = timeNow / 1000;
 
             recvLock.WaitOne();
 
@@ -372,8 +500,8 @@ namespace Lawrence
 
             uint currentHash = Crc32Algorithm.Compute(data);
 
-            // Throw away duplicate packets
-            if (lastHashes.Contains(currentHash))
+            // Throw away duplicate packets in the last 200 milliseconds
+            if (lastHashes.ContainsKey(currentHash) && lastHashes[currentHash] > timeNow - 200)
             {
                 recvLock.ReleaseMutex();
                 return;
@@ -388,7 +516,7 @@ namespace Lawrence
                 lastHashes.Remove(0);
             }
 
-            lastHashes.Add(currentHash);
+            lastHashes[currentHash] = timeNow;
 
             recvBuffer.Add(data);
 
@@ -396,19 +524,13 @@ namespace Lawrence
 
             if (recvBuffer.Count > 99)
             {
-                Console.WriteLine($"(Player {ID}) has a shit ton of packets lmao");
+                //Console.WriteLine($"(Player {ID}) has a shit ton of packets lmao");
                 recvBuffer = new List<byte[]>(100);
             }
         }
 
         List<byte[]> DrainPackets()
         {
-            if (recvBuffer.Count <= 0)
-            {
-                // We don't have enough bytes to build a header
-                return null;
-            }
-
             // We take at max 50 packets out of the buffer
             int takePackets = Math.Min(50, recvBuffer.Count);
 
@@ -442,14 +564,39 @@ namespace Lawrence
             {
                 foreach (var packet in packets)
                 {
-                    ParsePacket(packet);
+                    try
+                    {
+                        ParsePacket(packet);
+                    } catch (Exception e)
+                    {
+                        Console.WriteLine($"oh no exception in a client.");
+                    }
                 }
             }
 
             // Resend unacked packets
+            int index = 0;
+            long timeNow = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
             foreach (var unacked in this.unacked.ToArray())
             {
-                Lawrence.SendTo(unacked.packet, endpoint);
+                var _unacked = unacked;
+                if (_unacked.resendTimer > 0)
+                {
+                    _unacked.resendTimer--;
+                }
+                else
+                {
+                    if (timeNow - unacked.timestamp > 10)
+                    {
+                        Console.WriteLine($"Player {ID} has stale packet they never ack. Can this client please ack this packet?");
+                    }
+
+                    Lawrence.SendTo(unacked.packet, endpoint);
+                    _unacked.resendTimer = 10;
+                }
+
+                this.unacked[index] = _unacked;
+                index++;
             }
         }
 
