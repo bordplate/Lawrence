@@ -12,20 +12,50 @@ namespace Lawrence
 	{
 		static Game SharedGame;
 
+        /// <summary>
+        /// Entities in the game that are actively updated and kept track of by the game. 
+        /// </summary>
+        private List<Entity> entities = new List<Entity>();
+
         public List<Moby> mobys = new List<Moby>();
         List<Behavior> behaviors = new List<Behavior>();
 
         Lua state;
 
         string[] behaviorScripts;
+        string[] runtimeScripts;
 
         public Game()
 		{
             behaviorScripts = Directory.GetFiles("modes/");
+            runtimeScripts = Directory.GetFiles("runtime/");
 		}
 
+        /// <summary>
+        /// Inits the game by loading the game modes in the configured mods folder. 
+        /// </summary>
         void Initialize()
         {
+            foreach(var scriptFilename in runtimeScripts) {
+                if (!scriptFilename.EndsWith(".lua")) continue;
+
+                Logger.Trace($"Loading runtime script: {scriptFilename}");
+
+                try {
+                    string script = File.ReadAllText(scriptFilename);
+
+                    State().DoString(script);
+                } catch (FileNotFoundException exception) {
+                    Logger.Error($"Couldn't find file {scriptFilename} in runtime folder even though it was iterated on startup", exception);
+                } catch (FileLoadException exception) {
+                    Logger.Error($"Failed to read runtime file {scriptFilename}", exception);
+                } catch (NLua.Exceptions.LuaException exception) {
+                    Logger.Error($"Failed to execute runtime script {scriptFilename}", exception);
+                }
+            }
+
+            return;
+
             foreach (var script in behaviorScripts)
             {
                 if (!script.EndsWith(".lua")) continue;
@@ -97,6 +127,14 @@ namespace Lawrence
                 behavior.Tick();
             }
 
+            foreach(var entity in entities) {
+                if (!entity.Active) {
+                    continue;
+                }
+
+                entity.OnTick();
+            }
+
             foreach (var moby in mobys)
             {
                 if (!moby.active)
@@ -147,6 +185,19 @@ namespace Lawrence
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Make a new game Entity and register it in the game.
+        /// </summary>
+        /// <param name="luaEntity">Lua behavior object for the entity.</param>
+        /// <returns></returns>
+        public Entity NewEntity(LuaTable luaEntity = null) {
+            Entity entity = new Entity(luaEntity);
+
+            entities.Add(entity);
+
+            return entity;
         }
 
         public List<Moby> Mobys()
