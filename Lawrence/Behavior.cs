@@ -16,7 +16,7 @@ namespace Lawrence
 		public Behavior(string behaviorFile)
 		{
 			this.behaviorFile = behaviorFile;
-			state = Environment.Shared().State();
+			state = Game.Shared().State();
 
 			state.DoString(File.ReadAllText(behaviorFile));
 

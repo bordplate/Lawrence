@@ -75,8 +75,8 @@ namespace Lawrence
                 Console.WriteLine($"New collision between {this.UUID} and {uuid}");
                 // Notify stuff that new collision has happened
 
-                Moby victim = Environment.Shared().GetMoby(uuid);
-                Environment.Shared().OnCollision(this, victim, collisionFlags);
+                Moby victim = Game.Shared().GetMoby(uuid);
+                Game.Shared().OnCollision(this, victim, collisionFlags);
             } else
             {
                 colliders[uuid] = Moby.COLLIDE_TICKS;
@@ -98,7 +98,7 @@ namespace Lawrence
                     colliders.Remove(key);
                     Console.WriteLine($"Collision ended between {this.UUID} and {key}");
                     // Notify stuff that collision has ended
-                    Environment.Shared().OnCollisionEnd(this, Environment.Shared().GetMoby(key));
+                    Game.Shared().OnCollisionEnd(this, Game.Shared().GetMoby(key));
                 }
             }
         }

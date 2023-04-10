@@ -40,7 +40,7 @@ namespace Lawrence
 
         public static void Tick()
         {
-            Environment.Shared().Tick();
+            Game.Shared().Tick();
 
             foreach (var client in clients.ToArray())
             {
@@ -57,7 +57,7 @@ namespace Lawrence
                     // Notify client and delete client's mobys and their children
                     client.Disconnect();
                     playerCount -= 1;
-                    Environment.Shared().DeleteMobys(moby => moby.parent == client);
+                    Game.Shared().DeleteMobys(moby => moby.parent == client);
 
                     continue;
                 }
@@ -300,7 +300,7 @@ namespace Lawrence
 
                 if (command != null)
                 {
-                    Console.WriteLine(Environment.Shared().Execute(command));
+                    Console.WriteLine(Game.Shared().Execute(command));
                 }
 
                 Thread.Yield();

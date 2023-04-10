@@ -133,7 +133,7 @@ namespace Lawrence
 
         public void UpdateMoby(MPPacketMobyUpdate update)
         {
-            Moby moby = Environment.Shared().GetMoby(update.uuid);
+            Moby moby = Game.Shared().GetMoby(update.uuid);
 
             if (moby == null)
             {
@@ -310,7 +310,7 @@ namespace Lawrence
 
                             SendPacket(Packet.MakeAckPacket());
 
-                            Environment.Shared().OnPlayerConnect(this);
+                            Game.Shared().OnPlayerConnect(this);
                         }
                         else
                         {
@@ -343,7 +343,7 @@ namespace Lawrence
 
                         if (clientMoby == null && (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0)
                         {
-                            clientMoby = Environment.Shared().NewMoby(this);
+                            clientMoby = Game.Shared().NewMoby(this);
                         }
 
                         this.clientMoby.active = (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0;
@@ -365,7 +365,7 @@ namespace Lawrence
                     }
                 case MPPacketType.MP_PACKET_MOBY_CREATE:
                     {
-                        Moby moby = Environment.Shared().NewMoby(this);
+                        Moby moby = Game.Shared().NewMoby(this);
 
                         MPPacketMobyCreate createPacket = new MPPacketMobyCreate
                         {
@@ -409,7 +409,7 @@ namespace Lawrence
                             return;
                         }
 
-                        Moby moby = Environment.Shared().GetMoby(uuid);
+                        Moby moby = Game.Shared().GetMoby(uuid);
                         if (moby != null)
                         {
                             moby.AddCollider(collidedWith, collision.flags);
@@ -427,7 +427,7 @@ namespace Lawrence
                         if (state.stateType == MPStateType.MP_STATE_TYPE_GAME)
                         {
                             gameState = (GameState)state.value;
-                            Environment.Shared().OnPlayerGameStateChange(this, gameState);
+                            Game.Shared().OnPlayerGameStateChange(this, gameState);
                         }
 
                         break;
@@ -460,11 +460,8 @@ namespace Lawrence
                         {
                             this.pressedButtons = (ControllerInput)input.input;
 
-                            Environment.Shared().PlayerPressedButtons(this, this.pressedButtons);
-
-                            Console.WriteLine("Player pressed a button");
+                            Game.Shared().PlayerPressedButtons(this, this.pressedButtons);
                         }
-
 
                         break;
                     }

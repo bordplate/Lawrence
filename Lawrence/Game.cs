@@ -8,9 +8,9 @@ using NLua;
 
 namespace Lawrence
 {
-	public class Environment
+	public class Game
 	{
-		static Environment SharedEnvironment;
+		static Game SharedGame;
 
         public List<Moby> mobys = new List<Moby>();
         List<Behavior> behaviors = new List<Behavior>();
@@ -19,9 +19,9 @@ namespace Lawrence
 
         string[] behaviorScripts;
 
-        public Environment()
+        public Game()
 		{
-            behaviorScripts = Directory.GetFiles("behaviors/");
+            behaviorScripts = Directory.GetFiles("modes/");
 		}
 
         void Initialize()
@@ -75,15 +75,15 @@ namespace Lawrence
         }
 
 		// Get shared environment singleton
-		public static Environment Shared()
+		public static Game Shared()
 		{
-			if (Environment.SharedEnvironment == null)
+			if (Game.SharedGame == null)
 			{
-				Environment.SharedEnvironment = new Environment();
-                Environment.SharedEnvironment.Initialize();
+				Game.SharedGame = new Game();
+                Game.SharedGame.Initialize();
 			}
 
-			return Environment.SharedEnvironment;
+			return Game.SharedGame;
 		}
 
         public void Tick()
