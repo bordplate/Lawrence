@@ -2,3 +2,4 @@
 **/obj/*
 *.toml
 *.log
+**/*.csproj.user
