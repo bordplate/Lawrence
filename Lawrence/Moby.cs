@@ -25,6 +25,7 @@ namespace Lawrence
         public byte team = 0;
 
         public bool onlyVisibleToTeam = false;
+        public int onlyVisibleToPlayer = -1;
         public bool active = false;
         public bool mpUpdateFunc = true;
         public bool collision = true;

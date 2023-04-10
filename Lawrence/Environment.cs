@@ -122,7 +122,25 @@ namespace Lawrence
                 }
                 else
                 {
-                    Lawrence.DistributePacket(Packet.MakeMobyUpdatePacket(moby), moby.level, ignoring);
+                    if (moby.onlyVisibleToPlayer != -1)
+                    {
+                        Client client = Lawrence.GetClient(moby.onlyVisibleToPlayer);
+                        if (client != null)
+                        {
+                            if (client.GetMoby() != null && moby.level == client.GetMoby().level)
+                            {
+                                client.SendPacket(Packet.MakeMobyUpdatePacket(moby));
+                            }
+                        }
+                        else
+                        {
+                            DeleteMoby(moby.UUID);
+                        }
+                    }
+                    else
+                    {
+                        Lawrence.DistributePacket(Packet.MakeMobyUpdatePacket(moby), moby.level, ignoring);
+                    }
                 }
             }
         }
@@ -164,7 +182,6 @@ namespace Lawrence
             {
                 mobys[moby.UUID-1] = moby;
             }
-            
 
             if (parent != null)
             {
@@ -182,6 +199,14 @@ namespace Lawrence
         {
             Moby moby = NewMoby();
             moby.oClass = oClass;
+
+            return moby;
+        }
+
+        public Moby SpawnMobyForPlayer(int oClass, ushort playerUUID)
+        {
+            Moby moby = SpawnMoby(oClass);
+            moby.onlyVisibleToPlayer = playerUUID;
 
             return moby;
         }
