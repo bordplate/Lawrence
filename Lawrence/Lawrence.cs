@@ -154,17 +154,19 @@ namespace Lawrence
 
         static void Main(string[] args)
         {
-            if (Array.IndexOf(args, "--directory") >= 0)
+            if (Settings.Default().Get<bool>("Server.directoryMode", false) || Array.IndexOf(args, "--directory") >= 0)
             {
                 directoryMode = true;
                 directory = new ServerDirectory();
 
-                directory.RegisterServer("10.0.0.16", 2407, "Vetle's server", 20, 0);
+                directory.RegisterServer("10.9.0.2", 2407, "Vetle's server", 20, 0);
                 directory.RegisterServer("127.0.0.1", 2407, "localhost", 20, 0);
                 directory.RegisterServer("10.9.0.5", 2407, "Someone's server", 3000, 1368);
             }
 
-            IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 2407);
+            int serverPort = Settings.Default().Get<int>("Server.port", 2407);
+
+            IPEndPoint ipep = new IPEndPoint(IPAddress.Any, serverPort);
             server = new UdpClient(ipep);
 
             Console.WriteLine("                                       -=*####***++++++=-                  ");
