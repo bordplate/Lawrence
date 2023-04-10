@@ -1,0 +1,146 @@
+﻿----
+-- Game mode functions
+----
+
+hunter_player_id = -1
+
+pickups = {
+    {x=230, y=166, z=55.5, oclass=500, item=2, respawn=0, moby=nil},
+    {x=230, y=170, z=55.5, oclass=500, item=3, respawn=0, moby=nil}
+}
+
+local TagPlayer = class('TagPlayer', Entity)
+
+function TagPlayer:Made()
+    self.isHunter = true
+end
+
+function TagPlayer:OnTick()
+    print("Hey it ticks")
+end
+
+local TagGame = class("TagGame", GameMode)
+function TagGame:initialize()
+    GameMode.initialize(self)
+
+    self.hunter = nil
+end
+
+function TagGame:OnPlayerConnect(player)
+    player = player:Make(TagPlayer)
+
+    player:GoToPlanet(4)
+
+    self.hunter = player
+end
+
+function TagGame:OnTick()
+    
+end
+
+local game = TagGame:new()
+game:Start()
+
+
+----
+-- Engine callbacks
+----
+
+-- Called when the script is loaded
+function on_load()
+
+end
+
+-- When a player connects
+function on_player_connect(player)
+    -- Send player to Eudora
+    Environment:SendPlayerToPlanet(player.ID, 4)
+
+    -- Last player to connect automatically becomes hunter
+    hunter_player_id = player.ID
+end
+
+-- When player disconnects
+function on_player_disconnect(player)
+    
+end
+
+-- Called when a player collides with a game object
+-- Flags are either 0 or 1, if the collision is passive or aggressive (attack), respectively
+function on_collision(collider, collidee, flags)
+    -- If the collidee has a "parent", that means this is a player object
+    if collidee.parent ~= nil then
+        -- Check for aggressive collision
+        if flags > 0 then
+            -- If the attacking player is the hunter
+            if collider.parent.ID == hunter_player_id then
+                -- Hunter is now the player who was hit
+                hunter_player_id = collidee.parent.ID
+
+                collidee:Damage(0)
+            end
+        end
+    else -- Probably a pickup item
+        print("Collided with thing")
+        -- Check if we collided with a pickup
+        for i, pickup in ipairs(pickups) do
+            if pickup.moby ~= nil then
+                if collidee.UUID == pickup.moby.UUID then
+                    Environment:DeleteMoby(collidee.UUID)
+                    Environment:GiveItemToPlayer(collider.parent.ID, pickup.item)
+
+                    pickup.moby = nil
+                end
+            end
+        end
+    end
+end
+
+function on_collision_end(collider, collidee)
+
+end
+
+function on_player_input(player, input)
+
+end
+
+-- Called every tick
+function tick()
+    -- Go through pickups and respawn if necessary
+    for i, pickup in ipairs(pickups) do
+        if pickup.respawn <= 0 and pickup.moby == nil then
+            local moby = Environment:SpawnMoby(pickup.oclass)
+            moby.x = pickup.x
+            moby.y = pickup.y
+            moby.z = pickup.z
+            moby.level = 4
+            moby.active = true
+
+            pickup.moby = moby
+
+            pickup.respawn = 120  -- Respawn every 2 seconds
+
+            print("Spawned pickup for item: " .. pickup.item)
+        end
+
+        -- Decrease respawn timer if the item has been picked up
+        if pickup.moby == nil then
+            pickup.respawn = pickup.respawn - 1
+        end
+    end
+end
+
+-- Called every tick for every player in the game
+function player_tick(player)
+    -- Write "Hunter" or "Runner" in the corner for the player, depending on if they are or not
+    if hunter_player_id == player.ID then
+        Environment:DrawTextForPlayer(player.ID, 1, "Hunter", 60, 60, 0xff0000ff)
+    else
+        Environment:DrawTextForPlayer(player.ID, 1, "Runner", 60, 60, 0xffff0000)
+    end
+
+    -- Draw position for player, for debugging
+    Environment:DrawTextForPlayer(player.ID, 14, "x: " .. player:GetMoby().x, 400, 360, 0xff9e26e4)
+    Environment:DrawTextForPlayer(player.ID, 13, "y: " .. player:GetMoby().y, 400, 380, 0xff9e26e4)
+    Environment:DrawTextForPlayer(player.ID, 12, "z: " .. player:GetMoby().z, 400, 400, 0xff9e26e4)
+end

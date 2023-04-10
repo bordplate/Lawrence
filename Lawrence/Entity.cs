@@ -16,11 +16,19 @@ namespace Lawrence
         /// <summary>
         /// Active entities are updated and kept track of by the game.
         /// </summary>
-        public bool Active = true;
+        private bool _active = true;
 
         public Entity(LuaTable luaEntity = null)
         {
             this._luaEntity = luaEntity;
+        }
+
+        public bool IsActive() {
+            return _active;
+        }
+
+        public void SetActive(bool active) {
+            _active = active;
         }
 
         /// <summary>
@@ -75,11 +83,17 @@ namespace Lawrence
             return function.Call(args);
         }
 
+        public void SetLuaEntity(LuaTable luaEntity) {
+            _luaEntity = luaEntity;
+
+            _luaFunctions = new Dictionary<string, LuaFunction>();
+        }
+
         /// <summary>
         /// Calls the Lua object's OnTick function
         /// </summary>
         public void OnTick() {
-            if (_luaEntity == null) {
+            if (this._active && _luaEntity == null) {
                 return;
             }
 

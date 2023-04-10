@@ -65,7 +65,7 @@ local function _propagateInstanceMethod(aClass, name, f)
   end
 end
 
-local function _declareInstanceMethod(aClass, name, f)
+function _declareInstanceMethod(aClass, name, f)
   aClass.__declaredMethods[name] = f
 
   if f == nil and aClass.super then

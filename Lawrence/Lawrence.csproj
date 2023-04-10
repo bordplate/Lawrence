@@ -14,14 +14,19 @@
     <None Remove="Terminal.Gui" />
     <None Remove="UI\" />
     <None Remove="runtime\" />
+    <None Remove="modes\tag\" />
+    <None Remove="runtime\lib\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NLua" Version="1.6.0" />
     <PackageReference Include="Crc32.NET" Version="1.2.0" />
     <PackageReference Include="Terminal.Gui" Version="1.8.2" />
+    <PackageReference Include="Nett" Version="0.15.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="UI\" />
     <Folder Include="runtime\" />
+    <Folder Include="mods\tag\" />
+    <Folder Include="runtime\lib\" />
   </ItemGroup>
 </Project>

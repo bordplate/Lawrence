@@ -103,7 +103,7 @@ end
 
 function spawn_test_moby()
    test_moby = Environment:SpawnMoby(0x424)
-   test_moby.collision = false
+   test_moby.collision = true
    test_moby.active = true
    
    test_moby.x = 263.88892
@@ -117,20 +117,29 @@ end
 
 -- Called when the script is loaded
 function on_load()
-   local the_moby = Environment:SpawnMoby(0xb) -- Vendor
-   
-   the_moby.x = 263.88892
-   the_moby.y = 117.64792
-   the_moby.z = 55
-   the_moby.level = 3
-   
-   the_moby.active = true
-   the_moby.collision = true
+   --the_moby = Environment:SpawnMoby(0x1f4) -- Bolt crate
+   --
+   --the_moby.x = 263.88892
+   --the_moby.y = 117.64792
+   --the_moby.z = 55
+   --the_moby.level = 3
+   --
+   --the_moby.active = true
+   --the_moby.collision = false
 end
 
 -- When a player connects
 function on_player_connect(player)
    Environment:SendPlayerToPlanet(player.ID, 3)
+   local mobers = Environment:SpawnMobyForPlayer(0x1f4, player.ID)
+
+   mobers.x = 263.88892
+   mobers.y = 117.64792
+   mobers.z = 55
+   mobers.level = 3
+
+   mobers.active = true
+   mobers.collision = false
 end
 
 -- When a player disconnects
@@ -145,15 +154,15 @@ end
 -- Called when a player collides with a game object
 function on_collision(collider, collidee, flags)
    -- We only care about collisions with players
-   if collidee.parent == null then
-      return
-   end
+   --if collidee.parent == null then
+   --   return
+   --end
    
    if flags > 0 then
       collidee:Damage(1)
    else
       print("Collided with " .. collider.oClass)
-      if collider.oClass == 0xba then
+      if collider.oClass == 0x1f4 then
          print("Pick up")
          Environment:DeleteMoby(collider.UUID);
          Environment:GiveItemToPlayer(collidee.parent.ID, 0xc) -- Swingshot

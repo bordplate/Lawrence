@@ -22,12 +22,16 @@ namespace Lawrence
 
         Lua state;
 
-        string[] behaviorScripts;
+        string[] modsFolders;
         string[] runtimeScripts;
+
+        private List<Mod> mods = new List<Mod>();
+
+        private GameMode _gameMode;
 
         public Game()
 		{
-            behaviorScripts = Directory.GetFiles("modes/");
+            modsFolders = Directory.GetDirectories("mods/");
             runtimeScripts = Directory.GetFiles("runtime/");
 		}
 
@@ -36,6 +40,7 @@ namespace Lawrence
         /// </summary>
         void Initialize()
         {
+            // Start off by loading some runtime Lua that initializes all the important Lua objects and similar.
             foreach(var scriptFilename in runtimeScripts) {
                 if (!scriptFilename.EndsWith(".lua")) continue;
 
@@ -51,23 +56,47 @@ namespace Lawrence
                     Logger.Error($"Failed to read runtime file {scriptFilename}", exception);
                 } catch (NLua.Exceptions.LuaException exception) {
                     Logger.Error($"Failed to execute runtime script {scriptFilename}", exception);
+                } catch (Exception exception) {
+                    Logger.Error($"Unknown exception when executing runtime script {scriptFilename}", exception);
                 }
             }
 
-            return;
-
-            foreach (var script in behaviorScripts)
+            // Load the user-installed mods
+            foreach (var folder in modsFolders)
             {
-                if (!script.EndsWith(".lua")) continue;
+                string canonicalName = folder.Split("/").Last().Split("\\").Last();
 
-                Console.WriteLine($"Starting script at {script}");
+                // Users can disable or enable mods from the main settings.toml file. 
+                if (!Settings.Default().Get<bool>($"Mod.{canonicalName}.enabled", true)) {
+                    continue;
+                }
 
-                try
-                {
-                    behaviors.Add(new Behavior(script));
-                } catch (ApplicationException exception)
-                {
-                    Console.WriteLine(exception.Message);
+                foreach (var file in Directory.GetFiles(folder)) {
+                    if (file.EndsWith(".toml", StringComparison.OrdinalIgnoreCase)) {
+                        try {
+                            Logger.Log($"Loading configuration for mod at {file}");
+                            Mod mod = new Mod(file);
+
+                            // Run the entry Lua file
+                            string entry = mod.Settings().Get<string>("General.entry");
+                            if (entry == null) {
+                                Logger.Error($"Mod at {file} does not contain `General.entry` Lua file to specify which Lua file should be executed first to start the mod. ");
+                                continue;
+                            }
+
+                            string entryFile = File.ReadAllText($"{mod.Path()}/{entry}");
+                            if (entryFile == null) {
+                                Logger.Error($"Could not load entry file at {entryFile}.");
+                                continue;
+                            }
+
+                            State().DoString(entryFile, entry);
+
+                            mods.Add(mod);
+                        } catch (Exception exception) {
+                            Logger.Error($"Failed to load mod at {folder}", exception);
+                        }
+                    }
                 }
             }
         }
@@ -94,7 +123,7 @@ namespace Lawrence
 
             try
             {
-                object[] result = State().DoString(eval);
+                object[] result = State().DoString(eval, "console");
 
                 foreach (object obj in result)
                 {
@@ -122,13 +151,14 @@ namespace Lawrence
 
         public void Tick()
         {
-            foreach (var behavior in behaviors)
-            {
-                behavior.Tick();
+            if (_gameMode != null && !_gameMode.GetBool("Active")) {
+                return;
             }
 
+            _gameMode.Call("OnTick");
+
             foreach(var entity in entities) {
-                if (!entity.Active) {
+                if (!entity.IsActive()) {
                     continue;
                 }
 
@@ -185,6 +215,16 @@ namespace Lawrence
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// `Game` tracks one game mode at a time. This changes that game mode.
+        /// </summary>
+        /// <param name="gameMode">LuaTable that's inherited from (or is) `GameMode`.</param>
+        public void StartGame(LuaTable gameMode) {
+            _gameMode = new GameMode(gameMode);
+
+            Logger.Log("Starting a new game mode.");
         }
 
         /// <summary>
