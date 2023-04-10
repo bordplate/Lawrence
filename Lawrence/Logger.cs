@@ -12,7 +12,7 @@ namespace Lawrence {
         private static Logger shared;
         private readonly object _syncLock = new object();
 
-        private string _logFile;
+        private string _logFile = Settings.Default().Get<string>("Logger.path", "lawrence.log");
 
         private Logger() {
         }
@@ -35,13 +35,15 @@ namespace Lawrence {
 
                 // Write to console
                 TextWriter consoleWriter = priority == Priority.Error ? Console.Error : Console.Out;
-                consoleWriter.WriteLine(logEntry);
+                consoleWriter.WriteLine($"\r{logEntry}");
 
                 if (exception != null) {
                     consoleWriter.WriteLine($"Exception: {exception.GetType().FullName}");
                     consoleWriter.WriteLine($"Message: {exception.Message}");
                     consoleWriter.WriteLine($"StackTrace: {exception.StackTrace}");
                 }
+
+                consoleWriter.Write("> ");
             }
         }
 

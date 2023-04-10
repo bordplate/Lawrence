@@ -48,7 +48,11 @@ namespace Lawrence
                 state = new Lua();
 
                 state.LoadCLRPackage();
-                state["Environment"] = this;
+                state["Game"] = this;
+
+                state["print"] = (string text) => {
+                    Logger.Log(text);
+                };
             }
 
             return state;

@@ -284,7 +284,7 @@ namespace Lawrence
 
                     if (sw.ElapsedMilliseconds > 16)
                     {
-                        Console.WriteLine("Tick running late: Elapsed={0}", sw.ElapsedMilliseconds);
+                        Logger.Trace($"Tick running late: Elapsed={sw.ElapsedMilliseconds}");
                     }
                     else
                     {
