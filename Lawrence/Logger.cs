@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.Common;
 using System.IO;
 
 namespace Lawrence {
@@ -65,6 +66,14 @@ namespace Lawrence {
 
         public static void Trace(string value, Exception exception = null) {
             Shared().Log(Priority.Trace, value, exception);
+        }
+
+        public static void Raw(string value) {
+            using (var streamWriter = new StreamWriter(Shared()._logFile, true)) {
+                streamWriter.WriteLine(value);
+            }
+
+            Console.WriteLine(value);
         }
     }
 }

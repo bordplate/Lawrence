@@ -154,6 +154,9 @@ namespace Lawrence
 
         static void Main(string[] args)
         {
+            // Make space above last entry in log so there's a nice split between last run of the program
+            Logger.Raw("\n");
+
             if (Settings.Default().Get<bool>("Server.directoryMode", false) || Array.IndexOf(args, "--directory") >= 0)
             {
                 directoryMode = true;
