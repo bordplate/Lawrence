@@ -209,11 +209,11 @@ namespace Lawrence
             Console.WriteLine(":#*=-=*#%#=                                                                ");
             Console.WriteLine(" .+#*+=++                                                                \n");
 
-            Console.WriteLine($"Started Lawrence on {ipep.ToString()}");
+            Logger.Log($"Started Lawrence on {ipep.ToString()}");
 
             if (directoryMode)
             {
-                Console.WriteLine($"Directory mode enabled!");
+                Logger.Log($"Directory mode enabled!");
             }
 
             new Thread(() =>
@@ -240,12 +240,8 @@ namespace Lawrence
 
                         if (data.Length <= 0)
                         {
-                            Console.WriteLine("Hey, why is it 0?");
+                            Logger.Error("Hey, why is it 0?");
                             continue;
-                        }
-                        if (data.Length > 100)
-                        {
-                            Console.WriteLine("Wow that's a large packet you've got there.");
                         }
 
                         bool existingPlayer = false;
@@ -265,7 +261,7 @@ namespace Lawrence
                     }
                     catch (SocketException e)
                     {
-                        Console.WriteLine($"Receive error: {e.Message}");
+                        Logger.Error($"Receive error", e);
                     }
                 }
             }).Start();
