@@ -13,8 +13,11 @@ namespace Lawrence
         /// </summary>
         LuaTable _luaEntity;
 
-        Entity _parent;
+        private Entity _parent;
         List<Entity> _children = new List<Entity>();
+
+        private bool _maskVisibility = false;
+        private bool _maskCollision = false;
 
         private Dictionary<string, LuaFunction> _luaFunctions = new Dictionary<string, LuaFunction>();
 
@@ -41,6 +44,14 @@ namespace Lawrence
 
         public void SetActive(bool active) {
             _active = active;
+        }
+
+        public bool MasksVisibility() {
+            return _maskVisibility;
+        }
+
+        public void SetMasksVisibility(bool maskVisibility) {
+            _maskVisibility = maskVisibility;
         }
 
         #endregion
@@ -112,7 +123,9 @@ namespace Lawrence
         }
 
         /// <summary>
-        /// Calls the Lua object's OnTick function
+        /// Calls the Lua object's OnTick function.
+        /// If this entity is a visibility group, it tells children that are players what's up with all the other
+        ///     children that are mobys. 
         /// </summary>
         public virtual void OnTick(TickNotification notification) {
             if (!this._active || _luaEntity == null) {
@@ -130,8 +143,10 @@ namespace Lawrence
             return _parent;
         }
 
-        public void Add(Entity entity) {
-            entity._parent = this;
+        public void Add(Entity entity, bool reparent = true) {
+            if (reparent) {
+                entity._parent = this;
+            }
 
             _children.Add(entity);
         }
@@ -140,6 +155,14 @@ namespace Lawrence
             foreach (Entity entity in entities) {
                 Add(entity);
             }
+        }
+
+        public void Remove(Entity entity, bool unparent = true) {
+            if (unparent) {
+                entity._parent = null;
+            }
+            
+            _children.Remove(entity);
         }
 
         public IEnumerable<T> Find<T>() where T : Entity {

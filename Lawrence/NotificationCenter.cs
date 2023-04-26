@@ -43,7 +43,6 @@ namespace Lawrence {
     public class NotificationCenter {
         // Dictionary to store subscribers for each notification type
         private Dictionary<string, List<Action<Notification>>> _subscribers;
-        private Dictionary<int, Action<Notification>> _indexedSubscribers;
 
         /// <summary>
         /// Constructor for the NotificationCenter class

@@ -268,20 +268,19 @@ namespace Lawrence
             return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
         }
 
-        public static (MPPacketHeader, byte[]) MakeMobyUpdatePacket(Moby moby)
+        public static (MPPacketHeader, byte[]) MakeMobyUpdatePacket(ushort id, Moby moby)
         {
             MPPacketMobyUpdate moby_update = new MPPacketMobyUpdate();
 
-            moby_update.uuid = moby.UUID;
+            moby_update.uuid = id;
 
             moby_update.flags |= moby.active ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
             moby_update.flags |= moby.collision ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
             moby_update.flags |= moby.mpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
-
-            // FIXME: Parent and level works differently now and should be fixed
-            //moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
+            
+            moby_update.parent = (ushort)0; // Parent isn't really used
             moby_update.oClass = (ushort)moby.oClass;
-            //moby_update.level = moby.parent == null ? moby.level : moby.parent.GetMoby().level;
+            moby_update.level = moby.Level() != null ? (ushort)moby.Level().GetGameID() : (ushort)0;
             moby_update.x = moby.x;
             moby_update.y = moby.y;
             moby_update.z = moby.z;

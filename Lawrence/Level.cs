@@ -9,6 +9,8 @@ public class Level : Entity {
     public Level(int gameId, string name, LuaTable luaTable = null) : base(luaTable) {
         _gameId = gameId;
         _name = name;
+        
+        SetMasksVisibility(true);
     }
 
     /// <summary>
@@ -25,5 +27,13 @@ public class Level : Entity {
     /// <returns></returns>
     public int GetGameID() {
         return _gameId;
+    }
+
+    /// <summary>
+    /// Adds the entity as a child of the level, but without setting this level as its parent.
+    /// </summary>
+    /// <param name="entity"></param>
+    public void Add(Entity entity) {
+        this.Add(entity, false);
     }
 }

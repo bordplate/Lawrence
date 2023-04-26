@@ -8,9 +8,8 @@ using NLua;
 
 namespace Lawrence
 {
-	public class Game
-	{
-		static Game SharedGame;
+    public class Game {
+        static Game SharedGame;
 
         private NotificationCenter _notificationCenter = new NotificationCenter();
 
@@ -21,19 +20,19 @@ namespace Lawrence
 
         private List<Mod> mods = new List<Mod>();
 
-        public Game()
-		{
+        private long _ticks = 0;
+
+        public Game() {
             modsFolders = Directory.GetDirectories("mods/");
             runtimeScripts = Directory.GetFiles("runtime/");
-		}
+        }
 
         /// <summary>
         /// Inits the game by loading the game modes in the configured mods folder. 
         /// </summary>
-        void Initialize()
-        {
+        void Initialize() {
             // Start off by loading some runtime Lua that initializes all the important Lua objects and similar.
-            foreach(var scriptFilename in runtimeScripts) {
+            foreach (var scriptFilename in runtimeScripts) {
                 if (!scriptFilename.EndsWith(".lua")) continue;
 
                 Logger.Trace($"Loading runtime script: {scriptFilename}");
@@ -42,20 +41,25 @@ namespace Lawrence
                     string script = File.ReadAllText(scriptFilename);
 
                     State().DoString(script);
-                } catch (FileNotFoundException exception) {
-                    Logger.Error($"Couldn't find file {scriptFilename} in runtime folder even though it was iterated on startup", exception);
-                } catch (FileLoadException exception) {
+                }
+                catch (FileNotFoundException exception) {
+                    Logger.Error(
+                        $"Couldn't find file {scriptFilename} in runtime folder even though it was iterated on startup",
+                        exception);
+                }
+                catch (FileLoadException exception) {
                     Logger.Error($"Failed to read runtime file {scriptFilename}", exception);
-                } catch (NLua.Exceptions.LuaException exception) {
+                }
+                catch (NLua.Exceptions.LuaException exception) {
                     Logger.Error($"Failed to execute runtime script {scriptFilename}", exception);
-                } catch (Exception exception) {
+                }
+                catch (Exception exception) {
                     Logger.Error($"Unknown exception when executing runtime script {scriptFilename}", exception);
                 }
             }
 
             // Load the user-installed mods
-            foreach (var folder in modsFolders)
-            {
+            foreach (var folder in modsFolders) {
                 string canonicalName = folder.Split("/").Last().Split("\\").Last();
 
                 // Users can disable or enable mods from the main settings.toml file. 
@@ -72,7 +76,8 @@ namespace Lawrence
                             // Run the entry Lua file
                             string entry = mod.Settings().Get<string>("General.entry");
                             if (entry == null) {
-                                Logger.Error($"Mod at {file} does not contain `General.entry` Lua file to specify which Lua file should be executed first to start the mod. ");
+                                Logger.Error(
+                                    $"Mod at {file} does not contain `General.entry` Lua file to specify which Lua file should be executed first to start the mod. ");
                                 continue;
                             }
 
@@ -85,7 +90,8 @@ namespace Lawrence
                             State().DoString(entryFile, entry);
 
                             mods.Add(mod);
-                        } catch (Exception exception) {
+                        }
+                        catch (Exception exception) {
                             Logger.Error($"Failed to load mod at {folder}", exception);
                         }
                     }
@@ -99,6 +105,14 @@ namespace Lawrence
         /// <returns></returns>
         public NotificationCenter NotificationCenter() {
             return _notificationCenter;
+        }
+
+        /// <summary>
+        /// How many server ticks have happened thus far.
+        /// </summary>
+        /// <returns></returns>
+        public long Ticks() {
+            return _ticks;
         }
 
         public Lua State()
@@ -154,8 +168,9 @@ namespace Lawrence
 			return Game.SharedGame;
 		}
 
-        public void Tick()
-        {
+        public void Tick() {
+            _ticks += 1;
+            
             NotificationCenter().Post<TickNotification>(new TickNotification());
         }
 

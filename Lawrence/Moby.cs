@@ -48,6 +48,10 @@ namespace Lawrence
             
         }
 
+        public Level Level() {
+            return _level;
+        }
+
         public bool Deleted()
         {
             return deleted;
@@ -87,7 +91,7 @@ namespace Lawrence
 
         public override void OnTick(TickNotification notification) {
             base.OnTick(notification);
-
+            
             // Collision debouncing
             ushort[] keys = new ushort[colliders.Keys.Count];
             colliders.Keys.CopyTo(keys, 0);
