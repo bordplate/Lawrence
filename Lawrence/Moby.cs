@@ -6,6 +6,17 @@ namespace Lawrence
 {
 	public class Moby : Entity
 	{
+        /// <summary>
+        /// Should always keep an updated reference to the universe this moby is currently in.
+        /// </summary>
+        protected Universe _universe;
+
+        /// <summary>
+        /// The current level this moby is on. Levels are tied to universes such that mobys (incl. users) on the same
+        /// level in different universes won't be able to see or interact with each other. 
+        /// </summary>
+        protected Level _level;
+        
         static ushort COLLIDE_TICKS = 10;
 
         public ushort UUID = 0;

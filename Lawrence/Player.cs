@@ -44,6 +44,17 @@ namespace Lawrence
         }
     }
     #endregion
+    
+    #region Gameplay related function
+
+    partial class Player {
+        public void LoadLevel(string level) {
+            _level = _universe.GetLevelByName(level);
+            
+            SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID()));
+        }
+    }
+    #endregion
 
     #region Notification
     partial class Player { 

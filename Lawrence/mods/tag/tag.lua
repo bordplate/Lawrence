@@ -30,7 +30,7 @@ end
 function TagUniverse:OnPlayerJoin(player)
     player = player:Make(TagPlayer)
 
-    player:LoadLevel(self.Levels.Kerwan)
+    player:LoadLevel("Kerwan")
 
     self.hunter = player
 end
