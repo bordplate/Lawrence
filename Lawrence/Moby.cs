@@ -22,11 +22,6 @@ namespace Lawrence
         public int animationID = 0;
         public int animationDuration = 0;
 
-        public ushort level = 0;
-        public byte team = 0;
-
-        public bool onlyVisibleToTeam = false;
-        public int onlyVisibleToPlayer = -1;
         public bool active = false;
         public bool mpUpdateFunc = true;
         public bool collision = true;
@@ -49,12 +44,8 @@ namespace Lawrence
 
         public void Delete()
         {
-            // FIXME: Make it so this doesn't delete all teams' mobys if it shouldn't
-            Lawrence.DistributePacket(Packet.MakeDeleteMobyPacket(UUID));
-
             deleted = true;
             active = false;
-            level = 0;
             parent = null;
             oClass = 0;
             animationID = 0;

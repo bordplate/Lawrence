@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.VisualBasic;
 using NLua;
 
 namespace Lawrence
@@ -89,9 +90,70 @@ namespace Lawrence
     #region Client events
     partial class Player : IClientHandler
     {
-        public void UpdateMoby()
+        public void Collision(MPPacketMobyCollision collision)
+        {
+            ushort uuid = collision.uuid;
+            ushort collidedWith = collision.collidedWith;
+
+            //if (uuid == 0) {
+            //    uuid = clientMoby.UUID;
+            //}
+            //
+            //if (collidedWith == 0) {
+            //    collidedWith = clientMoby.UUID;
+            //}
+            //
+            //if (uuid == collidedWith) {
+            //    Console.WriteLine($"Player {ID} just told us they collided with themselves.");
+            //    return;
+            //}
+            //
+            //Moby moby = null;
+            //// TODO: Tell client handler about the collision
+            //if (moby != null) {
+            //    moby.AddCollider(collidedWith, collision.flags);
+            //} else {
+            //    Console.WriteLine($"Player {ID} claims they hit null-moby {uuid}");
+            //}
+
+        }
+
+        public void ControllerInputHeld(ControllerInput input)
         {
             throw new NotImplementedException();
+        }
+
+        public void ControllerInputReleased(ControllerInput input)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ControllerInputTapped(ControllerInput input)
+        {
+            throw new NotImplementedException();
+        }
+
+        public uint CreateMoby()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UpdateMoby(MPPacketMobyUpdate mobyUpdate)
+        {
+            // Update this moby if 0, update child moby if not 0
+            if (mobyUpdate.uuid == 0) {
+                this.active = (mobyUpdate.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0;
+
+                this.x = mobyUpdate.x;
+                this.y = mobyUpdate.y;
+                this.z = mobyUpdate.z;
+                //this.level = mobyUpdate.level;
+                this.rot = mobyUpdate.rotation;
+                this.animationID = mobyUpdate.animationID;
+                this.animationDuration = mobyUpdate.animationDuration;
+            } else {
+                // Update child moby 
+            }
         }
     }
     #endregion

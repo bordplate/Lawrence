@@ -49,7 +49,12 @@ namespace Lawrence {
     }
 
     public interface IClientHandler {
-        abstract void UpdateMoby();
+        abstract uint CreateMoby();
+        abstract void UpdateMoby(MPPacketMobyUpdate updatePacket);
+        abstract void Collision(MPPacketMobyCollision collision);
+        abstract void ControllerInputTapped(ControllerInput input);
+        abstract void ControllerInputHeld(ControllerInput input);
+        abstract void ControllerInputReleased(ControllerInput input);
     }
 
     public class Client {
@@ -71,13 +76,7 @@ namespace Lawrence {
 
         bool disconnected = true;
 
-        public ControllerInput heldButtons = (ControllerInput)0;
-        public ControllerInput pressedButtons = (ControllerInput)0;
-
         public GameState gameState = (GameState)0;
-
-        // All connected clients should have an associated client moby. 
-        Moby clientMoby;
 
         AckedMetadata[] acked = new AckedMetadata[256];
 
@@ -119,49 +118,8 @@ namespace Lawrence {
             return !disconnected && handshakeCompleted;
         }
 
-        public Moby GetMoby() {
-            return clientMoby;
-        }
-
         public uint GameState() {
             return (uint)gameState;
-        }
-
-        public void UpdateMoby(MPPacketMobyUpdate update) {
-            Moby moby = null;
-            // TODO: Get relevant entity
-
-            if (moby == null) {
-                Logger.Error($"Player {this.ID} tried to update null moby {update.uuid}.");
-                return;
-            }
-
-            if (moby.parent != this) {
-                Logger.Error($"Player {this.ID} tried to update moby {moby.UUID} that does not belong to them.");
-                return;
-            }
-
-            if (update.flags != 0 && !moby.active && moby.state == 0) {
-                moby.active = true;
-                moby.state = 1;
-
-                Logger.Log($"Got first update for {moby.UUID} (oClass: {moby.oClass}) from player {this.ID}");
-            } else if (update.oClass != moby.oClass) {
-                Logger.Log($"Changed oClass for {moby.UUID}, from {moby.oClass} to {update.oClass}");
-            }
-
-            moby.oClass = (int)update.oClass;
-
-            moby.active = update.flags != 0;
-            moby.x = update.x;
-            moby.y = update.y;
-            moby.z = update.z;
-            moby.level = update.level;
-            moby.animationID = update.animationID;
-            moby.animationDuration = update.animationDuration;
-            moby.rot = update.rotation;
-
-            return;
         }
 
         (byte, byte) NextAck() {
@@ -271,7 +229,6 @@ namespace Lawrence {
                 }
             }
 
-
             switch (packetHeader.ptype) {
                 case MPPacketType.MP_PACKET_SYN: {
                         if (!handshakeCompleted) {
@@ -297,41 +254,15 @@ namespace Lawrence {
                 case MPPacketType.MP_PACKET_MOBY_UPDATE: {
                         MPPacketMobyUpdate update = Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, Packet.Endianness.BigEndian);
 
-                        // If it's not moby uuid 0, then the player is sending an update for a moby it controls.
-                        // This could be heli-pack, weapons, etc.
-                        // When player updates UUID 0, that means it wants to update it's main hero moby
-                        if (update.uuid != 0) {
-                            UpdateMoby(update);
-
-                            break;
-                        }
-
-                        if (clientMoby == null && (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0) {
-                            // TODO: Create child Moby entity for this player
-                        }
-
-                        this.clientMoby.active = (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0;
-
-                        if (!clientMoby.active) {
-                            break;
-                        }
-
-                        this.clientMoby.x = update.x;
-                        this.clientMoby.y = update.y;
-                        this.clientMoby.z = update.z;
-                        this.clientMoby.level = update.level;
-                        this.clientMoby.rot = update.rotation;
-                        this.clientMoby.animationID = update.animationID;
-                        this.clientMoby.animationDuration = update.animationDuration;
+                        _clientHandler.UpdateMoby(update);
 
                         break;
                     }
                 case MPPacketType.MP_PACKET_MOBY_CREATE: {
-                        Moby moby = null;
-                        // TODO: Create child Moby entity for this player
+                        uint createdUUID = _clientHandler.CreateMoby();
 
                         MPPacketMobyCreate createPacket = new MPPacketMobyCreate {
-                            uuid = moby.UUID
+                            uuid = createdUUID
                         };
 
                         MPPacketHeader header = new MPPacketHeader {
@@ -342,7 +273,7 @@ namespace Lawrence {
                             ackCycle = packetHeader.ackCycle
                         };
 
-                        Console.WriteLine($"Player({this.ID}) created moby (uuid: {moby.UUID})");
+                        Logger.Log($"Player({this.ID}) created moby (uuid: {createdUUID})");
 
                         SendPacket(header, Packet.StructToBytes<MPPacketMobyCreate>(createPacket, Packet.Endianness.BigEndian));
 
@@ -351,30 +282,7 @@ namespace Lawrence {
                 case MPPacketType.MP_PACKET_MOBY_COLLISION: {
                         MPPacketMobyCollision collision = Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, Packet.Endianness.BigEndian);
 
-                        ushort uuid = collision.uuid;
-                        ushort collidedWith = collision.collidedWith;
-
-                        if (uuid == 0) {
-                            uuid = clientMoby.UUID;
-                        }
-
-                        if (collidedWith == 0) {
-                            collidedWith = clientMoby.UUID;
-                        }
-
-                        if (uuid == collidedWith) {
-                            Console.WriteLine($"Player {ID} just told us they collided with themselves.");
-                            return;
-                        }
-
-                        Moby moby = null;
-                        // TODO: Tell client handler about the collision
-                        if (moby != null) {
-                            moby.AddCollider(collidedWith, collision.flags);
-                        } else {
-                            Console.WriteLine($"Player {ID} claims they hit null-moby {uuid}");
-                        }
-
+                        _clientHandler.Collision(collision);
                         break;
                     }
                 case MPPacketType.MP_PACKET_SET_STATE: {
@@ -382,6 +290,8 @@ namespace Lawrence {
 
                         if (state.stateType == MPStateType.MP_STATE_TYPE_GAME) {
                             gameState = (GameState)state.value;
+                            
+
                             // TODO: Tell client handler about game state change
                         }
 
@@ -401,15 +311,17 @@ namespace Lawrence {
                         break;
                     }
                 case MPPacketType.MP_PACKET_CONTROLLER_INPUT: {
+                        // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons. 
+
                         MPPacketControllerInput input = Packet.BytesToStruct<MPPacketControllerInput>(packetBody, Packet.Endianness.BigEndian);
                         if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
-                            this.heldButtons = (ControllerInput)input.input;
+                            _clientHandler.ControllerInputTapped((ControllerInput)input.input);
                         }
 
                         if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0) {
-                            this.pressedButtons = (ControllerInput)input.input;
+                            ControllerInput pressedButtons = (ControllerInput)input.input;
 
-                            // TODO: Tell client handler about inputs
+                            _clientHandler.ControllerInputTapped(pressedButtons);
                         }
 
                         break;

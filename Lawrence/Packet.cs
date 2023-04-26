@@ -278,9 +278,10 @@ namespace Lawrence
             moby_update.flags |= moby.collision ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
             moby_update.flags |= moby.mpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
 
-            moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
+            // FIXME: Parent and level works differently now and should be fixed
+            //moby_update.parent = moby.parent != null ? moby.parent.GetMoby().UUID : (ushort)0;
             moby_update.oClass = (ushort)moby.oClass;
-            moby_update.level = moby.parent == null ? moby.level : moby.parent.GetMoby().level;
+            //moby_update.level = moby.parent == null ? moby.level : moby.parent.GetMoby().level;
             moby_update.x = moby.x;
             moby_update.y = moby.y;
             moby_update.z = moby.z;
