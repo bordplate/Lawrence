@@ -2,12 +2,16 @@
 
 Entity = class('Entity')
 
--- Initialize by making a new entity in the game and storing the internal C# object. 
+--- Initialize by making a new entity in the game and storing the internal C# object. 
 function Entity:initialize(internalEntity)
-    self._internalEntity = internalEntity or Game:NewEntity(self)
+    self._internalEntity = internalEntity
+
+    if internalEntity == nil then
+        self._internalEntity = Game:NewEntity(self)
+    end
 end
 
--- Functions that don't exist in Lua should redirect to the internal C# object.
+--- Functions that don't exist in Lua should redirected to the internal C# object.
 function Entity:__index(key)
     local value = Entity[key]
 
@@ -28,6 +32,7 @@ function Entity:__index(key)
     end
 end
 
+--- Makes this entity a different type of entity. 
 function Entity:Make(entityType)
     local newEntity = entityType:new(self._internalEntity)
 
@@ -40,7 +45,7 @@ function Entity:Make(entityType)
     return self
 end
 
--- Called every tick for entities that are active and registered in the game. 
+--- Called every tick for entities that are active and registered in the game. 
 function Entity:OnTick()
     
 end

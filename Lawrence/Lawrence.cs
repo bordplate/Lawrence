@@ -15,7 +15,7 @@ namespace Lawrence
 {
     class Lawrence
     {
-        static int CLIENT_INACTIVE_TIMEOUT_SECONDS = 30;
+        public static int CLIENT_INACTIVE_TIMEOUT_SECONDS = 30;
 
         static List<Client> clients = new List<Client>();
 
@@ -41,29 +41,6 @@ namespace Lawrence
         public static void Tick()
         {
             Game.Shared().Tick();
-
-            foreach (var client in clients.ToArray())
-            {
-                // Check if this client is still alive
-                if (client.IsDisconnected())
-                {
-                    continue;
-                }
-
-                if (client.GetInactiveSeconds() > CLIENT_INACTIVE_TIMEOUT_SECONDS)
-                {
-                    Console.WriteLine($"Client {client.ID} inactive for more than {CLIENT_INACTIVE_TIMEOUT_SECONDS} seconds.");
-
-                    // Notify client and delete client's mobys and their children
-                    client.Disconnect();
-                    playerCount -= 1;
-                    Game.Shared().DeleteMobys(moby => moby.parent == client);
-
-                    continue;
-                }
-
-                client.Tick();
-            }
         }
 
         public static void DistributePacket((MPPacketHeader, byte[]) packet, int level = -1, List<Client> ignoring = null, byte team = 0)

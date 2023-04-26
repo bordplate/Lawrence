@@ -9,7 +9,7 @@ pickups = {
     {x=230, y=170, z=55.5, oclass=500, item=3, respawn=0, moby=nil}
 }
 
-local TagPlayer = class('TagPlayer', Entity)
+local TagPlayer = class('TagPlayer', Player)
 
 function TagPlayer:Made()
     self.isHunter = true
@@ -19,27 +19,28 @@ function TagPlayer:OnTick()
     print("Hey it ticks")
 end
 
-local TagGame = class("TagGame", GameMode)
-function TagGame:initialize()
-    GameMode.initialize(self)
+local TagUniverse = class("TagUniverse", Universe)
+function TagUniverse:initialize()
+    Universe.initialize(self)
 
     self.hunter = nil
 end
 
-function TagGame:OnPlayerConnect(player)
+-- When a new player joins this Universe. 
+function TagUniverse:OnPlayerJoin(player)
     player = player:Make(TagPlayer)
 
-    player:GoToPlanet(4)
+    player:LoadLevel(self.Levels.Kerwan)
 
     self.hunter = player
 end
 
-function TagGame:OnTick()
-    
+function TagUniverse:OnTick()
+    print("Yup, it works")
 end
 
-local game = TagGame:new()
-game:Start()
+local universe = TagUniverse:new()
+universe:Start(true)
 
 
 ----

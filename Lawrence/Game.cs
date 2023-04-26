@@ -12,10 +12,7 @@ namespace Lawrence
 	{
 		static Game SharedGame;
 
-        /// <summary>
-        /// Entities in the game that are actively updated and kept track of by the game. 
-        /// </summary>
-        private List<Entity> entities = new List<Entity>();
+        private NotificationCenter _notificationCenter = new NotificationCenter();
 
         public List<Moby> mobys = new List<Moby>();
         List<Behavior> behaviors = new List<Behavior>();
@@ -26,8 +23,6 @@ namespace Lawrence
         string[] runtimeScripts;
 
         private List<Mod> mods = new List<Mod>();
-
-        private GameMode _gameMode;
 
         public Game()
 		{
@@ -101,6 +96,10 @@ namespace Lawrence
             }
         }
 
+        public NotificationCenter NotificationCenter() {
+            return _notificationCenter;
+        }
+
         public Lua State()
         {
             if (state == null) {
@@ -151,19 +150,7 @@ namespace Lawrence
 
         public void Tick()
         {
-            if (_gameMode != null && !_gameMode.GetBool("Active")) {
-                return;
-            }
-
-            _gameMode.Call("OnTick");
-
-            foreach(var entity in entities) {
-                if (!entity.IsActive()) {
-                    continue;
-                }
-
-                entity.OnTick();
-            }
+            NotificationCenter().Post<TickNotification>(new TickNotification());
 
             foreach (var moby in mobys)
             {
@@ -218,26 +205,33 @@ namespace Lawrence
         }
 
         /// <summary>
-        /// `Game` tracks one game mode at a time. This changes that game mode.
+        /// Called by a Client when handshake is completed and a player has connected to the game server. 
         /// </summary>
-        /// <param name="gameMode">LuaTable that's inherited from (or is) `GameMode`.</param>
-        public void StartGame(LuaTable gameMode) {
-            _gameMode = new GameMode(gameMode);
+        /// <param name="client"></param>
+        public void OnPlayerConnect(Client client) {
+            Player player = new Player(client);
 
-            Logger.Log("Starting a new game mode.");
+            _notificationCenter.Post<PlayerJoinedNotification>(new PlayerJoinedNotification(0, null, player));
         }
 
         /// <summary>
-        /// Make a new game Entity and register it in the game.
+        /// Make a new game Entity, but does not automatically add it to the game.
         /// </summary>
         /// <param name="luaEntity">Lua behavior object for the entity.</param>
         /// <returns></returns>
         public Entity NewEntity(LuaTable luaEntity = null) {
             Entity entity = new Entity(luaEntity);
 
-            entities.Add(entity);
-
             return entity;
+        }
+
+        /// <summary>
+        /// Returns a new Universe CLR object.
+        /// </summary>
+        /// <param name="universeTable">Lua entity object</param>
+        /// <returns></returns>
+        public Universe NewUniverse(LuaTable universeTable) {
+            return new Universe(universeTable);
         }
 
         public List<Moby> Mobys()
@@ -385,15 +379,6 @@ namespace Lawrence
         public void SendPlayerToPlanet(int playerID, int planet)
         {
             Lawrence.GetClient(playerID).SendPacket(Packet.MakeGoToPlanetPacket(planet));
-        }
-
-        public void OnPlayerConnect(Client client)
-        {
-            LuaFunction function = state.GetFunction("on_player_connect");
-            if (function != null)
-            {
-                function.Call(new object[] { client });
-            }
         }
 
         public void OnCollision(Moby collider, Moby collidee, uint flags)

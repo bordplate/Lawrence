@@ -38,7 +38,9 @@ namespace Lawrence
 
 		public void Tick()
 		{
-			tickFunction.Call();
+			if (tickFunction != null) {
+				tickFunction.Call();
+			}
 		}
 
 		public void PlayerTick(Client client)

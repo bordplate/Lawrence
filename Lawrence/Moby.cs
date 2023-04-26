@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using NLua;
 
 namespace Lawrence
 {
-	public class Moby
+	public class Moby : Entity
 	{
         static ushort COLLIDE_TICKS = 10;
 
@@ -36,9 +37,9 @@ namespace Lawrence
 
         Dictionary<ushort, ushort> colliders = new Dictionary<ushort, ushort>();
 
-        public Moby(Client parent = null)
+        public Moby(LuaTable luaTable = null) : base(luaTable)
         {
-            this.parent = parent;
+            
         }
 
         public bool Deleted()
@@ -83,18 +84,17 @@ namespace Lawrence
             }
         }
 
-        public void Tick()
-        {
+        public override void OnTick(TickNotification notification) {
+            base.OnTick(notification);
+
             // Collision debouncing
             ushort[] keys = new ushort[colliders.Keys.Count];
             colliders.Keys.CopyTo(keys, 0);
 
-            foreach(var key in keys)
-            {
+            foreach(var key in keys) {
                 colliders[key] -= 1;
 
-                if (colliders[key] <= 0)
-                {
+                if (colliders[key] <= 0) {
                     colliders.Remove(key);
                     Console.WriteLine($"Collision ended between {this.UUID} and {key}");
                     // Notify stuff that collision has ended
