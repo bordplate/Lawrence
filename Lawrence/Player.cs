@@ -3,6 +3,9 @@ using NLua;
 
 namespace Lawrence
 {
+    /// <summary>
+    /// Networked Player entity. Communicates with Client to send and receive updates in the Player's game. 
+    /// </summary>
     public partial class Player : Moby {
         private Client _client;
 
@@ -70,7 +73,7 @@ namespace Lawrence
     #region Networking
     partial class Player {
         /// <summary>
-        /// 
+        /// Send a packet to the Player
         /// </summary>
         /// <important>
         /// This override must not call its base function. That could cause an infinite loop. 

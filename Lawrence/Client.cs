@@ -132,12 +132,12 @@ namespace Lawrence {
             // TODO: Get relevant entity
 
             if (moby == null) {
-                Console.WriteLine($"Player {this.ID} tried to update null moby {update.uuid}.");
+                Logger.Error($"Player {this.ID} tried to update null moby {update.uuid}.");
                 return;
             }
 
             if (moby.parent != this) {
-                Console.WriteLine($"Player {this.ID} tried to update moby {moby.UUID} that does not belong to them.");
+                Logger.Error($"Player {this.ID} tried to update moby {moby.UUID} that does not belong to them.");
                 return;
             }
 
@@ -145,9 +145,9 @@ namespace Lawrence {
                 moby.active = true;
                 moby.state = 1;
 
-                Console.WriteLine($"Got first update for {moby.UUID} (oClass: {moby.oClass}) from player {this.ID}");
+                Logger.Log($"Got first update for {moby.UUID} (oClass: {moby.oClass}) from player {this.ID}");
             } else if (update.oClass != moby.oClass) {
-                Console.WriteLine($"Changed oClass for {moby.UUID}, from {moby.oClass} to {update.oClass}");
+                Logger.Log($"Changed oClass for {moby.UUID}, from {moby.oClass} to {update.oClass}");
             }
 
             moby.oClass = (int)update.oClass;
