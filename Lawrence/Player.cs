@@ -8,8 +8,7 @@ namespace Lawrence
     /// Networked Player entity. Communicates with Client to send and receive updates in the Player's game. 
     /// </summary>
     public partial class Player : Moby {
-        private Client _client;
-
+        private readonly Client _client;
         public Player(Client client) {
             _client = client;
             _client.SetHandler(this);
@@ -34,7 +33,7 @@ namespace Lawrence
 
             LuaFunction initializeFunction = ((LuaFunction)((LuaTable)player)["new"]);
 
-            object[] entity = initializeFunction.Call(new object[] { player, this });
+            object[] entity = initializeFunction.Call( new[] { player, this });
 
             if (entity.Length <= 0 || !(entity[0] is LuaTable)) {
                 throw new Exception("Failed to initialize `Player` Lua entity. `Player` is not a Lua table");
@@ -120,7 +119,7 @@ namespace Lawrence
             //}
             //
             //Moby moby = null;
-            //// TODO: Tell client handler about the collision
+            //
             //if (moby != null) {
             //    moby.AddCollider(collidedWith, collision.flags);
             //} else {

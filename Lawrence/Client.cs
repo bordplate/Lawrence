@@ -210,13 +210,11 @@ namespace Lawrence {
 
             // If this packet requires ack and is not RPC, we send ack before processing.
             // If this is RPC we only send ack here if a previous ack has been sent and cached.
-            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0)  // We don't ack ack messages
-            {
+            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) { // We don't ack ack messages
                 // If this is an RPC packet and we've already processed and cached it, we use the cached response. 
                 if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 && acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle) {
                     Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
-                } else if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) // If it's not RPC, we just ack the packet and process the packet
-                  {
+                } else if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) { // If it's not RPC, we just ack the packet and process the packet
                     MPPacketHeader ack = new MPPacketHeader {
                         ptype = MPPacketType.MP_PACKET_ACK,
                         flags = 0,

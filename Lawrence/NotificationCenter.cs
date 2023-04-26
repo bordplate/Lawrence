@@ -37,18 +37,26 @@ namespace Lawrence {
         public TickNotification() : base("Tick") { }
     }
 
-    // Class responsible for managing notification subscriptions and posting
+    /// <summary>
+    /// Class responsible for managing notification subscriptions and posting
+    /// </summary>
     public class NotificationCenter {
         // Dictionary to store subscribers for each notification type
         private Dictionary<string, List<Action<Notification>>> _subscribers;
         private Dictionary<int, Action<Notification>> _indexedSubscribers;
 
-        // Constructor for the NotificationCenter class
+        /// <summary>
+        /// Constructor for the NotificationCenter class
+        /// </summary>
         public NotificationCenter() {
             _subscribers = new Dictionary<string, List<Action<Notification>>>();
         }
 
-        // Method to subscribe a callback to a specific notification type
+        /// <summary>
+        /// Method to subscribe a callback to a specific notification type
+        /// </summary>
+        /// <param name="callback"></param>
+        /// <typeparam name="T"></typeparam>
         public void Subscribe<T>(Action<T> callback) where T : Notification {
             string notificationName = typeof(T).Name;
             Action<Notification> wrapperCallback = n => callback((T)n);
@@ -59,7 +67,11 @@ namespace Lawrence {
             _subscribers[notificationName].Add(wrapperCallback);
         }
 
-        // Method to unsubscribe a callback from a specific notification type
+        /// <summary>
+        /// Method to unsubscribe a callback from a specific notification type
+        /// </summary>
+        /// <param name="callback"></param>
+        /// <typeparam name="T"></typeparam>
         public void Unsubscribe<T>(Action<T> callback) where T : Notification {
             string notificationName = typeof(T).Name;
             Action<Notification> wrapperCallback = n => callback((T)n);
@@ -69,7 +81,11 @@ namespace Lawrence {
             }
         }
 
-        // Method to post a notification to all subscribers of the given type
+        /// <summary>
+        /// Method to post a notification to all subscribers of the given type
+        /// </summary>
+        /// <param name="notification"></param>
+        /// <typeparam name="T"></typeparam>
         public void Post<T>(T notification) where T : Notification {
             string notificationName = typeof(T).Name;
             if (_subscribers.ContainsKey(notificationName)) {

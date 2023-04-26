@@ -93,6 +93,10 @@ namespace Lawrence
             }
         }
 
+        /// <summary>
+        /// Central notification center for all things happening within the game. 
+        /// </summary>
+        /// <returns></returns>
         public NotificationCenter NotificationCenter() {
             return _notificationCenter;
         }

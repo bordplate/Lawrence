@@ -47,10 +47,10 @@ namespace Lawrence
         {
             foreach (var client in clients.ToArray())
             {
-                if (client.IsDisconnected() || !client.IsActive() || client.GetMoby() == null) continue;
-                if (ignoring != null && ignoring.Contains(client)) continue;
-                if (level != -1 && client.GetMoby().level != level) continue;
-                if (team != 0 && client.GetMoby().team != team) continue;
+                //if (client.IsDisconnected() || !client.IsActive() || client.GetMoby() == null) continue;
+                //if (ignoring != null && ignoring.Contains(client)) continue;
+                //if (level != -1 && client.GetMoby().level != level) continue;
+                //if (team != 0 && client.GetMoby().team != team) continue;
 
                 client.SendPacket(packet);
             }
