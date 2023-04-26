@@ -128,7 +128,8 @@ namespace Lawrence {
         }
 
         public void UpdateMoby(MPPacketMobyUpdate update) {
-            Moby moby = Game.Shared().GetMoby(update.uuid);
+            Moby moby = null;
+            // TODO: Get relevant entity
 
             if (moby == null) {
                 Console.WriteLine($"Player {this.ID} tried to update null moby {update.uuid}.");
@@ -306,7 +307,7 @@ namespace Lawrence {
                         }
 
                         if (clientMoby == null && (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0) {
-                            clientMoby = Game.Shared().NewMoby(this);
+                            // TODO: Create child Moby entity for this player
                         }
 
                         this.clientMoby.active = (update.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0;
@@ -326,7 +327,8 @@ namespace Lawrence {
                         break;
                     }
                 case MPPacketType.MP_PACKET_MOBY_CREATE: {
-                        Moby moby = Game.Shared().NewMoby(this);
+                        Moby moby = null;
+                        // TODO: Create child Moby entity for this player
 
                         MPPacketMobyCreate createPacket = new MPPacketMobyCreate {
                             uuid = moby.UUID
@@ -365,7 +367,8 @@ namespace Lawrence {
                             return;
                         }
 
-                        Moby moby = Game.Shared().GetMoby(uuid);
+                        Moby moby = null;
+                        // TODO: Tell client handler about the collision
                         if (moby != null) {
                             moby.AddCollider(collidedWith, collision.flags);
                         } else {
@@ -379,7 +382,7 @@ namespace Lawrence {
 
                         if (state.stateType == MPStateType.MP_STATE_TYPE_GAME) {
                             gameState = (GameState)state.value;
-                            Game.Shared().OnPlayerGameStateChange(this, gameState);
+                            // TODO: Tell client handler about game state change
                         }
 
                         break;
@@ -406,7 +409,7 @@ namespace Lawrence {
                         if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0) {
                             this.pressedButtons = (ControllerInput)input.input;
 
-                            Game.Shared().PlayerPressedButtons(this, this.pressedButtons);
+                            // TODO: Tell client handler about inputs
                         }
 
                         break;

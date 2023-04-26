@@ -16,7 +16,7 @@ function TagPlayer:Made()
 end
 
 function TagPlayer:OnTick()
-    print("Hey it ticks")
+    
 end
 
 local TagUniverse = class("TagUniverse", Universe)
@@ -36,7 +36,7 @@ function TagUniverse:OnPlayerJoin(player)
 end
 
 function TagUniverse:OnTick()
-    print("Yup, it works")
+    
 end
 
 local universe = TagUniverse:new()

@@ -55,7 +55,7 @@ namespace Lawrence
                 // Notify client and delete client's mobys and their children
                 _client.Disconnect();
 
-                Game.Shared().DeleteMobys(moby => moby.parent == _client);
+                // TODO: Delete entity
 
                 return;
             }
