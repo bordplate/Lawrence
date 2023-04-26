@@ -49,7 +49,7 @@ namespace Lawrence
 
     partial class Player {
         public void LoadLevel(string level) {
-            _level = _universe.GetLevelByName(level);
+            _level = Universe().GetLevelByName(level);
             _level.Add(this);
 
             SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID()));
@@ -73,6 +73,11 @@ namespace Lawrence
 
                 // TODO: Delete entity
 
+                return;
+            }
+
+            // Nothing here for the player if they're not in a level yet.
+            if (_level == null) {
                 return;
             }
             

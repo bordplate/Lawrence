@@ -64,6 +64,11 @@ namespace Lawrence {
             MPPacketType.MP_PACKET_SYN,
             MPPacketType.MP_PACKET_QUERY_GAME_SERVERS       // Only used in directory mode.
         };
+        
+        /// <summary>
+        /// When true, this client is waiting to connect, and is not yet part of the regular OnTick loop
+        /// </summary>
+        public bool WaitingToConnect = true;
 
         IClientHandler _clientHandler;
 
@@ -228,15 +233,18 @@ namespace Lawrence {
             }
 
             switch (packetHeader.ptype) {
+                case MPPacketType.MP_PACKET_CONNECT: {
+                    Game.Shared().OnPlayerConnect(this);
+
+                    WaitingToConnect = false;
+                    
+                    break;
+                }
                 case MPPacketType.MP_PACKET_SYN: {
                         if (!handshakeCompleted) {
                             handshakeCompleted = true;
 
-                            Console.WriteLine("Player handshake complete.");
-
                             SendPacket(Packet.MakeAckPacket());
-
-                            Game.Shared().OnPlayerConnect(this);
                         } else {
                             SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
                         }
@@ -409,7 +417,7 @@ namespace Lawrence {
                     try {
                         ParsePacket(packet);
                     } catch (Exception e) {
-                        Console.WriteLine($"oh no exception in a client.");
+                        Logger.Error($"oh no exception in a client.", e);
                     }
                 }
             }

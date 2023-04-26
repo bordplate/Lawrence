@@ -122,6 +122,10 @@ namespace Lawrence
             _luaFunctions = new Dictionary<string, LuaFunction>();
         }
 
+        public LuaTable LuaEntity() {
+            return _luaEntity;
+        }
+
         /// <summary>
         /// Calls the Lua object's OnTick function.
         /// If this entity is a visibility group, it tells children that are players what's up with all the other

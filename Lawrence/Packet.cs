@@ -66,6 +66,11 @@ namespace Lawrence
     }
 
     [StructLayout(LayoutKind.Explicit)]
+    public struct MPPacketConnect {
+        [FieldOffset(0x0)] public UInt16 nickLength;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
     public struct MPPacketMobyUpdate
     {
         [FieldOffset(0x0)] public ushort uuid;

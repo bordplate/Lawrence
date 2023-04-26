@@ -73,7 +73,7 @@ namespace Lawrence
 
             this.Add(notification.Entity);
 
-            CallLuaFunction("OnPlayerJoin", new object[] { notification.Entity });
+            CallLuaFunction("OnPlayerJoin", new object[] { LuaEntity(), notification.Entity.LuaEntity() });
         }
 
         public override void OnTick(TickNotification notification)

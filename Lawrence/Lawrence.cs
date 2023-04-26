@@ -19,11 +19,7 @@ namespace Lawrence
 
         static List<Client> clients = new List<Client>();
 
-        static List<uint> disconnectedClients = new List<uint>();
-
         static UdpClient server = null;
-
-        static int playerCount = 0;
 
         static bool directoryMode = false;
         static ServerDirectory directory = null;
@@ -42,24 +38,9 @@ namespace Lawrence
         {
             Game.Shared().Tick();
         }
-
-        public static void DistributePacket((MPPacketHeader, byte[]) packet, int level = -1, List<Client> ignoring = null, byte team = 0)
+        
+        static void NewClient(IPEndPoint endpoint, byte[] data = null)
         {
-            foreach (var client in clients.ToArray())
-            {
-                //if (client.IsDisconnected() || !client.IsActive() || client.GetMoby() == null) continue;
-                //if (ignoring != null && ignoring.Contains(client)) continue;
-                //if (level != -1 && client.GetMoby().level != level) continue;
-                //if (team != 0 && client.GetMoby().team != team) continue;
-
-                client.SendPacket(packet);
-            }
-        }
-
-        static void NewPlayer(IPEndPoint endpoint, byte[] data = null)
-        {
-            playerCount += 1;
-
             int index = clients.Count;
             for (int i = 0; i < clients.Count; i++) 
             {
@@ -75,12 +56,10 @@ namespace Lawrence
             if (index >= clients.Count)
             {
                 clients.Add(client);
-            } else
-            {
+            }
+            else {
                 clients[index] = client;
             }
-
-            Console.WriteLine($"New player {client.ID} from {endpoint.ToString()}");
 
             // Receive their first packet
             if (data != null)
@@ -236,7 +215,7 @@ namespace Lawrence
 
                         if (!existingPlayer)
                         {
-                            NewPlayer(clientEndpoint, data);
+                            NewClient(clientEndpoint, data);
                         }
                     }
                     catch (SocketException e)
@@ -253,6 +232,15 @@ namespace Lawrence
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
+
+                    // Clients that are waiting to connect aren't part of a `Player` tick loop so the Client tick 
+                    //   isn't being called. Therefore we call the Tick function here if it's waiting to connect, so
+                    //   packets can be processed like they should on the right thread. 
+                    foreach (Client client in clients) {
+                        if (client.WaitingToConnect) {
+                            client.Tick();
+                        }
+                    }
 
                     Tick();
 

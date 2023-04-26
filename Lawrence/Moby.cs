@@ -7,11 +7,6 @@ namespace Lawrence
 	public class Moby : Entity
 	{
         /// <summary>
-        /// Should always keep an updated reference to the universe this moby is currently in.
-        /// </summary>
-        protected Universe _universe;
-
-        /// <summary>
         /// The current level this moby is on. Levels are tied to universes such that mobys (incl. users) on the same
         /// level in different universes won't be able to see or interact with each other. 
         /// </summary>
@@ -50,6 +45,24 @@ namespace Lawrence
 
         public Level Level() {
             return _level;
+        }
+        
+        public Universe Universe() {
+            Entity parent = Parent();
+            
+            while (!(parent is Universe)) {
+                if (parent == null) {
+                    return null;
+                }
+                
+                parent = parent.Parent();
+            }
+
+            if (parent is Universe universe) {
+                return universe;
+            }
+            
+            return null;
         }
 
         public bool Deleted()
