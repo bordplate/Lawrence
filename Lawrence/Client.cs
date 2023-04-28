@@ -417,7 +417,7 @@ namespace Lawrence {
                     try {
                         ParsePacket(packet);
                     } catch (Exception e) {
-                        Logger.Error($"oh no exception in a client.", e);
+                        Logger.Error($"Encountered an exception in client", e);
                     }
                 }
             }
