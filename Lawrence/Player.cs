@@ -125,7 +125,7 @@ namespace Lawrence
             // TODO: I think these GUID().ToString() calls might not be super performant.
             if (!_mobysTable.TryGetValue(moby.GUID().ToString(), out internalId)) {
                 // Find next available ID
-                for (ushort i = 0; i < _mobys.Length; i++) {
+                for (ushort i = 1; i < _mobys.Length; i++) {
                     // Check if this is a stale moby that we should clear out to make new room
                     if (_mobys[i].Item1 != null && _mobys[i].Item2 < Game.Shared().Ticks() - 10) {
                         // If this moby hasn't been touched in 10 ticks, we tell the game to delete it and clear it out
