@@ -49,8 +49,9 @@ namespace Lawrence {
         /// <typeparam name="T">The type of the value to retrieve.</typeparam>
         /// <param name="key">The key to retrieve the value for.</param>
         /// <param name="fallback">The fallback value to return if the key is not found. Default value is default(T).</param>
+        /// <param name="silent">If false, saves the fallback to the config, if true, does not save the fallback value to the config file.</param>
         /// <returns>The value associated with the specified key, or the fallback value if the key is not found.</returns>
-        public T Get<T>(string key, T fallback = default) {
+        public T Get<T>(string key, T fallback = default, bool silent = false) {
             string[] keys = key.Split('.');
             TomlTable current = _settingsTable;
 
@@ -68,7 +69,7 @@ namespace Lawrence {
 
                 return current.Get<T>(keys[keys.Length - 1]);
             } catch (KeyNotFoundException) {
-                if (fallback != null) {
+                if (fallback != null && !silent) {
                     Set(key, fallback);
                 }
 
