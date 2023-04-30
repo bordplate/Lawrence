@@ -142,7 +142,7 @@ namespace Lawrence
                 return;
             }
 
-            CallLuaFunction("OnTick");
+            CallLuaFunction("OnTick", new object[] { this._luaEntity });
         }
     }
     #endregion
