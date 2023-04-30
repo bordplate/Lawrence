@@ -59,8 +59,9 @@ namespace Lawrence {
 
     public class Client {
         // Packet types in this list are allowed to be sent before a handshake
-        static List<MPPacketType> allowedAnonymous = new List<MPPacketType>
+        private static readonly List<MPPacketType> _allowedAnonymous = new List<MPPacketType>
         {
+            MPPacketType.MP_PACKET_CONNECT,
             MPPacketType.MP_PACKET_SYN,
             MPPacketType.MP_PACKET_QUERY_GAME_SERVERS       // Only used in directory mode.
         };
@@ -199,7 +200,7 @@ namespace Lawrence {
             //       Ideally the handshake should start a session that the client can
             //          easily use to identify itself. Ideally without much computational
             //          overhead. 
-            if (!handshakeCompleted && !allowedAnonymous.Contains(packetHeader.ptype)) {
+            if ((!handshakeCompleted || WaitingToConnect) && !_allowedAnonymous.Contains(packetHeader.ptype)) {
                 // Client has sent a packet that is not a handshake packet.
                 // We tell the client we don't know it and it should reset state and
                 // start handshake. 
@@ -231,12 +232,14 @@ namespace Lawrence {
                     SendPacket(ack, null);
                 }
             }
-
+            
             switch (packetHeader.ptype) {
                 case MPPacketType.MP_PACKET_CONNECT: {
                     Game.Shared().OnPlayerConnect(this);
 
                     WaitingToConnect = false;
+
+                    Logger.Log("New player connected!");
                     
                     break;
                 }
