@@ -19,6 +19,8 @@ namespace Lawrence
         private bool _maskVisibility = false;
         private bool _maskCollision = false;
 
+        private long _startTicks = Game.Shared().Ticks();
+
         private Dictionary<string, LuaFunction> _luaFunctions = new Dictionary<string, LuaFunction>();
 
         /// <summary>
@@ -52,6 +54,10 @@ namespace Lawrence
 
         public void SetMasksVisibility(bool maskVisibility) {
             _maskVisibility = maskVisibility;
+        }
+
+        public long Ticks() {
+            return Game.Shared().Ticks() - _startTicks;
         }
 
         #endregion
