@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace Lawrence {
     // Abstract base class for notifications
@@ -42,13 +43,13 @@ namespace Lawrence {
     /// </summary>
     public class NotificationCenter {
         // Dictionary to store subscribers for each notification type
-        private Dictionary<string, List<Action<Notification>>> _subscribers;
+        private ConcurrentDictionary<string, List<Delegate>> _subscribers;
 
         /// <summary>
         /// Constructor for the NotificationCenter class
         /// </summary>
         public NotificationCenter() {
-            _subscribers = new Dictionary<string, List<Action<Notification>>>();
+            _subscribers = new ConcurrentDictionary<string, List<Delegate>>();
         }
 
         /// <summary>
@@ -58,12 +59,11 @@ namespace Lawrence {
         /// <typeparam name="T"></typeparam>
         public void Subscribe<T>(Action<T> callback) where T : Notification {
             string notificationName = typeof(T).Name;
-            Action<Notification> wrapperCallback = n => callback((T)n);
-
-            if (!_subscribers.ContainsKey(notificationName)) {
-                _subscribers[notificationName] = new List<Action<Notification>>();
+            if (_subscribers.TryGetValue(notificationName, out var callbacks)) {
+                callbacks.Add(callback);
+            } else {
+                _subscribers[notificationName] = new List<Delegate> { callback };
             }
-            _subscribers[notificationName].Add(wrapperCallback);
         }
 
         /// <summary>
@@ -73,10 +73,8 @@ namespace Lawrence {
         /// <typeparam name="T"></typeparam>
         public void Unsubscribe<T>(Action<T> callback) where T : Notification {
             string notificationName = typeof(T).Name;
-            Action<Notification> wrapperCallback = n => callback((T)n);
-
-            if (_subscribers.ContainsKey(notificationName)) {
-                _subscribers[notificationName].Remove(wrapperCallback);
+            if (_subscribers.TryGetValue(notificationName, out var callbacks)) {
+                callbacks.Remove(callback);
             }
         }
 
@@ -87,8 +85,8 @@ namespace Lawrence {
         /// <typeparam name="T"></typeparam>
         public void Post<T>(T notification) where T : Notification {
             string notificationName = typeof(T).Name;
-            if (_subscribers.ContainsKey(notificationName)) {
-                foreach (var callback in _subscribers[notificationName]) {
+            if (_subscribers.TryGetValue(notificationName, out var callbacks)) {
+                foreach (Action<T> callback in callbacks) {
                     callback(notification);
                 }
             }
