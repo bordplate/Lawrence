@@ -5,6 +5,11 @@ using NLua;
 
 namespace Lawrence
 {
+    /// <summary>
+    /// An Entity is an object that is tracked across native (C#) and Lua environment. It is tightly coupled with a Lua
+    ///     table `_luaEntity`. This is to simplify coding in the Lua environment, but we can run a lot of native code
+    ///     to improve performance. 
+    /// </summary>
     public partial class Entity {
         private Guid _guid = Guid.NewGuid();
 

@@ -21,6 +21,10 @@ namespace Lawrence
 
     #region Lua
     partial class Player { 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <exception cref="Exception"></exception>
         private void InitializeInteralLuaEntity() {
             object player = Game.Shared().State()["Player"];
 
@@ -114,7 +118,7 @@ namespace Lawrence
     partial class Player {
         private Dictionary<string, ushort> _mobysTable = new Dictionary<string, ushort>();
         private (string, long)[] _mobys = new (string, long)[1024];
-
+        
         public void Update(Moby moby) {
             // We don't update ourselves.
             if (moby == this) {
@@ -155,7 +159,7 @@ namespace Lawrence
             
             SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
         }
-        
+
         /// <summary>
         /// Send a packet to the Player
         /// </summary>
