@@ -80,6 +80,8 @@ namespace Lawrence
             if (_level == null) {
                 return;
             }
+
+            UpdateLabels();
             
             // Find the nearest parent that masks visibility or use the level
             Entity visibilityGroup = this;
@@ -234,6 +236,92 @@ namespace Lawrence
             } else {
                 // Update child moby 
                 throw new NotImplementedException("Player's can't spawn child mobys yet");
+            }
+        }
+    }
+    #endregion
+    
+    #region User interface
+    partial class Player {
+        /// <summary>
+        /// We keep track of the labels we've assigned a user here, to match the way we track labels in the game client.
+        /// Tuple where first item is the Label object, and the second is the hash we registered last tick. We use the hash
+        ///     to only send updates to the user when we know something about the Label has updated. 
+        /// </summary>
+        private List<(Label, uint)> _labels = new List<(Label, uint)>();
+
+        /// <summary>
+        /// Adds a label to the player's screen.
+        /// </summary>
+        /// <param name="label"></param>
+        public override void AddLabel(Label label) {
+            // We loop through to check that we don't have that label or a label with the same hash already.
+            // This mitigates issues if someone e.g. tries to add labels every tick, which can happen and be hard to debug
+            //  for beginners.
+            foreach ((Label, uint) labelTuple in _labels) {
+                if (label == labelTuple.Item1 || label.Hash() == labelTuple.Item2) {
+                    return;
+                }
+            }
+
+            // Register first empty index with null label with a hash of 0 to guarantee it's sent to the player next tick
+            for (int i = 0; i < _labels.Count; i++) {
+                if (_labels[i].Item1 == null) {
+                    _labels[i] = (label, 0);
+                    return;
+                }
+            }
+            
+            // If it didn't return above, we just allocate more space for a new label
+            _labels.Add((label, 0));
+        }
+
+        /// <summary>
+        /// Removes all the labels from the player's screen.
+        /// </summary>
+        public void RemoveAllLabels() {
+            _labels = new List<(Label, uint)>();
+            
+            for (int i = 0; i < _labels.Count; i++) {
+                RemoveLabel(_labels[i].Item1);
+            }
+        }
+
+        /// <summary>
+        /// Removes the given label from the player's screen.
+        /// </summary>
+        /// <param name="label">Label to remove</param>
+        public override void RemoveLabel(Label label) {
+            for (int i = 0; i < _labels.Count; i++) {
+                if (_labels[i].Item1 == null) {
+                    continue;
+                }
+                
+                if (_labels[i].Item1.Hash() == label.Hash()) {
+                    _labels[i] = (null, 0);
+                    
+                    SendPacket(Packet.MakeDeleteHUDTextPacket((ushort)i));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sends an update to the player about labels that need updates. 
+        /// </summary>
+        private void UpdateLabels() {
+            for (int i = 0; i < _labels.Count; i++) {
+                Label label = _labels[i].Item1;
+
+                if (label == null) {
+                    continue;
+                }
+
+                // Continue if the label hasn't been updated
+                if (_labels[i].Item2 == label.Hash()) {
+                    continue;
+                }
+                
+                SendPacket(Packet.MakeSetHUDTextPacket((ushort)i, label.Text(), label.X(), label.Y(), label.Color()));
             }
         }
     }

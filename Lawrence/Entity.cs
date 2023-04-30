@@ -208,4 +208,40 @@ namespace Lawrence
         }
     }
     #endregion
+
+    partial class Entity {
+        public virtual void AddLabel(Label label) {
+            foreach (Player player in Find<Player>()) {
+                player.AddLabel(label);
+            }
+        }
+
+        public virtual void RemoveLabel(Label label) {
+            foreach (Player player in Find<Player>()) {
+                player.RemoveLabel(label);
+            }
+        }
+
+        public void AddLabel(LuaTable tableLabel) {
+            object internalEntity = tableLabel["_internalEntity"];
+
+            if (internalEntity is Label label) {
+                AddLabel(label);
+            }
+            else {
+                Logger.Error("Failed to add a Label. Label was not correct type.");
+            }
+        }
+
+        public void RemoveLabel(LuaTable tableLabel) {
+            object internalEntity = tableLabel["_internalEntity"];
+
+            if (internalEntity is Label label) {
+                RemoveLabel(label);
+            }
+            else {
+                Logger.Error("Failed to remove a Label. Label was not correct type.");
+            }
+        }
+    }
 }

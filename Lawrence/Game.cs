@@ -195,6 +195,12 @@ namespace Lawrence
             return entity;
         }
 
+        public Label NewLabel(LuaTable luaEntity, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888) {
+            Label label = new Label(luaEntity, text, x, y, color);
+
+            return label;
+        }
+
         /// <summary>
         /// Returns a new Universe CLR object.
         /// </summary>
