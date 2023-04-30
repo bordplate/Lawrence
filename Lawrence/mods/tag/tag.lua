@@ -12,13 +12,37 @@ pickups = {
 local TagPlayer = class('TagPlayer', Player)
 
 function TagPlayer:Made()
-    self.isHunter = true
+    
 end
 
 function TagPlayer:OnTick()
     
 end
 
+local HunterPlayer = class('HunterPlayer', Player)
+
+function HunterPlayer:Made()
+    self.hunterLabel = Label:new("Hunter", 60, 60, 0xff0000ff)
+    self.ticksLabel = Label:new(self:Ticks() .. " player ticks", 400, 400, 0xC0FFA888)
+    
+    self:AddLabel(self.hunterLabel)
+    self:AddLabel(self.ticksLabel)
+end
+
+function HunterPlayer:OnTick()
+    self.ticksLabel:SetText(self:Ticks() .. " player ticks")
+
+    if (self:Ticks() % 60) == 0 then
+        self:RemoveLabel(self.hunterLabel)
+    elseif (self:Ticks() % 60) == 30 then
+        self:AddLabel(self.hunterLabel)
+    end
+
+    if self:Ticks() > 1000 then
+        self:RemoveLabel(self.ticksLabel)
+    end
+end
+    
 local TagUniverse = class("TagUniverse", Universe)
 function TagUniverse:initialize()
     Universe.initialize(self)
@@ -28,10 +52,13 @@ end
 
 -- When a new player joins this Universe. 
 function TagUniverse:OnPlayerJoin(player)
-    player = player:Make(TagPlayer)
+    player:LoadLevel("Eudora")
 
-    player:LoadLevel("Kerwan")
-
+    if self.hunter ~= nil then
+        self.hunter:Make(TagPlayer)
+    end
+    
+    player = player:Make(HunterPlayer)
     self.hunter = player
 end
 
