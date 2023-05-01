@@ -168,7 +168,7 @@ namespace Lawrence
         ///     children that are mobys. 
         /// </summary>
         public virtual void OnTick(TickNotification notification) {
-            if (!this._active || _luaEntity == null) {
+            if (!_active || _luaEntity == null) {
                 return;
             }
 

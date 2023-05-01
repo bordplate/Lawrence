@@ -181,7 +181,7 @@ namespace Lawrence
         public void OnPlayerConnect(Client client) {
             Player player = new Player(client);
 
-            _notificationCenter.Post<PlayerJoinedNotification>(new PlayerJoinedNotification(0, null, player));
+            _notificationCenter.Post(new PlayerJoinedNotification(0, null, player));
         }
 
         /// <summary>
@@ -223,19 +223,6 @@ namespace Lawrence
             }
 
             return players;
-        }
-
-        public Client GetPlayer(ushort ID)
-        {
-            return Lawrence.GetClient((int)ID);
-        }
-
-        public List<Client> GetPlayers()
-        {
-            return Lawrence.GetClients().Where((Client client) =>
-            {
-                return client.IsActive();
-            }).ToList();
         }
     }
 }

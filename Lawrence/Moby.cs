@@ -18,8 +18,6 @@ namespace Lawrence
 
         public int oClass = 0;
 
-        public byte state = 0;
-
         public float x = 0.0f;
         public float y = 0.0f;
         public float z = 0.0f;
@@ -28,13 +26,8 @@ namespace Lawrence
         public int animationID = 0;
         public int animationDuration = 0;
 
-        public bool active = false;
         public bool mpUpdateFunc = true;
         public bool collision = true;
-
-        public Client parent;
-
-        bool deleted = false;
 
         Dictionary<ushort, ushort> colliders = new Dictionary<ushort, ushort>();
 
@@ -42,11 +35,7 @@ namespace Lawrence
         {
             
         }
-
-        public void Dispose() {
-            Logger.Log("Moby disposing");
-        }
-
+        
         public Level Level() {
             return _level;
         }
@@ -87,28 +76,6 @@ namespace Lawrence
             }
             
             return null;
-        }
-
-        public bool Deleted()
-        {
-            return deleted;
-        }
-
-        public void Delete()
-        {
-            deleted = true;
-            active = false;
-            parent = null;
-            oClass = 0;
-            animationID = 0;
-        }
-
-        public void Damage(int damage)
-        {
-            if (parent != null)
-            {
-                parent.SendPacket(Packet.MakeDamagePacket(1));
-            }
         }
 
         public void AddCollider(ushort uuid, uint collisionFlags)
