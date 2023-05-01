@@ -279,7 +279,7 @@ namespace Lawrence
 
             moby_update.uuid = id;
 
-            moby_update.flags |= moby.active ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
+            moby_update.flags |= moby.IsActive() ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
             moby_update.flags |= moby.collision ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
             moby_update.flags |= moby.mpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
             

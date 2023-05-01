@@ -55,6 +55,8 @@ namespace Lawrence {
         abstract void ControllerInputTapped(ControllerInput input);
         abstract void ControllerInputHeld(ControllerInput input);
         abstract void ControllerInputReleased(ControllerInput input);
+
+        abstract void Delete();
     }
 
     public class Client {
@@ -456,6 +458,11 @@ namespace Lawrence {
         public void Disconnect() {
             if (disconnected) {
                 return;
+            }
+
+            if (_clientHandler != null) {
+                _clientHandler.Delete();
+                _clientHandler = null;
             }
 
             // Send a disconnect packet. Don't really care if they receive it.

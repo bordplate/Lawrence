@@ -32,11 +32,36 @@ namespace Lawrence
         /// Active entities are updated and kept track of by the game.
         /// </summary>
         private bool _active = true;
+        
+        private bool _deleted = false;
 
         public Entity(LuaTable luaEntity = null) {
             this._luaEntity = luaEntity;
 
             Game.Shared().NotificationCenter().Subscribe<TickNotification>(OnTick);
+            Game.Shared().NotificationCenter().Subscribe<DeleteEntityNotification>(OnDeleteEntity);
+        }
+
+        /// <summary>
+        /// Marks this Entity for deletion so that it's from parents next time they iterate their children.
+        /// </summary>
+        public virtual void Delete() {
+            if (_luaEntity != null) {
+                _luaEntity.Dispose();
+                _luaEntity = null;
+            }
+
+            _active = false;
+            _deleted = true;
+            
+            Game.Shared().NotificationCenter().Unsubscribe<TickNotification>(OnTick);
+            Game.Shared().NotificationCenter().Unsubscribe<DeleteEntityNotification>(OnDeleteEntity);
+
+            Game.Shared().NotificationCenter().Post(new DeleteEntityNotification(this));
+        }
+
+        public virtual void OnDeleteEntity(DeleteEntityNotification notification) {
+            Remove(notification.Entity);
         }
 
         #region Getters/setters
@@ -181,9 +206,15 @@ namespace Lawrence
         }
 
         public IEnumerable<T> Find<T>() where T : Entity {
-            List<T> entities = new List<T>();
+            List<Entity> removeEntities = new List<Entity>();
 
             foreach (var entity in _children) {
+                // Can't remove deleted while enumerating, remove later
+                if (entity._deleted) {
+                    removeEntities.Add(entity);
+                    continue;
+                }
+                
                 if (entity is T) {
                     yield return (T)entity;
                 }
@@ -193,6 +224,10 @@ namespace Lawrence
                     yield return (T)e;
                 }
             }
+            
+            // Remove deleted entities
+            if (removeEntities.Count > 0)
+                _children.RemoveAll(x => removeEntities.Contains(x));
         }
 
         public IEnumerable<Entity> Where(Func<Entity, bool> predicate) {

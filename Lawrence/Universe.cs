@@ -41,6 +41,13 @@ namespace Lawrence
             Game.Shared().NotificationCenter().Subscribe<PlayerJoinedNotification>(OnPlayerJoined);
         }
 
+        public override void Delete() {
+            Game.Shared().NotificationCenter().Unsubscribe<PrimaryUniverseChangedNotification>(OnPrimaryUniverseChanged);
+            Game.Shared().NotificationCenter().Unsubscribe<PlayerJoinedNotification>(OnPlayerJoined);
+            
+            base.Delete();
+        }
+
         public Level GetLevelByName(string levelName) {
             foreach (Level level in _levels) {
                 if (levelName == level.GetName()) {

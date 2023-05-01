@@ -35,6 +35,14 @@ namespace Lawrence {
         }
     }
 
+    public class DeleteEntityNotification : Notification {
+        public Entity Entity;
+
+        public DeleteEntityNotification(Entity entity) : base("DeleteEntity") {
+            Entity = entity;
+        }
+    }
+
     public class TickNotification : Notification {
         public TickNotification() : base("Tick") { }
     }

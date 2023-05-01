@@ -16,6 +16,15 @@ namespace Lawrence
             InitializeInteralLuaEntity();
         }
 
+        public override void Delete() {
+            foreach ((Label, uint) labelTuple in _labels) {
+                if (labelTuple.Item1 != null) {
+                    labelTuple.Item1.Delete();
+                }
+            }
+
+            base.Delete();
+        }
     }
 
     #region Lua
@@ -65,6 +74,8 @@ namespace Lawrence
         public override void OnTick(TickNotification notification) {
             // Check if this client is still alive
             if (_client.IsDisconnected()) {
+                Delete();
+                
                 return;
             }
 
@@ -73,8 +84,6 @@ namespace Lawrence
 
                 // Notify client and delete client's mobys and their children
                 _client.Disconnect();
-
-                // TODO: Delete entity
 
                 return;
             }
@@ -109,6 +118,17 @@ namespace Lawrence
             _client.Tick();
 
             base.OnTick(notification);
+        }
+
+        public override void OnDeleteEntity(DeleteEntityNotification notification) {
+            for (ushort i = 1; i < _mobys.Length; i++) {
+                if (_mobys[i].Item1 == notification.Entity.GUID().ToString()) {
+                    SendPacket(Packet.MakeDeleteMobyPacket(i));
+                    _mobys[i] = (null, 0);
+                }
+            }
+            
+            base.OnDeleteEntity(notification);
         }
     }
     #endregion
@@ -228,7 +248,7 @@ namespace Lawrence
         {
             // Update this moby if 0, update child moby if not 0
             if (mobyUpdate.uuid == 0) {
-                this.active = (mobyUpdate.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0;
+                this.SetActive((mobyUpdate.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
 
                 this.x = mobyUpdate.x;
                 this.y = mobyUpdate.y;
