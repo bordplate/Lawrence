@@ -48,6 +48,12 @@ function TagUniverse:initialize()
     Universe.initialize(self)
 
     self.hunter = nil
+    
+    self:SpawnPickups()
+end
+
+function TagUniverse:SpawnPickups()
+    
 end
 
 -- When a new player joins this Universe. 
@@ -63,7 +69,23 @@ function TagUniverse:OnPlayerJoin(player)
 end
 
 function TagUniverse:OnTick()
-    
+    -- Go through pickups and respawn if necessary
+    for i, pickup in ipairs(pickups) do
+        if pickup.respawn <= 0 and pickup.moby == nil then
+            local moby = self:GetLevelByName("Eudora"):SpawnMoby(500)
+            moby:SetPosition(pickup.x, pickup.y, pickup.z)
+
+            pickup.moby = moby
+            pickup.respawn = 120  -- Respawn every 2 seconds
+
+            print("Spawned pickup for item: " .. pickup.item)
+        end
+
+        -- Decrease respawn timer if the item has been picked up
+        if pickup.moby == nil then
+            pickup.respawn = pickup.respawn - 1
+        end
+    end
 end
 
 local universe = TagUniverse:new()
