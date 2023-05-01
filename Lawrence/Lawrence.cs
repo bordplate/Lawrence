@@ -38,6 +38,8 @@ namespace Lawrence
         
         static void NewClient(IPEndPoint endpoint, byte[] data = null)
         {
+            Logger.Log($"Connection from {endpoint}");
+            
             int index = clients.Count;
             for (int i = 0; i < clients.Count; i++) 
             {
@@ -201,8 +203,16 @@ namespace Lawrence
                         }
 
                         bool existingPlayer = false;
-                        foreach (var p in clients)
-                        {
+                         
+                        for (int i = clients.Count - 1; i >= 0; i--) {
+                            Client p = clients[i];
+                            
+                            if (p.IsDisconnected()) {
+                                clients.RemoveAt(i);
+                                
+                                continue;
+                            }
+                            
                             if (!p.IsDisconnected() && p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
                             {
                                 p.ReceiveData(data);

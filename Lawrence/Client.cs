@@ -243,6 +243,13 @@ namespace Lawrence {
                     
                     break;
                 }
+                case MPPacketType.MP_PACKET_DISCONNECTED: {
+                    Disconnect();
+                    
+                    Logger.Log("Player disconnected.");
+                    
+                    break;
+                }
                 case MPPacketType.MP_PACKET_SYN: {
                         if (!handshakeCompleted) {
                             handshakeCompleted = true;
