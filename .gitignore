@@ -1,3 +1,4 @@
+docs/*
 **/bin/*
 **/obj/*
 *.toml
