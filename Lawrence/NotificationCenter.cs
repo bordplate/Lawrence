@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Lawrence {
     // Abstract base class for notifications
@@ -45,6 +46,8 @@ namespace Lawrence {
         // Dictionary to store subscribers for each notification type
         private ConcurrentDictionary<string, List<Delegate>> _subscribers;
 
+        private Mutex _lock = new Mutex();
+
         /// <summary>
         /// Constructor for the NotificationCenter class
         /// </summary>
@@ -59,11 +62,14 @@ namespace Lawrence {
         /// <typeparam name="T"></typeparam>
         public void Subscribe<T>(Action<T> callback) where T : Notification {
             string notificationName = typeof(T).Name;
+
+            _lock.WaitOne();
             if (_subscribers.TryGetValue(notificationName, out var callbacks)) {
                 callbacks.Add(callback);
             } else {
                 _subscribers[notificationName] = new List<Delegate> { callback };
             }
+            _lock.ReleaseMutex();
         }
 
         /// <summary>
@@ -86,7 +92,9 @@ namespace Lawrence {
         public void Post<T>(T notification) where T : Notification {
             string notificationName = typeof(T).Name;
             if (_subscribers.TryGetValue(notificationName, out var callbacks)) {
-                foreach (Action<T> callback in callbacks) {
+                // We use GetRange on callbacks here because otherwise we'd crash due to "modified collection" during
+                //   the loop. 
+                foreach (Action<T> callback in callbacks.GetRange(0, callbacks.Count)) {
                     callback(notification);
                 }
             }
