@@ -43,8 +43,32 @@ namespace Lawrence
             
         }
 
+        public void Dispose() {
+            Logger.Log("Moby disposing");
+        }
+
         public Level Level() {
             return _level;
+        }
+
+        public void SetLevel(Level level) {
+            if (this is Player) {
+                throw new Exception("Do NOT use SetLevel() to set a Player's level. Instead use LoadLevel()");
+            }
+            
+            if (_level != null) {
+                _level.Remove(this);
+            }
+            
+            _level = level;
+            
+            _level.Add(this);
+        }
+
+        public void SetPosition(float x, float y, float z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
         }
         
         public Universe Universe() {
