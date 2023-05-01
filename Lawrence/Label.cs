@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using Force.Crc32;
 using NLua;
