@@ -12,16 +12,28 @@ pickups = {
 local TagPlayer = class('TagPlayer', Player)
 
 function TagPlayer:Made()
+    self:RemoveAllLabels()
     
+    self.runnerLabel = Label:new("Runner", 60, 60, 0xffff0000)
+    self.ticksLabel = Label:new(self:Ticks() .. " player ticks", 400, 400, 0xC0FFA888)
+
+    self:AddLabel(self.runnerLabel)
+    self:AddLabel(self.ticksLabel)
 end
 
 function TagPlayer:OnTick()
+    self.ticksLabel:SetText(self:Ticks() .. " player ticks")
+end
+
+function TagPlayer:OnCollision()
     
 end
 
 local HunterPlayer = class('HunterPlayer', Player)
 
 function HunterPlayer:Made()
+    self:RemoveAllLabels()
+    
     self.hunterLabel = Label:new("Hunter", 60, 60, 0xff0000ff)
     self.ticksLabel = Label:new(self:Ticks() .. " player ticks", 400, 400, 0xC0FFA888)
     
@@ -31,16 +43,17 @@ end
 
 function HunterPlayer:OnTick()
     self.ticksLabel:SetText(self:Ticks() .. " player ticks")
+end
 
-    if (self:Ticks() % 60) == 0 then
-        self:RemoveLabel(self.hunterLabel)
-    elseif (self:Ticks() % 60) == 30 then
-        self:AddLabel(self.hunterLabel)
+function HunterPlayer:OnAttack(moby)
+    if moby:Is(TagPlayer) then
+        moby:Make(HunterPlayer)
+        self:Make(TagPlayer)
     end
+end
 
-    if self:Ticks() > 1000 then
-        self:RemoveLabel(self.ticksLabel)
-    end
+function HunterPlayer:OnCollision()
+    
 end
     
 local TagUniverse = class("TagUniverse", Universe)
