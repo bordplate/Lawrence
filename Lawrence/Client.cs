@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -55,12 +56,14 @@ namespace Lawrence {
         abstract void ControllerInputTapped(ControllerInput input);
         abstract void ControllerInputHeld(ControllerInput input);
         abstract void ControllerInputReleased(ControllerInput input);
-
         abstract void Delete();
+        abstract Moby Moby();
     }
 
-    public class Client {
-        // Packet types in this list are allowed to be sent before a handshake
+    public partial class Client {
+        /// <summary>
+        /// Packet types in this list are allowed to be sent before a handshake
+        /// </summary>
         private static readonly List<MPPacketType> _allowedAnonymous = new List<MPPacketType>
         {
             MPPacketType.MP_PACKET_CONNECT,
@@ -470,4 +473,87 @@ namespace Lawrence {
             disconnected = true;
         }
     }
+    
+    #region Handling Mobys
+    partial class Client {
+        private struct MobyData {
+            public Guid Id;
+            public long LastUpdate;
+            public Moby MobyRef;
+        }
+
+        private ConcurrentDictionary<Guid, ushort> _mobysTable = new ConcurrentDictionary<Guid, ushort>();
+        private ConcurrentDictionary<ushort, MobyData> _mobys = new ConcurrentDictionary<ushort, MobyData>();
+
+        public void UpdateMoby(Moby moby) {
+            ushort internalId = GetOrCreateInternalId(moby);
+            if (internalId == 0) {
+                Logger.Error("A player has run out of moby space.");
+                return;
+            }
+
+            _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Shared().Ticks(), MobyRef = moby };
+            SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
+        }
+
+        private ushort GetOrCreateInternalId(Moby moby) {
+            ushort internalId;
+            if (_mobysTable.TryGetValue(moby.GUID(), out internalId)) {
+                return internalId;
+            }
+
+            // Find next available ID
+            for (ushort i = 1; i <= ushort.MaxValue; i++) {
+                if (!_mobys.ContainsKey(i)) {
+                    _mobysTable[moby.GUID()] = i;
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        private Moby GetMobyByInternalId(ushort internalId) {
+            MobyData mobyData;
+            if (!_mobys.TryGetValue(internalId, out mobyData)) {
+                return null; // No Moby found with the given internalId.
+            }
+
+            // Check if Moby is stale.
+            long currentTicks = Game.Shared().Ticks();
+            if (mobyData.LastUpdate < currentTicks - 10) {
+                // Moby is stale, delete it and return null.
+                DeleteMoby(mobyData.MobyRef);
+                return null;
+            }
+
+            // Moby is not stale, return it.
+            return mobyData.MobyRef;
+        }
+
+        public void CleanupStaleMobys() {
+            long currentTicks = Game.Shared().Ticks();
+            foreach (var pair in _mobys) {
+                if (pair.Value.LastUpdate < currentTicks - 10) {
+                    SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
+                    _mobys.TryRemove(pair.Key, out _);
+                    _mobysTable.TryRemove(pair.Value.Id, out _);
+                }
+            }
+        }
+
+        public void DeleteMoby(Moby moby) {
+            ushort internalId;
+            if (_mobysTable.TryGetValue(moby.GUID(), out internalId)) {
+                // If found, delete it from the game
+                SendPacket(Packet.MakeDeleteMobyPacket(internalId));
+                // And remove it from our dictionaries
+                _mobys.TryRemove(internalId, out _);
+                _mobysTable.TryRemove(moby.GUID(), out _);
+            } else {
+                Logger.Error($"Trying to delete a moby which does not exist: {moby.GUID()}");
+            }
+        }
+    }
+    #endregion
 }

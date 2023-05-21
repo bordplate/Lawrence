@@ -58,7 +58,6 @@ namespace Lawrence
     #endregion
     
     #region Gameplay related function
-
     partial class Player {
         public void LoadLevel(string level) {
             _level = Universe().GetLevelByName(level);
@@ -95,7 +94,8 @@ namespace Lawrence
 
             UpdateLabels();
             
-            // Find the nearest parent that masks visibility or use the level
+            // Find the nearest parent that masks visibility or use the level to update the client on surrounding,
+            //  visible mobys.
             Entity visibilityGroup = this;
 
             do {
@@ -121,13 +121,10 @@ namespace Lawrence
         }
 
         public override void OnDeleteEntity(DeleteEntityNotification notification) {
-            for (ushort i = 1; i < _mobys.Length; i++) {
-                if (_mobys[i].Item1 == notification.Entity.GUID().ToString()) {
-                    SendPacket(Packet.MakeDeleteMobyPacket(i));
-                    _mobys[i] = (null, 0);
-                }
+            if (notification.Entity is Moby moby) {
+                _client.DeleteMoby(moby);
             }
-            
+
             base.OnDeleteEntity(notification);
         }
     }
@@ -135,48 +132,13 @@ namespace Lawrence
 
     #region Networking
     partial class Player {
-        private Dictionary<string, ushort> _mobysTable = new Dictionary<string, ushort>();
-        private (string, long)[] _mobys = new (string, long)[1024];
-        
         public void Update(Moby moby) {
             // We don't update ourselves.
             if (moby == this) {
                 return;
             }
-
-            // 0 is invalid in this context. 0 refers to the game's hero moby and shouldn't be updated here. 
-            ushort internalId = 0;
-
-            // TODO: I think these GUID().ToString() calls might not be super performant.
-            if (!_mobysTable.TryGetValue(moby.GUID().ToString(), out internalId)) {
-                // Find next available ID
-                for (ushort i = 1; i < _mobys.Length; i++) {
-                    // Check if this is a stale moby that we should clear out to make new room
-                    if (_mobys[i].Item1 != null && _mobys[i].Item2 < Game.Shared().Ticks() - 10) {
-                        // If this moby hasn't been touched in 10 ticks, we tell the game to delete it and clear it out
-                        SendPacket(Packet.MakeDeleteMobyPacket(i));
-                        _mobys[i] = (null,0);
-                    }
-                    
-                    if (_mobys[i].Item1 == null) {
-                        internalId = i;
-                        _mobys[i] = (moby.GUID().ToString(), Game.Shared().Ticks());
-                        _mobysTable[moby.GUID().ToString()] = i;
-                        
-                        break;
-                    }
-                }
-
-                if (internalId == 0) {
-                    Logger.Error("A player has run out of moby space.");
-                    return;
-                }
-            }
             
-            // Update the last time we saw this moby
-            _mobys[internalId].Item2 = Game.Shared().Ticks();
-            
-            SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
+            _client.UpdateMoby(moby);
         }
 
         /// <summary>
@@ -258,8 +220,12 @@ namespace Lawrence
                 this.animationDuration = mobyUpdate.animationDuration;
             } else {
                 // Update child moby 
-                throw new NotImplementedException("Player's can't spawn child mobys yet");
+                throw new NotImplementedException("Players can't spawn child mobys yet");
             }
+        }
+
+        public Moby Moby() {
+            return this;
         }
     }
     #endregion
