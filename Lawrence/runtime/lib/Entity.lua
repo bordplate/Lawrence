@@ -49,3 +49,7 @@ end
 function Entity:OnTick()
     
 end
+
+function Entity:Is(class)
+    return class == self.class
+end 
