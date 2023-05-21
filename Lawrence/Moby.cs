@@ -29,7 +29,7 @@ namespace Lawrence
         public bool mpUpdateFunc = true;
         public bool collision = true;
 
-        Dictionary<ushort, ushort> colliders = new Dictionary<ushort, ushort>();
+        Dictionary<Moby, ushort> colliders = new Dictionary<Moby, ushort>();
 
         public Moby(LuaTable luaTable = null) : base(luaTable)
         {
@@ -78,18 +78,16 @@ namespace Lawrence
             return null;
         }
 
-        public void AddCollider(ushort uuid, uint collisionFlags)
+        public void AddCollider(Moby moby, uint collisionFlags = 0)
         {
-            if (!colliders.ContainsKey(uuid))
+            if (!colliders.ContainsKey(moby))
             {
-                colliders.Add(uuid, Moby.COLLIDE_TICKS);
-                Console.WriteLine($"New collision between {this.UUID} and {uuid}");
-                // Notify stuff that new collision has happened
+                colliders.Add(moby, Moby.COLLIDE_TICKS);
 
-                // TODO: Notify other 
+                OnCollision(moby);
             } else
             {
-                colliders[uuid] = Moby.COLLIDE_TICKS;
+                colliders[moby] = Moby.COLLIDE_TICKS;
             }
         }
 
@@ -97,7 +95,7 @@ namespace Lawrence
             base.OnTick(notification);
             
             // Collision debouncing
-            ushort[] keys = new ushort[colliders.Keys.Count];
+            Moby[] keys = new Moby[colliders.Keys.Count];
             colliders.Keys.CopyTo(keys, 0);
 
             foreach(var key in keys) {
@@ -105,11 +103,22 @@ namespace Lawrence
 
                 if (colliders[key] <= 0) {
                     colliders.Remove(key);
-                    Console.WriteLine($"Collision ended between {this.UUID} and {key}");
-                    // Notify stuff that collision has ended
-                    // TODO: Notify other
+                } else {
+                    OnCollision(key);
                 }
             }
+        }
+
+        public virtual void OnCollision(Moby collidee) {
+            CallLuaFunction("OnCollision", new object[] { LuaEntity(), collidee.LuaEntity() });
+        }
+
+        public virtual void OnHit(Moby attacker) {
+            CallLuaFunction("OnHit", new object[] { LuaEntity(), attacker.LuaEntity() });
+        }
+
+        public virtual void OnAttack(Moby attacked) {
+            CallLuaFunction("OnAttack", new object[] { LuaEntity(), attacked.LuaEntity() });
         }
 	}
 }

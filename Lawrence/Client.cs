@@ -52,7 +52,7 @@ namespace Lawrence {
     public interface IClientHandler {
         abstract uint CreateMoby();
         abstract void UpdateMoby(MPPacketMobyUpdate updatePacket);
-        abstract void Collision(MPPacketMobyCollision collision);
+        abstract void Collision(Moby collider, Moby collidee, bool aggressive = false);
         abstract void ControllerInputTapped(ControllerInput input);
         abstract void ControllerInputHeld(ControllerInput input);
         abstract void ControllerInputReleased(ControllerInput input);
@@ -303,7 +303,15 @@ namespace Lawrence {
                 case MPPacketType.MP_PACKET_MOBY_COLLISION: {
                         MPPacketMobyCollision collision = Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, Packet.Endianness.BigEndian);
 
-                        _clientHandler.Collision(collision);
+                        Moby collider = collision.uuid == 0
+                            ? _clientHandler.Moby()
+                            : GetMobyByInternalId(collision.uuid);
+                        
+                        Moby collidee = collision.collidedWith == 0
+                            ? _clientHandler.Moby()
+                            : GetMobyByInternalId(collision.collidedWith);
+
+                        _clientHandler.Collision(collider, collidee, collision.flags > 0);
                         break;
                     }
                 case MPPacketType.MP_PACKET_SET_STATE: {
