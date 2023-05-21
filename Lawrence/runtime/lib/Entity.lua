@@ -51,5 +51,5 @@ function Entity:OnTick()
 end
 
 function Entity:Is(class)
-    return class == self.class
+    return self:isInstanceOf(class)
 end 
