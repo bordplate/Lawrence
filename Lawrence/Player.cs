@@ -158,32 +158,28 @@ namespace Lawrence
     #region Client events
     partial class Player : IClientHandler
     {
-        public void Collision(MPPacketMobyCollision collision)
+        public void Collision(Moby collider, Moby collidee, bool aggressive = false)
         {
-            ushort uuid = collision.uuid;
-            ushort collidedWith = collision.collidedWith;
+            if (collider == null) {
+                throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Got null-collider");
+            }
+            
+            if (collider != this) {
+                throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Illegal collider for collision update");
+            }
 
-            //if (uuid == 0) {
-            //    uuid = clientMoby.UUID;
-            //}
-            //
-            //if (collidedWith == 0) {
-            //    collidedWith = clientMoby.UUID;
-            //}
-            //
-            //if (uuid == collidedWith) {
-            //    Console.WriteLine($"Player {ID} just told us they collided with themselves.");
-            //    return;
-            //}
-            //
-            //Moby moby = null;
-            //
-            //if (moby != null) {
-            //    moby.AddCollider(collidedWith, collision.flags);
-            //} else {
-            //    Console.WriteLine($"Player {ID} claims they hit null-moby {uuid}");
-            //}
+            if (collider == collidee) {
+                throw new InvalidOperationException($"$Player [{_client.GetEndpoint()}]: Collider and collidee can't be the same entity. You can't collide with yourself.");
+            }
 
+            if (!aggressive) {
+                collider.AddCollider(collidee);
+                collidee.AddCollider(collider);
+            }
+            else {
+                collidee.OnHit(collider);
+                collider.OnAttack(collidee);
+            }
         }
 
         public void ControllerInputHeld(ControllerInput input)
