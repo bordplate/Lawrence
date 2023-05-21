@@ -167,6 +167,10 @@ namespace Lawrence
             if (collider == null) {
                 throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Got null-collider");
             }
+
+            if (collidee == null) {
+                return;
+            }
             
             if (collider != this) {
                 throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Illegal collider for collision update");
