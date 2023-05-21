@@ -55,6 +55,7 @@ public class Level : Entity {
         }
 
         if (entity[0] is LuaTable mobyEntity) {
+            moby.SetLuaEntity(mobyEntity);
             return mobyEntity;
         }
 
