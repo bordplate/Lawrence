@@ -74,6 +74,10 @@ namespace Lawrence
             return _active;
         }
 
+        public bool IsDeleted() {
+            return _deleted;
+        }
+
         public void SetActive(bool active) {
             _active = active;
         }

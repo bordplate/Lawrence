@@ -65,6 +65,10 @@ namespace Lawrence
 
             SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID()));
         }
+
+        public void GiveItem(ushort item) {
+            SendPacket(Packet.MakeSetItemPacket(item, true));
+        }
     }
     #endregion
 

@@ -86,6 +86,9 @@ namespace Lawrence
                                 Logger.Error($"Could not load entry file at {entryFile}.");
                                 continue;
                             }
+                            
+                            // Add the mod path to Lua package path
+                            state.DoString($"package.path = package.path .. \";{folder.Replace("\\", "\\\\")}/?.lua\"", "set package path chunk");
 
                             State().DoString(entryFile, entry);
 
