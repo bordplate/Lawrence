@@ -1,6 +1,6 @@
 docs/*
 **/bin/*
 **/obj/*
-*.toml
+settings.toml
 *.log
 **/*.csproj.user

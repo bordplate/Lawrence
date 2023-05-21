@@ -1,0 +1,3 @@
+﻿[General]
+name = "Bord's Phenomenal Game of Tag"
+entry = "tag.lua"
