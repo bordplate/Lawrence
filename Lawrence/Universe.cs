@@ -48,6 +48,14 @@ namespace Lawrence
             base.Delete();
         }
 
+        public override void Add(Entity entity, bool reparent = true) {
+            base.Add(entity, reparent);
+
+            if (entity is Player || entity.GetType().IsSubclassOf(typeof(Player))) {
+                CallLuaFunction("OnPlayerJoin", new object[] { LuaEntity(), entity.LuaEntity() });
+            }
+        }
+
         public Level GetLevelByName(string levelName) {
             foreach (Level level in _levels) {
                 if (levelName == level.GetName()) {
@@ -79,8 +87,6 @@ namespace Lawrence
             }
 
             this.Add(notification.Entity);
-
-            CallLuaFunction("OnPlayerJoin", new object[] { LuaEntity(), notification.Entity.LuaEntity() });
         }
 
         public override void OnTick(TickNotification notification)
