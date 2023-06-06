@@ -116,6 +116,10 @@ namespace Lawrence
             } while (!visibilityGroup.MasksVisibility());
 
             foreach (Moby moby in visibilityGroup.Find<Moby>()) {
+                if (moby.IsInstanced() && !moby.HasParent(this)) {
+                    continue;
+                }
+                
                 Update(moby);
             }
             

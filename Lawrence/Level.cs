@@ -31,24 +31,31 @@ public class Level : Entity {
         return _gameId;
     }
 
-    public LuaTable SpawnMoby(ushort oClass) {
+    public LuaTable SpawnMoby(object param) {
         Moby moby = new Moby();
         moby.SetLevel(this);
-        moby.oClass = oClass;
-
+        
+        if (param is int oClass) {
+            moby.oClass = oClass;
+        }
+        
         object mobyTable = Game.Shared().State()["Moby"];
+        if (param is LuaTable table) {
+            mobyTable = table;
+        }
 
         if (!(mobyTable is LuaTable)) {
-            throw new Exception("Unable to create Moby entity in Lua. `Moby` is nil or not a LuaTable.");
+            throw new Exception($"Unable to create Moby entity in Lua. Unable to resolve Moby for `{param}`.");
         }
 
         if (!(((LuaTable)mobyTable)["new"] is LuaFunction)) {
-            throw new Exception("Could not initialize new `Moby` entity as initialize isn't a function on `Moby` table");
+            throw new Exception(
+                "Could not initialize new `Moby` entity as initialize isn't a function on `Moby` table");
         }
 
         LuaFunction initializeFunction = ((LuaFunction)((LuaTable)mobyTable)["new"]);
 
-        object[] entity = initializeFunction.Call( new[] { mobyTable, moby });
+        object[] entity = initializeFunction.Call(new[] { mobyTable, moby });
 
         if (entity.Length <= 0 || !(entity[0] is LuaTable)) {
             throw new Exception("Failed to initialize `Moby` Lua entity. `Moby` is not a Lua table");

@@ -54,6 +54,10 @@ namespace Lawrence
             _level.Add(this);
         }
 
+        public void SetOClass(int oClass) {
+            this.oClass = oClass;
+        }
+
         public void SetPosition(float x, float y, float z) {
             this.x = x;
             this.y = y;

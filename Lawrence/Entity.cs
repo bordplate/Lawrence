@@ -24,6 +24,11 @@ namespace Lawrence
         private bool _maskVisibility = false;
         private bool _maskCollision = false;
 
+        /// <summary>
+        /// Instanced Entities are only visible to parents
+        /// </summary>
+        private bool _instanced = false;
+
         private long _startTicks = Game.Shared().Ticks();
 
         private Dictionary<string, LuaFunction> _luaFunctions = new Dictionary<string, LuaFunction>();
@@ -187,7 +192,28 @@ namespace Lawrence
             return _parent;
         }
 
-        public void Add(Entity entity, bool reparent = true) {
+        public bool HasParent(Entity entity) {
+            Entity next = this;
+            do {
+                if (next == entity) {
+                    return true;
+                }
+                
+                next = next.Parent();
+            } while (next != null);
+
+            return false;
+        }
+
+        public void AddEntity(LuaTable entityTable) {
+            object internalEntity = entityTable["_internalEntity"];
+
+            if (internalEntity is Entity entity) {
+                Add(entity);
+            }
+        }
+
+        public virtual void Add(Entity entity, bool reparent = true) {
             if (reparent) {
                 if (entity._parent != null) {
                     entity._parent.Remove(entity);
@@ -275,6 +301,13 @@ namespace Lawrence
             return _children.Where(predicate);
         }
 
+        public bool IsInstanced() {
+            return _instanced;
+        }
+
+        public void SetInstanced(bool instanced) {
+            _instanced = instanced;
+        }
      }
     #endregion
 
