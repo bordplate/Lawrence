@@ -189,6 +189,10 @@ namespace Lawrence
 
         public void Add(Entity entity, bool reparent = true) {
             if (reparent) {
+                if (entity._parent != null) {
+                    entity._parent.Remove(entity);
+                }
+
                 entity._parent = this;
             }
 
@@ -232,6 +236,39 @@ namespace Lawrence
             // Remove deleted entities
             if (removeEntities.Count > 0)
                 _children.RemoveAll(x => removeEntities.Contains(x));
+        }
+
+        public List<LuaTable> FindChildrenInternal(string entityType) {
+            Type type = Type.GetType($"Lawrence.{entityType}, Lawrence");
+            List<Entity> removeEntities = new List<Entity>();
+            List<LuaTable> entities = new List<LuaTable>();
+
+            foreach (var entity in _children) {
+                // Can't remove deleted while enumerating, remove later
+                if (entity._deleted) {
+                    removeEntities.Add(entity);
+                    continue;
+                }
+
+                if (entity.LuaEntity() == null) {
+                    continue;
+                }
+                
+                if (entity.GetType() == type) {
+                    entities.Add(entity.LuaEntity());
+                }
+
+                // Recursively search the children
+                foreach (var e in entity.FindChildrenInternal(entityType)) {
+                    entities.Add(entity.LuaEntity());
+                }
+            }
+            
+            // Remove deleted entities
+            if (removeEntities.Count > 0)
+                _children.RemoveAll(x => removeEntities.Contains(x));
+
+            return entities;
         }
 
         public IEnumerable<Entity> Where(Func<Entity, bool> predicate) {

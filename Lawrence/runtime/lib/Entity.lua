@@ -62,4 +62,21 @@ end
 
 function Entity:Is(class)
     return self:isInstanceOf(class)
+end
+
+function Entity:FindChildren(type)
+    local found = self:FindChildrenInternal(type)
+    local children = {}
+
+    if found.Count <= 0 then
+        return {}
+    end
+
+    for i = 0, found.Count-1, 1 do
+        local child = found[i]
+        
+        children[#children+1] = child
+    end
+    
+    return children
 end 
