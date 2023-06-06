@@ -32,6 +32,16 @@ function Entity:__index(key)
     end
 end
 
+function Entity:__newindex(key, value)
+    -- If the key exists in the internal C# object, set it
+    if rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
+        self._internalEntity[key] = value
+    else
+        -- Otherwise, set it in the Entity object
+        rawset(self, key, value)
+    end
+end
+
 --- Makes this entity a different type of entity. 
 function Entity:Make(entityType)
     local newEntity = entityType:new(self._internalEntity)
