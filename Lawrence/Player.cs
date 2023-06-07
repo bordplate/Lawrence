@@ -230,9 +230,11 @@ namespace Lawrence
                 this.x = mobyUpdate.x;
                 this.y = mobyUpdate.y;
                 this.z = mobyUpdate.z;
-                this.rotX = mobyUpdate.rotX;
-                this.rotY = mobyUpdate.rotY;
-                this.rotZ = mobyUpdate.rotZ;
+                this.rotX = (float)(180 / Math.PI) * mobyUpdate.rotX;
+                this.rotY = (float)(180 / Math.PI) * mobyUpdate.rotY;
+                this.rotZ = (float)(180 / Math.PI) * mobyUpdate.rotZ;
+                this.scale = mobyUpdate.scale;
+                this.alpha = mobyUpdate.alpha / 128.0f;
                 this.animationID = mobyUpdate.animationID;
                 this.animationDuration = mobyUpdate.animationDuration;
             } else {
