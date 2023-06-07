@@ -119,6 +119,13 @@ namespace Lawrence
                 if (moby.IsInstanced() && !moby.HasParent(this)) {
                     continue;
                 }
+
+                float mobyDistance = DistanceTo(moby);
+                if (mobyDistance > 5) {
+                    if (Game.Shared().Ticks() % (int)(Math.Max(1, mobyDistance / 10)) != 0) {
+                        continue;
+                    }
+                }
                 
                 Update(moby);
             }

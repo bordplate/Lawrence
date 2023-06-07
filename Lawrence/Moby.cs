@@ -117,6 +117,15 @@ namespace Lawrence
             }
         }
 
+        public float DistanceTo(Moby moby)
+        {
+            float xDiff = this.x - moby.x;
+            float yDiff = this.y - moby.y;
+            float zDiff = this.z - moby.z;
+
+            return (float)Math.Sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
+        }
+
         public virtual void OnCollision(Moby collidee) {
             CallLuaFunction("OnCollision", new object[] { LuaEntity(), collidee.LuaEntity() });
         }
