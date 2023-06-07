@@ -75,17 +75,21 @@ namespace Lawrence
     {
         [FieldOffset(0x0)] public ushort uuid;
         [FieldOffset(0x2)] public ushort parent;
-        [FieldOffset(0x4)] public byte team;
-        [FieldOffset(0x5)] public byte reserved;
-        [FieldOffset(0x6)] public MPMobyFlags flags;
-        [FieldOffset(0x8)] public ushort oClass;
-        [FieldOffset(0xa)] public ushort level;
-        [FieldOffset(0xc)] public Int32 animationID;
-        [FieldOffset(0x10)] public Int32 animationDuration;
-        [FieldOffset(0x14)] public float x;
-        [FieldOffset(0x18)] public float y;
-        [FieldOffset(0x1c)] public float z;
-        [FieldOffset(0x20)] public float rotation;
+        [FieldOffset(0x4)] public MPMobyFlags mpFlags;
+        [FieldOffset(0x6)] public ushort oClass;
+        [FieldOffset(0x8)] public ushort level;
+        [FieldOffset(0xa)] public Int32 animationID;
+        [FieldOffset(0xe)] public Int32 animationDuration;
+        [FieldOffset(0x12)] public float x;
+        [FieldOffset(0x16)] public float y;
+        [FieldOffset(0x1a)] public float z;
+        [FieldOffset(0x1e)] public float rotX;
+        [FieldOffset(0x22)] public float rotY;
+        [FieldOffset(0x26)] public float rotZ;
+        [FieldOffset(0x2a)] public float scale;
+        [FieldOffset(0x2e)] public byte alpha;
+        [FieldOffset(0x2f)] public sbyte padding;
+        [FieldOffset(0x30)] public ushort modeBits;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -279,9 +283,9 @@ namespace Lawrence
 
             moby_update.uuid = id;
 
-            moby_update.flags |= moby.IsActive() ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
-            moby_update.flags |= moby.collision ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
-            moby_update.flags |= moby.mpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
+            moby_update.mpFlags |= moby.IsActive() ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
+            moby_update.mpFlags |= moby.collision ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
+            moby_update.mpFlags |= moby.mpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
             
             moby_update.parent = (ushort)0; // Parent isn't really used
             moby_update.oClass = (ushort)moby.oClass;
@@ -289,8 +293,14 @@ namespace Lawrence
             moby_update.x = moby.x;
             moby_update.y = moby.y;
             moby_update.z = moby.z;
-            moby_update.rotation = moby.rot;
+            moby_update.rotX = (float)(Math.PI / 180) * moby.rotX;
+            moby_update.rotY = (float)(Math.PI / 180) * moby.rotY;
+            moby_update.rotZ = (float)(Math.PI / 180) * moby.rotZ;
             moby_update.animationID = moby.animationID;
+            moby_update.scale = moby.scale;
+            moby_update.alpha = Math.Min((byte)(moby.alpha * 128), (byte)128);
+            
+            moby_update.modeBits = moby.modeBits;
 
             MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
 

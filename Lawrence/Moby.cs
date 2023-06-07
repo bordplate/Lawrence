@@ -14,17 +14,21 @@ namespace Lawrence
         
         static ushort COLLIDE_TICKS = 10;
 
-        public ushort UUID = 0;
-
         public int oClass = 0;
 
         public float x = 0.0f;
         public float y = 0.0f;
         public float z = 0.0f;
-        public float rot = 0.0f;
+        public float rotX = 0.0f;
+        public float rotY = 0.0f;
+        public float rotZ = 0.0f;
+        public float scale = 1.0f;
+        public float alpha = 1.0f;
 
         public int animationID = 0;
         public int animationDuration = 0;
+
+        public ushort modeBits = 0x10 | 0x20 | 0x400 | 0x4000;
 
         public bool mpUpdateFunc = true;
         public bool collision = true;

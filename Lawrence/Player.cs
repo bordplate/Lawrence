@@ -218,12 +218,14 @@ namespace Lawrence
         {
             // Update this moby if 0, update child moby if not 0
             if (mobyUpdate.uuid == 0) {
-                this.SetActive((mobyUpdate.flags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
+                this.SetActive((mobyUpdate.mpFlags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
 
                 this.x = mobyUpdate.x;
                 this.y = mobyUpdate.y;
                 this.z = mobyUpdate.z;
-                this.rot = mobyUpdate.rotation;
+                this.rotX = mobyUpdate.rotX;
+                this.rotY = mobyUpdate.rotY;
+                this.rotZ = mobyUpdate.rotZ;
                 this.animationID = mobyUpdate.animationID;
                 this.animationDuration = mobyUpdate.animationDuration;
             } else {
