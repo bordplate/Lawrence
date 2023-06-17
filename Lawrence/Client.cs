@@ -68,7 +68,8 @@ namespace Lawrence {
         {
             MPPacketType.MP_PACKET_CONNECT,
             MPPacketType.MP_PACKET_SYN,
-            MPPacketType.MP_PACKET_QUERY_GAME_SERVERS       // Only used in directory mode.
+            MPPacketType.MP_PACKET_QUERY_GAME_SERVERS,       // Only used in directory mode.
+            MPPacketType.MP_PACKET_TIME_SYNC
         };
         
         /// <summary>
@@ -147,6 +148,8 @@ namespace Lawrence {
         }
 
         public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody) {
+            packetHeader.timeSent = (long)Game.Shared().Time();
+    
             var bodyLen = 0;
             if (packetBody != null) {
                 bodyLen = packetBody.Length;
@@ -265,15 +268,37 @@ namespace Lawrence {
                         }
                         break;
                     }
-                case MPPacketType.MP_PACKET_ACK:
-                    foreach (var unacked in this.unacked.ToArray()) {
-                        if (unacked.ackCycle == packetHeader.ackCycle && unacked.ackIndex == packetHeader.requiresAck) {
-                            this.unacked.Remove(unacked);
+                    case MPPacketType.MP_PACKET_ACK:
+                        foreach (var unacked in this.unacked.ToArray()) {
+                            if (unacked.ackCycle == packetHeader.ackCycle &&
+                                unacked.ackIndex == packetHeader.requiresAck) {
+                                this.unacked.Remove(unacked);
+                                break;
+                            }
                         }
+
+                        break;
+                    case MPPacketType.MP_PACKET_TIME_SYNC: {
+                        MPPacketTimeResponse response = new MPPacketTimeResponse() {
+                            clientSendTime = (ulong)packetHeader.timeSent,
+                            serverSendTime = Game.Shared().Time()
+                        };
+
+                        MPPacketHeader header = new MPPacketHeader {
+                            ptype = MPPacketType.MP_PACKET_ACK,
+                            size = (uint)Marshal.SizeOf<MPPacketTimeResponse>(),
+                            requiresAck = packetHeader.requiresAck,
+                            ackCycle = packetHeader.ackCycle
+                        };
+
+                        SendPacket(header,
+                            Packet.StructToBytes<MPPacketTimeResponse>(response, Packet.Endianness.BigEndian));
+
+                        break;
                     }
-                    break;
-                case MPPacketType.MP_PACKET_MOBY_UPDATE: {
-                        MPPacketMobyUpdate update = Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, Packet.Endianness.BigEndian);
+                    case MPPacketType.MP_PACKET_MOBY_UPDATE: {
+                        MPPacketMobyUpdate update =
+                            Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, Packet.Endianness.BigEndian);
 
                         _clientHandler.UpdateMoby(update);
 
@@ -371,7 +396,7 @@ namespace Lawrence {
                 return;
             }
 
-            long timeNow = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            long timeNow = (long)Game.Shared().Time();
 
             this.lastContact = timeNow / 1000;
 

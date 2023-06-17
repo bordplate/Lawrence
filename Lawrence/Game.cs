@@ -21,6 +21,8 @@ namespace Lawrence
         private List<Mod> mods = new List<Mod>();
 
         private long _ticks = 0;
+        private ulong _time = 0;
+        private ulong _deltaTime = 0;
 
         public Game() {
             modsFolders = Directory.GetDirectories("mods/");
@@ -171,7 +173,22 @@ namespace Lawrence
 			return Game.SharedGame;
 		}
 
+        public ulong Time() {
+            return _time;
+        }
+
+        public ulong DeltaTime() {
+            return _deltaTime;
+        }
+
         public void Tick() {
+            DateTimeOffset unixEpoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            TimeSpan timeSinceEpoch = DateTimeOffset.UtcNow - unixEpoch;
+            ulong time = (ulong)timeSinceEpoch.TotalMilliseconds;
+
+            _deltaTime = time - _time;
+            _time = time;
+            
             _ticks += 1;
             
             NotificationCenter().Post<TickNotification>(new TickNotification());

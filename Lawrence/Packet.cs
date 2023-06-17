@@ -54,15 +54,15 @@ namespace Lawrence
         MP_CONTROLLER_FLAGS_HELD = 0x2,
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketHeader
     {
-        [FieldOffset(0x0)] public MPPacketType ptype;
-        [FieldOffset(0x2)] public MPPacketFlags flags;
-        [FieldOffset(0x4)] public UInt32 size;
-        [FieldOffset(0x8)] public byte requiresAck;
-        [FieldOffset(0x9)] public byte ackCycle;
-        [FieldOffset(0xb)] public byte pad;
+        public MPPacketType ptype;
+        public MPPacketFlags flags;
+        public UInt32 size;
+        public long timeSent;
+        public byte requiresAck;
+        public byte ackCycle;
     }
 
     [StructLayout(LayoutKind.Explicit)]
