@@ -66,6 +66,8 @@ namespace Lawrence
         }
 
         public virtual void OnDeleteEntity(DeleteEntityNotification notification) {
+            if (notification.Entity == this)
+                return;
             Remove(notification.Entity);
         }
 

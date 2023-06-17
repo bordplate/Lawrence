@@ -137,7 +137,9 @@ namespace Lawrence
 
         public override void OnDeleteEntity(DeleteEntityNotification notification) {
             if (notification.Entity is Moby moby) {
-                _client.DeleteMoby(moby);
+                if (_client.HasMoby(moby)) {
+                    _client.DeleteMoby(moby);
+                }
             }
 
             base.OnDeleteEntity(notification);

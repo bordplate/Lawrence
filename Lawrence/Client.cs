@@ -564,6 +564,8 @@ namespace Lawrence {
     
     #region Handling Mobys
     partial class Client {
+        private ushort lastDeletedId = 0;
+        
         private struct MobyData {
             public Guid Id;
             public long LastUpdate;
@@ -592,7 +594,7 @@ namespace Lawrence {
 
             // Find next available ID
             for (ushort i = 1; i <= ushort.MaxValue; i++) {
-                if (!_mobys.ContainsKey(i)) {
+                if (!_mobys.ContainsKey(i) && lastDeletedId != i) {
                     _mobysTable[moby.GUID()] = i;
                     return i;
                 }
@@ -609,7 +611,7 @@ namespace Lawrence {
 
             // Check if Moby is stale.
             long currentTicks = Game.Shared().Ticks();
-            if (mobyData.LastUpdate < currentTicks - 10) {
+            if (mobyData.LastUpdate < currentTicks - 120) {
                 // Moby is stale, delete it and return null.
                 DeleteMoby(mobyData.MobyRef);
                 return null;
@@ -617,6 +619,10 @@ namespace Lawrence {
 
             // Moby is not stale, return it.
             return mobyData.MobyRef;
+        }
+
+        public bool HasMoby(Moby moby) {
+            return _mobysTable.TryGetValue(moby.GUID(), out _);
         }
 
         public void CleanupStaleMobys() {
@@ -638,8 +644,9 @@ namespace Lawrence {
                 // And remove it from our dictionaries
                 _mobys.TryRemove(internalId, out _);
                 _mobysTable.TryRemove(moby.GUID(), out _);
+                lastDeletedId = internalId;
             } else {
-                Logger.Error($"Trying to delete a moby which does not exist: {moby.GUID()}");
+                Logger.Error($"Trying to delete a moby that does not exist: {moby.GUID()}");
             }
         }
     }
