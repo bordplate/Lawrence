@@ -43,8 +43,16 @@ namespace Lawrence {
         }
     }
 
+    public class PreTickNotification : Notification {
+        public PreTickNotification() : base("PreTick") { }
+    }
+
     public class TickNotification : Notification {
         public TickNotification() : base("Tick") { }
+    }
+
+    public class PostTickNotification : Notification {
+        public PostTickNotification() : base("PostTick") { }
     }
 
     /// <summary>

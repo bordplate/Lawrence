@@ -190,8 +190,10 @@ namespace Lawrence
             _time = time;
             
             _ticks += 1;
-            
-            NotificationCenter().Post<TickNotification>(new TickNotification());
+
+            NotificationCenter().Post(new PreTickNotification());
+            NotificationCenter().Post(new TickNotification());
+            NotificationCenter().Post(new PostTickNotification());
         }
 
         /// <summary>

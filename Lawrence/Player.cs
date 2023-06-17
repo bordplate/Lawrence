@@ -14,6 +14,8 @@ namespace Lawrence
             _client.SetHandler(this);
 
             InitializeInteralLuaEntity();
+            
+            Game.Shared().NotificationCenter().Subscribe<PostTickNotification>(OnPostTick);
         }
 
         public override void Delete() {
@@ -24,6 +26,8 @@ namespace Lawrence
             }
 
             base.Delete();
+            
+            Game.Shared().NotificationCenter().Unsubscribe<PostTickNotification>(OnPostTick);
         }
     }
 
@@ -75,6 +79,12 @@ namespace Lawrence
     #region Notification
     partial class Player { 
         public override void OnTick(TickNotification notification) {
+            _client.Tick();
+
+            base.OnTick(notification);
+        }
+
+        public void OnPostTick(PostTickNotification notification) {
             // Check if this client is still alive
             if (_client.IsDisconnected()) {
                 Delete();
@@ -129,10 +139,6 @@ namespace Lawrence
                 
                 Update(moby);
             }
-            
-            _client.Tick();
-
-            base.OnTick(notification);
         }
 
         public override void OnDeleteEntity(DeleteEntityNotification notification) {
