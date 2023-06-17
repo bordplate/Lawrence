@@ -9,6 +9,23 @@ namespace Lawrence
     /// </summary>
     public partial class Player : Moby {
         private readonly Client _client;
+
+        public override float x {
+            get { return _x; }
+            set { base.x = value; _client.SendPacket(Packet.MakeSetPositionPacket(0, value)); }
+        }
+
+        public override float y {
+            get { return _y; }
+            set { base.y = value; _client.SendPacket(Packet.MakeSetPositionPacket(1, value)); }
+        }
+
+        public override float z {
+            get { return _z; }
+            set { base.z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
+        }
+
+
         public Player(Client client) {
             _client = client;
             _client.SetHandler(this);
@@ -126,12 +143,12 @@ namespace Lawrence
             } while (!visibilityGroup.MasksVisibility());
 
             foreach (Moby moby in visibilityGroup.Find<Moby>()) {
-                if (moby.IsInstanced() && !moby.HasParent(this)) {
+                if (!moby.HasChanged || (moby.IsInstanced() && !moby.HasParent(this))) {
                     continue;
                 }
 
                 float mobyDistance = DistanceTo(moby);
-                if (mobyDistance > 5) {
+                if (mobyDistance > 10) {
                     if (Game.Shared().Ticks() % (int)(Math.Max(1, mobyDistance / 10)) != 0) {
                         continue;
                     }
@@ -235,9 +252,13 @@ namespace Lawrence
             if (mobyUpdate.uuid == 0) {
                 this.SetActive((mobyUpdate.mpFlags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
 
-                this.x = mobyUpdate.x;
-                this.y = mobyUpdate.y;
-                this.z = mobyUpdate.z;
+                if (mobyUpdate.x != _x || mobyUpdate.y != _y || mobyUpdate.z != _z) {
+                    HasChanged = true;
+                }
+                
+                this._x = mobyUpdate.x;
+                this._y = mobyUpdate.y;
+                this._z = mobyUpdate.z;
                 this.rotX = (float)(180 / Math.PI) * mobyUpdate.rotX;
                 this.rotY = (float)(180 / Math.PI) * mobyUpdate.rotY;
                 this.rotZ = (float)(180 / Math.PI) * mobyUpdate.rotZ;

@@ -13,31 +13,64 @@ namespace Lawrence
         protected Level _level;
         
         static ushort COLLIDE_TICKS = 10;
+        
+        private int _oClass = 0;
+        public int oClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
+        
+        protected float _x = 0.0f;
+        public virtual float x { get => _x; set { if (_x != value) { _x = value; HasChanged = true; } } }
+        
+        protected float _y = 0.0f;
+        public virtual float y { get => _y; set { if (_y != value) { _y = value; HasChanged = true; } } }
+        
+        protected float _z = 0.0f;
+        public virtual float z { get => _z; set { if (_z != value) { _z = value; HasChanged = true; } } }
+        
+        private float _rotX = 0.0f;
+        public float rotX { get => _rotX; set { if (_rotX != value) { _rotX = value; HasChanged = true; } } }
+        
+        private float _rotY = 0.0f;
+        public float rotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
+        
+        private float _rotZ = 0.0f;
+        public float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
+        
+        private float _scale = 1.0f;
+        public float scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
+        
+        private float _alpha = 1.0f;
+        public float alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
 
-        public int oClass = 0;
+        private int _animationID = 0;
+        public int animationID { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
+        
+        private int _animationDuration = 0;
+        public int animationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }
+        
+        private ushort _modeBits = 0x10 | 0x20 | 0x400 | 0x4000;
+        public ushort modeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
 
-        public float x = 0.0f;
-        public float y = 0.0f;
-        public float z = 0.0f;
-        public float rotX = 0.0f;
-        public float rotY = 0.0f;
-        public float rotZ = 0.0f;
-        public float scale = 1.0f;
-        public float alpha = 1.0f;
+        public bool HasChanged { get; protected set; } = false;
 
-        public int animationID = 0;
-        public int animationDuration = 0;
+        public void ResetChanged()
+        {
+            HasChanged = false;
+        }
 
-        public ushort modeBits = 0x10 | 0x20 | 0x400 | 0x4000;
 
         public bool mpUpdateFunc = true;
         public bool collision = true;
 
         Dictionary<Moby, ushort> colliders = new Dictionary<Moby, ushort>();
 
-        public Moby(LuaTable luaTable = null) : base(luaTable)
-        {
+        public Moby(LuaTable luaTable = null) : base(luaTable) {
+            Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);
+        }
+
+        public override void Delete() {
+            base.Delete();
             
+            Game.Shared().NotificationCenter().Unsubscribe<PreTickNotification>(OnPreTick);
         }
         
         public Level Level() {
@@ -117,8 +150,30 @@ namespace Lawrence
             }
         }
 
-        public float DistanceTo(Moby moby)
-        {
+
+        public void OnPreTick(PreTickNotification notification) {
+            if (Game.Shared().Ticks() % 60 == 0) {
+                // Force sending updates every 60 ticks
+                HasChanged = true;
+            }
+            else {
+                ResetChanged();
+            }
+        }
+
+        public float DistanceTo(object mobyObject) {
+            Moby moby;
+            
+            if (mobyObject is LuaTable) {
+                moby = (Moby)(((LuaTable)mobyObject)["_internalEntity"]);
+            }
+            else if (mobyObject is Moby) {
+                moby = (Moby)mobyObject;
+            }
+            else {
+                throw new Exception("Invalid object type for mobyObject in DistanceTo");
+            }
+            
             float xDiff = this.x - moby.x;
             float yDiff = this.y - moby.y;
             float zDiff = this.z - moby.z;
