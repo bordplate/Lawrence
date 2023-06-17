@@ -248,7 +248,6 @@ namespace Lawrence
             //text.ToList().CopyTo(buffer, Marshal.SizeOf(hudText));
             Encoding.ASCII.GetBytes(text).CopyTo(buffer, Marshal.SizeOf(hudText));
             
-
             return (header, buffer);
         }
 
@@ -321,6 +320,8 @@ namespace Lawrence
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
 
             MPPacketSetState destinationPlanetState = new MPPacketSetState();
             destinationPlanetState.stateType = MPStateType.MP_STATE_TYPE_PLANET;
@@ -370,6 +371,8 @@ namespace Lawrence
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
 
             MPPacketSetState setItemState = new MPPacketSetState();
             setItemState.stateType = MPStateType.MP_STATE_TYPE_ITEM;

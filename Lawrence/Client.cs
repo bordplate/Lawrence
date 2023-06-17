@@ -300,8 +300,6 @@ namespace Lawrence {
                             handshakeCompleted = true;
 
                             SendPacket(Packet.MakeAckPacket());
-                        } else {
-                            SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
                         }
                         else {
                             SendPacket(
