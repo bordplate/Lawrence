@@ -112,20 +112,20 @@ namespace Lawrence
         [FieldOffset(0x10)] public float z;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketSetState
     {
-        [FieldOffset(0x0)] public MPStateType stateType;
-        [FieldOffset(0x4)] public uint offset;
-        [FieldOffset(0x8)] public uint value;
+        public MPStateType stateType;
+        public uint offset;
+        public uint value;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketSetStateFloat
     {
-        [FieldOffset(0x0)] public MPStateType stateType;
-        [FieldOffset(0x4)] public uint offset;
-        [FieldOffset(0x8)] public float value;
+        public MPStateType stateType;
+        public uint offset;
+        public float value;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -379,6 +379,61 @@ namespace Lawrence
             header.size = (uint)size;
 
             return (header, StructToBytes<MPPacketSetState>(setItemState, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeSetPositionPacket(ushort property, float position) {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetStateFloat setPositionState = new MPPacketSetStateFloat();
+            setPositionState.stateType = MPStateType.MP_STATE_TYPE_POSITION;
+
+            setPositionState.offset = property;
+            setPositionState.value = position;
+
+            header.size = (uint)Marshal.SizeOf(setPositionState);
+
+            return (header, StructToBytes(setPositionState, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeSetRespawnPacket(float x, float y, float z, float rotationZ) {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetStateFloat setRespawnX = new MPPacketSetStateFloat();
+            setRespawnX.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
+            setRespawnX.offset = 0;
+            setRespawnX.value = x;
+            
+            MPPacketSetStateFloat setRespawnY = new MPPacketSetStateFloat();
+            setRespawnY.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
+            setRespawnY.offset = 1;
+            setRespawnY.value = y;
+
+            MPPacketSetStateFloat setRespawnZ = new MPPacketSetStateFloat();
+            setRespawnZ.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
+            setRespawnZ.offset = 2;
+            setRespawnZ.value = z;
+            
+            MPPacketSetStateFloat setRespawnRotZ = new MPPacketSetStateFloat();
+            setRespawnRotZ.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
+            setRespawnRotZ.offset = 5;
+            setRespawnRotZ.value = rotationZ;
+            
+            List<byte> bytes = new List<byte>();
+            
+            bytes.AddRange(StructToBytes(setRespawnX, Endianness.BigEndian));
+            bytes.AddRange(StructToBytes(setRespawnY, Endianness.BigEndian));
+            bytes.AddRange(StructToBytes(setRespawnZ, Endianness.BigEndian));
+            bytes.AddRange(StructToBytes(setRespawnRotZ, Endianness.BigEndian));
+
+            header.size = (uint)bytes.Count;
+            
+            return (header, bytes.ToArray());
         }
 
         public static byte[] headerToBytes(MPPacketHeader header)

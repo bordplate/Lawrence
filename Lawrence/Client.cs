@@ -58,6 +58,7 @@ namespace Lawrence {
         abstract void ControllerInputReleased(ControllerInput input);
         abstract void Delete();
         abstract Moby Moby();
+        abstract void PlayerRespawned();
     }
 
     public partial class Client {

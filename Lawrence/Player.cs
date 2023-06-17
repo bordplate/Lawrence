@@ -90,6 +90,10 @@ namespace Lawrence
         public void GiveItem(ushort item) {
             SendPacket(Packet.MakeSetItemPacket(item, true));
         }
+
+        public void SetRespawn(float x, float y, float z, float rotationZ) {
+            SendPacket(Packet.MakeSetRespawnPacket(x, y, z, rotationZ));
+        }
     }
     #endregion
 
@@ -274,6 +278,10 @@ namespace Lawrence
 
         public Moby Moby() {
             return this;
+        }
+
+        public void PlayerRespawned() {
+            CallLuaFunction("OnRespawned", LuaEntity());
         }
     }
     #endregion
