@@ -23,7 +23,9 @@ namespace Lawrence
         MP_PACKET_SET_STATE = 10,
         MP_PACKET_SET_HUD_TEXT = 11,
         MP_PACKET_QUERY_GAME_SERVERS = 12,
-        MP_PACKET_CONTROLLER_INPUT = 13
+        MP_PACKET_CONTROLLER_INPUT = 13,
+        MP_PACKET_TIME_SYNC = 14,
+        MP_PACKET_PLAYER_RESPAWNED = 15,
     }
 
     public enum MPStateType : uint
@@ -33,7 +35,8 @@ namespace Lawrence
         MP_STATE_TYPE_POSITION = 3,
         MP_STATE_TYPE_PLANET = 4,
         MP_STATE_TYPE_GAME = 5,
-        MP_STATE_TYPE_ITEM = 6
+        MP_STATE_TYPE_ITEM = 6,
+        MP_STATE_TYPE_SET_RESPAWN = 7
     }
 
     public enum MPPacketFlags : ushort
@@ -152,6 +155,12 @@ namespace Lawrence
     {
         [FieldOffset(0x0)] public ushort input;
         [FieldOffset(0x2)] public MPControllerInputFlags flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack =  1)]
+    public struct MPPacketTimeResponse {
+        public ulong clientSendTime;
+        public ulong serverSendTime;
     }
 
 
