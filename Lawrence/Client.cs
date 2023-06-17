@@ -146,6 +146,9 @@ namespace Lawrence {
 
             return (++ackIndex, ackCycle);
         }
+        
+        private List<byte> buffer = new List<byte>();
+        private const int bufferSize = 1024;
 
         public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody) {
             packetHeader.timeSent = (long)Game.Shared().Time();
@@ -172,6 +175,7 @@ namespace Lawrence {
                 if (ack.ackCycle != packetHeader.ackCycle) {
                     ack.ackCycle = packetHeader.ackCycle;
                     ack.packet = packet;
+                    ack.resendTimer = 120;
                 }
 
                 acked[packetHeader.requiresAck] = ack;
@@ -187,7 +191,21 @@ namespace Lawrence {
                 unacked.Add(new AckedMetadata { packet = packet, ackIndex = packetHeader.requiresAck, ackCycle = packetHeader.ackCycle, resendTimer = 30, timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds() });
             }
 
-            Lawrence.SendTo(packet, endpoint);
+            // Add packet to buffer
+            buffer.AddRange(packet);
+
+            // Check if buffer size reached
+            if (buffer.Count >= bufferSize) {
+                // Send the buffer
+                Flush();
+            }
+        }
+        
+        public void Flush() {
+            if (buffer.Count > 0) {
+                Lawrence.SendTo(buffer.ToArray(), endpoint);
+                buffer.Clear();
+            }
         }
 
         public void SendPacket((MPPacketHeader packetHeader, byte[] packetBody) packet) {
@@ -198,67 +216,85 @@ namespace Lawrence {
 
         // Parse and process a packet
         public void ParsePacket(byte[] packet) {
-            // Start out by reading the header
-            MPPacketHeader packetHeader = Packet.makeHeader(packet.Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
-            byte[] packetBody = packet.Skip(Marshal.SizeOf<MPPacketHeader>()).Take((int)packetHeader.size).ToArray();
+            int index = 0;
 
-            // Check if handshake is complete, otherwise start completing it. 
+            while (index < packet.Length && packet.Length - index >= Marshal.SizeOf<MPPacketHeader>()) {
+                // Start out by reading the header
+                MPPacketHeader packetHeader =
+                    Packet.makeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
+                index += Marshal.SizeOf<MPPacketHeader>();
 
-            // TODO: Implement some sort of protection against anyone spoofing others.
-            //       Ideally the handshake should start a session that the client can
-            //          easily use to identify itself. Ideally without much computational
-            //          overhead. 
-            if ((!handshakeCompleted || WaitingToConnect) && !_allowedAnonymous.Contains(packetHeader.ptype)) {
-                // Client has sent a packet that is not a handshake packet.
-                // We tell the client we don't know it and it should reset state and
-                // start handshake. 
-                SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_IDKU }, null);
-                return;
-            }
-
-            // Get size of packet body 
-            var packetSize = 0;
-            if (packetHeader.size > 0 && packetHeader.size < 1024 * 8) {
-                packetSize = (int)packetHeader.size;
-            }
-
-            // If this packet requires ack and is not RPC, we send ack before processing.
-            // If this is RPC we only send ack here if a previous ack has been sent and cached.
-            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) { // We don't ack ack messages
-                // If this is an RPC packet and we've already processed and cached it, we use the cached response. 
-                if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 && acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle) {
-                    Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
-                } else if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) { // If it's not RPC, we just ack the packet and process the packet
-                    MPPacketHeader ack = new MPPacketHeader {
-                        ptype = MPPacketType.MP_PACKET_ACK,
-                        flags = 0,
-                        size = 0,
-                        requiresAck = packetHeader.requiresAck,
-                        ackCycle = packetHeader.ackCycle
-                    };
-
-                    SendPacket(ack, null);
+                if (packetHeader.size > packet.Length - index) {
+                    Logger.Log("Bad packet");
+                    //throw new Exception("Bad packet");
                 }
-            }
-            
-            switch (packetHeader.ptype) {
-                case MPPacketType.MP_PACKET_CONNECT: {
-                    Game.Shared().OnPlayerConnect(this);
+                
+                byte[] packetBody = packet.Skip(index).Take((int)packetHeader.size)
+                    .ToArray();
 
-                    WaitingToConnect = false;
+                index += (int)packetHeader.size;
 
-                    Logger.Log("New player connected!");
-                    
-                    break;
+                // Check if handshake is complete, otherwise start completing it. 
+
+                // TODO: Implement some sort of protection against anyone spoofing others.
+                //       Ideally the handshake should start a session that the client can
+                //          easily use to identify itself. Ideally without much computational
+                //          overhead. 
+                if ((!handshakeCompleted || WaitingToConnect) && !_allowedAnonymous.Contains(packetHeader.ptype)) {
+                    // Client has sent a packet that is not a handshake packet.
+                    // We tell the client we don't know it and it should reset state and
+                    // start handshake. 
+                    SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_IDKU }, null);
+                    return;
                 }
-                case MPPacketType.MP_PACKET_DISCONNECTED: {
-                    Disconnect();
-                    
-                    Logger.Log("Player disconnected.");
-                    
-                    break;
+
+                // Get size of packet body 
+                var packetSize = 0;
+                if (packetHeader.size > 0 && packetHeader.size < 1024 * 8) {
+                    packetSize = (int)packetHeader.size;
                 }
-                case MPPacketType.MP_PACKET_SYN: {
+
+                // If this packet requires ack and is not RPC, we send ack before processing.
+                // If this is RPC we only send ack here if a previous ack has been sent and cached.
+                if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) {
+                    // We don't ack ack messages
+                    // If this is an RPC packet and we've already processed and cached it, we use the cached response. 
+                    if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 &&
+                        acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle) {
+                        Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
+                    }
+                    else if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) {
+                        // If it's not RPC, we just ack the packet and process the packet
+                        MPPacketHeader ack = new MPPacketHeader {
+                            ptype = MPPacketType.MP_PACKET_ACK,
+                            flags = 0,
+                            size = 0,
+                            requiresAck = packetHeader.requiresAck,
+                            ackCycle = packetHeader.ackCycle
+                        };
+
+                        SendPacket(ack, null);
+                    }
+                }
+
+                switch (packetHeader.ptype) {
+                    case MPPacketType.MP_PACKET_CONNECT: {
+                        Game.Shared().OnPlayerConnect(this);
+
+                        WaitingToConnect = false;
+
+                        Logger.Log("New player connected!");
+
+                        break;
+                    }
+                    case MPPacketType.MP_PACKET_DISCONNECTED: {
+                        Disconnect();
+
+                        Logger.Log("Player disconnected.");
+
+                        break;
+                    }
+                    case MPPacketType.MP_PACKET_SYN: {
                         if (!handshakeCompleted) {
                             handshakeCompleted = true;
 
@@ -266,6 +302,12 @@ namespace Lawrence {
                         } else {
                             SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
                         }
+                        else {
+                            SendPacket(
+                                new MPPacketHeader
+                                    { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
+                        }
+
                         break;
                     }
                     case MPPacketType.MP_PACKET_ACK:
@@ -304,7 +346,7 @@ namespace Lawrence {
 
                         break;
                     }
-                case MPPacketType.MP_PACKET_MOBY_CREATE: {
+                    case MPPacketType.MP_PACKET_MOBY_CREATE: {
                         uint createdUUID = _clientHandler.CreateMoby();
 
                         MPPacketMobyCreate createPacket = new MPPacketMobyCreate {
@@ -321,17 +363,19 @@ namespace Lawrence {
 
                         Logger.Log($"Player({this.ID}) created moby (uuid: {createdUUID})");
 
-                        SendPacket(header, Packet.StructToBytes<MPPacketMobyCreate>(createPacket, Packet.Endianness.BigEndian));
+                        SendPacket(header,
+                            Packet.StructToBytes<MPPacketMobyCreate>(createPacket, Packet.Endianness.BigEndian));
 
                         break;
                     }
-                case MPPacketType.MP_PACKET_MOBY_COLLISION: {
-                        MPPacketMobyCollision collision = Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, Packet.Endianness.BigEndian);
+                    case MPPacketType.MP_PACKET_MOBY_COLLISION: {
+                        MPPacketMobyCollision collision =
+                            Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, Packet.Endianness.BigEndian);
 
                         Moby collider = collision.uuid == 0
                             ? _clientHandler.Moby()
                             : GetMobyByInternalId(collision.uuid);
-                        
+
                         Moby collidee = collision.collidedWith == 0
                             ? _clientHandler.Moby()
                             : GetMobyByInternalId(collision.collidedWith);
@@ -339,8 +383,9 @@ namespace Lawrence {
                         _clientHandler.Collision(collider, collidee, collision.flags > 0);
                         break;
                     }
-                case MPPacketType.MP_PACKET_SET_STATE: {
-                        MPPacketSetState state = Packet.BytesToStruct<MPPacketSetState>(packetBody, Packet.Endianness.BigEndian);
+                    case MPPacketType.MP_PACKET_SET_STATE: {
+                        MPPacketSetState state =
+                            Packet.BytesToStruct<MPPacketSetState>(packetBody, Packet.Endianness.BigEndian);
 
                         if (state.stateType == MPStateType.MP_STATE_TYPE_GAME) {
                             gameState = (GameState)state.value;
@@ -351,23 +396,25 @@ namespace Lawrence {
 
                         break;
                     }
-                case MPPacketType.MP_PACKET_QUERY_GAME_SERVERS: {
+                    case MPPacketType.MP_PACKET_QUERY_GAME_SERVERS: {
                         if (Lawrence.DirectoryMode()) {
                             List<Server> servers = Lawrence.Directory().Servers();
 
-                            SendPacket(Packet.MakeQuerySerserResponsePacket(servers, packetHeader.requiresAck, packetHeader.ackCycle));
-                        } else {
-                            Logger.Error($"(Player {ID}) tried to query us as directory, but we're not a directory server.");
+                            SendPacket(Packet.MakeQuerySerserResponsePacket(servers, packetHeader.requiresAck,
+                                packetHeader.ackCycle));
                         }
-
-                        Disconnect();
+                        else {
+                            Logger.Error(
+                                $"(Player {ID}) tried to query us as directory, but we're not a directory server.");
+                        }
 
                         break;
                     }
-                case MPPacketType.MP_PACKET_CONTROLLER_INPUT: {
+                    case MPPacketType.MP_PACKET_CONTROLLER_INPUT: {
                         // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons. 
 
-                        MPPacketControllerInput input = Packet.BytesToStruct<MPPacketControllerInput>(packetBody, Packet.Endianness.BigEndian);
+                        MPPacketControllerInput input =
+                            Packet.BytesToStruct<MPPacketControllerInput>(packetBody, Packet.Endianness.BigEndian);
                         if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
                             _clientHandler.ControllerInputTapped((ControllerInput)input.input);
                         }
@@ -380,16 +427,22 @@ namespace Lawrence {
 
                         break;
                     }
-                default: {
-                        Logger.Error($"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.ptype} with size: {packetSize}.");
+                    case MPPacketType.MP_PACKET_PLAYER_RESPAWNED: {
+                        _clientHandler.PlayerRespawned();
                         break;
                     }
+                    default: {
+                        Logger.Error(
+                            $"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.ptype} with size: {packetSize}.");
+                        break;
+                    }
+                }
             }
         }
 
         Mutex recvLock;
         bool resetBuffer = false;
-        List<byte[]> recvBuffer = new List<byte[]>(100);
+        List<byte[]> recvBuffer = new List<byte[]>(400);
         Dictionary<uint, long> lastHashes = new Dictionary<uint, long>(10);
         public void ReceiveData(byte[] data) {
             if (disconnected) {
@@ -428,8 +481,8 @@ namespace Lawrence {
 
             recvLock.ReleaseMutex();
 
-            if (recvBuffer.Count > 99) {
-                recvBuffer = new List<byte[]>(100);
+            if (recvBuffer.Count > 399) {
+                recvBuffer = new List<byte[]>(400);
             }
         }
 
@@ -459,6 +512,8 @@ namespace Lawrence {
                 return;
             }
 
+            Flush();
+
             var packets = DrainPackets();
             if (packets != null) {
                 foreach (var packet in packets) {
@@ -482,8 +537,8 @@ namespace Lawrence {
                         Console.WriteLine($"Player {ID} has stale packet they never ack. Can this client please ack this packet?");
                     }
 
-                    Lawrence.SendTo(unacked.packet, endpoint);
-                    _unacked.resendTimer = 10;
+                    buffer.AddRange(_unacked.packet);
+                    _unacked.resendTimer = 60;
                 }
 
                 this.unacked[index] = _unacked;
