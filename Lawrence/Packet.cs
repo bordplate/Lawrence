@@ -128,16 +128,17 @@ namespace Lawrence
         [FieldOffset(0x8)] public float value;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketSetHUDText
     {
-        [FieldOffset(0x0)] public ushort id;
-        [FieldOffset(0x2)] public ushort x;
-        [FieldOffset(0x4)] public ushort y;
-        [FieldOffset(0x6)] public ushort flags;
-        [FieldOffset(0x8)] public uint color;
-        [FieldOffset(0xc)] public ushort box_height;
-        [FieldOffset(0x10)] public ushort box_width;
+        public ushort id;
+        public ushort x;
+        public ushort y;
+        public ushort flags;
+        public uint color;
+        public ushort box_height;
+        public ushort box_width;
+        public float size;
     }
 
     [StructLayout(LayoutKind.Explicit)]

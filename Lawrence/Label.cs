@@ -11,16 +11,30 @@ public class Label : Entity {
     private ushort _y = 0;
 
     private uint _color = 0;
+    public bool HasChanged { get; private set; }
 
-    private uint _hash = 0;
-    
-    public Label(LuaTable luaTable, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888) : base(luaTable) {
+    public Label(LuaTable luaTable, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888) :
+        base(luaTable) {
         _text = text;
         _x = x;
         _y = y;
         _color = color;
 
-        ComputeHash();
+        HasChanged = true;
+
+        Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);
+    }
+
+    ~Label() {
+        Game.Shared().NotificationCenter().Unsubscribe<PreTickNotification>(OnPreTick);
+    }
+
+    public void OnPreTick(PreTickNotification notification) {
+        HasChanged = false;
+    }
+
+    public void ForceSetChanged() {
+        HasChanged = true;
     }
 
     public string Text() {
@@ -39,34 +53,22 @@ public class Label : Entity {
         return _color;
     }
 
-    /// <summary>
-    /// The hash changes when the label is updated, so that we can remove redundant updates to labels that haven't updated
-    /// </summary>
-    /// <returns></returns>
-    public uint Hash() {
-        return _hash;
-    }
-
-    private void ComputeHash() {
-        _hash = Crc32Algorithm.Compute(Encoding.ASCII.GetBytes($"{_x}{_y}{_color}{_text}"));
-    }
-
     public void SetPosition(ushort x, ushort y) {
+        HasChanged = (_x != x || _y != y);
+
         _x = x;
         _y = y;
-        
-        ComputeHash();
     }
 
     public void SetText(string text) {
+        HasChanged = !_text.Equals(text);
+
         _text = text;
-        
-        ComputeHash();
     }
 
     public void SetColor(uint color) {
+        HasChanged = _color != color;
+
         _color = color;
-        
-        ComputeHash();
     }
 }

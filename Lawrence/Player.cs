@@ -36,9 +36,9 @@ namespace Lawrence
         }
 
         public override void Delete() {
-            foreach ((Label, uint) labelTuple in _labels) {
-                if (labelTuple.Item1 != null) {
-                    labelTuple.Item1.Delete();
+            foreach (Label label in _labels) {
+                if (label != null) {
+                    label.Delete();
                 }
             }
 
@@ -285,7 +285,7 @@ namespace Lawrence
         /// Tuple where first item is the Label object, and the second is the hash we registered last tick. We use the hash
         ///     to only send updates to the user when we know something about the Label has updated. 
         /// </summary>
-        private List<(Label, uint)> _labels = new List<(Label, uint)>();
+        private List<Label> _labels = new ();
 
         /// <summary>
         /// Adds a label to the player's screen.
@@ -295,32 +295,33 @@ namespace Lawrence
             // We loop through to check that we don't have that label or a label with the same hash already.
             // This mitigates issues if someone e.g. tries to add labels every tick, which can happen and be hard to debug
             //  for beginners.
-            foreach ((Label, uint) labelTuple in _labels) {
-                if (label == labelTuple.Item1 || label.Hash() == labelTuple.Item2) {
+            foreach (var _label in _labels) {
+                if (_label == label) {
                     return;
                 }
             }
 
-            // Register first empty index with null label with a hash of 0 to guarantee it's sent to the player next tick
+            // Register first empty index with null label and force set HasChanged to guarantee it's sent to the player next tick
             for (int i = 0; i < _labels.Count; i++) {
-                if (_labels[i].Item1 == null) {
-                    _labels[i] = (label, 0);
+                if (_labels[i] == null) {
+                    label.ForceSetChanged();
+                    _labels[i] = label;
                     return;
                 }
             }
             
             // If it didn't return above, we just allocate more space for a new label
-            _labels.Add((label, 0));
+            _labels.Add(label);
         }
 
         /// <summary>
         /// Removes all the labels from the player's screen.
         /// </summary>
         public void RemoveAllLabels() {
-            _labels = new List<(Label, uint)>();
+            _labels = new List<Label>();
             
             for (int i = 0; i < _labels.Count; i++) {
-                RemoveLabel(_labels[i].Item1);
+                RemoveLabel(_labels[i]);
             }
         }
 
@@ -330,12 +331,12 @@ namespace Lawrence
         /// <param name="label">Label to remove</param>
         public override void RemoveLabel(Label label) {
             for (int i = 0; i < _labels.Count; i++) {
-                if (_labels[i].Item1 == null) {
+                if (_labels[i] == null) {
                     continue;
                 }
                 
-                if (_labels[i].Item1.Hash() == label.Hash()) {
-                    _labels[i] = (null, 0);
+                if (_labels[i] == label) {
+                    _labels[i] = null;
                     
                     SendPacket(Packet.MakeDeleteHUDTextPacket((ushort)i));
                 }
@@ -347,17 +348,18 @@ namespace Lawrence
         /// </summary>
         private void UpdateLabels() {
             for (int i = 0; i < _labels.Count; i++) {
-                Label label = _labels[i].Item1;
+                Label label = _labels[i];
 
                 if (label == null) {
                     continue;
                 }
 
                 // Continue if the label hasn't been updated
-                if (_labels[i].Item2 == label.Hash()) {
+                // But we force resend every 1 second in case a client missed our call. 
+                if (!label.HasChanged && Game.Shared().Ticks() % 60 != 0) {
                     continue;
                 }
-                
+
                 SendPacket(Packet.MakeSetHUDTextPacket((ushort)i, label.Text(), label.X(), label.Y(), label.Color()));
             }
         }
