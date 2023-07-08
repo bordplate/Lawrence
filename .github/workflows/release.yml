@@ -28,8 +28,9 @@ jobs:
       - name: Publish for Linux x64
         working-directory: ./Lawrence
         run: >
-          dotnet publish -c Release -f net7.0 -r linux-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/linux-x64
-          cd bin/publish/linux-x64 && zip Lawrence-linux-x64.zip -r .
+          dotnet publish -c Release -f net7.0 -r linux-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/linux-x64 &&
+          cd bin/publish/linux-x64 && 
+          zip Lawrence-linux-x64.zip -r .
         
       - name: Create release
         id: create_release
