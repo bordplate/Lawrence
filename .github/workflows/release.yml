@@ -43,7 +43,6 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           make_latest: true
-          prerelease: true
           
       - name: Upload assets
         id: upload-release-asset
