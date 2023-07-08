@@ -13,6 +13,13 @@ namespace Lawrence
     class Lawrence
     {
         public static int CLIENT_INACTIVE_TIMEOUT_SECONDS = 30;
+        
+        const double TargetTickDurationMs = 1000.0 / 60.0; // 16.67 ms per tick for 60 ticks per second
+        
+        static double _totalTickDurationMs = 0;    // Total tick duration in milliseconds
+        static long _tickCount = 0;             // Total number of ticks
+        static DateTime _lastAverageUpdateTime = DateTime.UtcNow;
+        private static double _ticksPerSecond = 0.0;
 
         static List<Client> clients = new List<Client>();
 
@@ -123,8 +130,9 @@ namespace Lawrence
             }
 
             int serverPort = Settings.Default().Get<int>("Server.port", 2407);
+            string listenAddress = Settings.Default().Get("Server.address", "0.0.0.0");
 
-            IPEndPoint ipep = new IPEndPoint(IPAddress.Any, serverPort);
+            IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), serverPort);
             server = new UdpClient(ipep);
 
             Console.WriteLine("                                       -=*####***++++++=-                  ");
@@ -207,12 +215,8 @@ namespace Lawrence
                         for (int i = clients.Count - 1; i >= 0; i--) {
                             Client p = clients[i];
                             
-                            if (p.IsDisconnected()) {
-                                clients.RemoveAt(i);
-                                
-                                continue;
-                            }
-                            
+                            // FIXME: Check if client is disconnected and remove them from clients list.
+
                             if (!p.IsDisconnected() && p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
                             {
                                 p.ReceiveData(data);
@@ -232,14 +236,12 @@ namespace Lawrence
                 }
             }).Start();
 
-            new Thread(() =>
-            { 
-                while (true)
-                {
-                    Stopwatch sw = new Stopwatch();
-
-                    sw.Start();
-
+            DateTime lastTickEndTime = DateTime.UtcNow;
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
+            
+            Thread runLoop = new Thread(() => {
+                while (true) {
                     // Clients that are waiting to connect aren't part of a `Player` tick loop so the Client tick 
                     //   isn't being called. Therefore we call the Tick function here if it's waiting to connect, so
                     //   packets can be processed like they should on the right thread. 
@@ -251,18 +253,30 @@ namespace Lawrence
 
                     Tick();
 
-                    sw.Stop();
+                    watch.Stop();
+                    
+                    double tickDuration = watch.ElapsedMilliseconds;
+                    LAST_TICK_TIME_MS = tickDuration;
 
-                    if (sw.ElapsedMilliseconds > 16)
-                    {
-                        Logger.Trace($"Tick running late: Elapsed={sw.ElapsedMilliseconds}");
+                    _totalTickDurationMs += tickDuration;
+                    _tickCount++;
+
+                    if (tickDuration > TargetTickDurationMs+1) {
+                        Logger.Trace($"Tick running late: Elapsed={tickDuration}ms");
+                    } else {
+                        int sleepTime = (int)TargetTickDurationMs - (int)tickDuration;
+                        if (sleepTime > 0) {
+                            Thread.Sleep(sleepTime);
+                        }
                     }
                     else
                     {
                         Thread.Sleep((int)(16 - sw.ElapsedMilliseconds));
                     }
+
+                    watch.Restart();
                 }
-            }).Start();
+            });
 
             while (true)
             {
