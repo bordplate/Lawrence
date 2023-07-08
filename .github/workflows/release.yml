@@ -2,8 +2,8 @@ name: Compile and publish releases
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
     
 jobs:
   deploy:
@@ -39,8 +39,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with: 
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: v0.0.6-${{ github.run_number }}-${{ github.run_id }}-alpha
+          release_name: Release v0.0.6-${{ github.run_number }}-${{ github.run_id }}-alpha
           draft: false
           make_latest: true
           
