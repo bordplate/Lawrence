@@ -17,10 +17,6 @@ end
 -- When a new player joins this Universe. 
 function LobbyUniverse:OnPlayerJoin(player)
     player:LoadLevel("Eudora")
-
-    if self.robot == nil then
-        self.robot = self:GetLevelByName("Eudora"):SpawnMoby(217):Make(NPCTest)
-    end
 end
 
 function LobbyUniverse:OnTick()

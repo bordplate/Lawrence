@@ -15,6 +15,8 @@ namespace Lawrence
         public static double LAST_TICK_TIME_MS = 0;
         public static int CLIENT_INACTIVE_TIMEOUT_SECONDS = 30;
         
+        private static DateTime lastDirectoryPing = DateTime.MinValue;
+        
         const double TargetTickDurationMs = 1000.0 / 60.0; // 16.67 ms per tick for 60 ticks per second
         
         static double _totalTickDurationMs = 0;    // Total tick duration in milliseconds
@@ -32,6 +34,10 @@ namespace Lawrence
         public static bool DirectoryMode()
         {
             return directoryMode;
+        }
+
+        public static void ForceDirectorySync() {
+            lastDirectoryPing = DateTime.MinValue;
         }
 
         public static ServerDirectory Directory()
@@ -128,6 +134,7 @@ namespace Lawrence
             }
 
             int serverPort = directoryMode ? 2407 : Settings.Default().Get<int>("Server.port", 2407);
+            int maxPlayers = Settings.Default().Get("Server.max_players", 10);
             string listenAddress = Settings.Default().Get("Server.address", "0.0.0.0");
             
             bool advertise = Settings.Default().Get("Server.advertise", false);
@@ -244,8 +251,6 @@ namespace Lawrence
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
-            DateTime lastDirectoryPing = DateTime.MinValue;
-            
             Thread runLoop = new Thread(() => {
                 while (true) {
                     // Clients that are waiting to connect aren't part of a `Player` tick loop so the Client tick 
@@ -305,12 +310,20 @@ namespace Lawrence
                     
                     while (true) {
                         if ((DateTime.Now - lastDirectoryPing).TotalMinutes >= 1.0) {
+                            // Count players
+                            int players = 0;
+                            foreach (Client c in GetClients()) {
+                                if (!c.IsDisconnected() && !c.WaitingToConnect) {
+                                    players++;
+                                }
+                            }
+                            
                             lastDirectoryPing = DateTime.Now;
 
                             string ipString = Settings.Default()
                                 .Get<string>("Server.advertise_ip", ipep.Address.ToString(), true);
                             (MPPacketHeader, byte[]) packet = Packet.MakeRegisterServerPacket(ipString,
-                                (ushort)serverPort, 0, 0, serverName);
+                                (ushort)serverPort, (ushort)maxPlayers, (ushort)players, serverName);
 
                             List<byte> packetData = new List<byte>();
                             packetData.AddRange(Packet.StructToBytes(packet.Item1, Packet.Endianness.BigEndian));

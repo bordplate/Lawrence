@@ -330,6 +330,7 @@ namespace Lawrence {
                         WaitingToConnect = false;
 
                         Logger.Log($"New player {username} connected!");
+                        Lawrence.ForceDirectorySync();
 
                         break;
                     }
@@ -337,6 +338,7 @@ namespace Lawrence {
                         Disconnect();
 
                         Logger.Log("Player disconnected.");
+                        Lawrence.ForceDirectorySync();
 
                         break;
                     }
