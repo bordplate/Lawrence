@@ -257,25 +257,6 @@ namespace Lawrence
                         }
                     }
 
-                    if (!directoryMode && advertise && (DateTime.Now - lastDirectoryPing).TotalMinutes >= 1.0) {
-                        Logger.Trace("Registering server");
-                        lastDirectoryPing = DateTime.Now;
-
-                        UdpClient client = new UdpClient(Settings.Default().Get("Server.directory_server", "172.104.144.15", true), 2407);
-                        string ipString = Settings.Default()
-                            .Get<string>("Server.advertise_ip", ipep.Address.ToString(), true);
-                        (MPPacketHeader, byte[]) packet = Packet.MakeRegisterServerPacket(ipString,
-                            (ushort)serverPort, 0, 0, serverName);
-
-                        List<byte> packetData = new List<byte>();
-                        packetData.AddRange(Packet.StructToBytes(packet.Item1, Packet.Endianness.BigEndian));
-                        packetData.AddRange(packet.Item2);
-
-                        client.Send(packetData.ToArray());
-                        
-                        client.Dispose();
-                    }
-
                     if (!directoryMode) {
                         // We only process normally if we're not in directory mode.
                         Tick();
@@ -314,6 +295,34 @@ namespace Lawrence
             });
 
             runLoop.Start();
+
+            if (!directoryMode && advertise) {
+                string directoryIP = Settings.Default().Get("Server.directory_server", "172.104.144.15", true);
+                Logger.Log($"Registering server with directory @ {directoryIP}");
+                
+                new Thread(() => {
+                    UdpClient client = new UdpClient(directoryIP, 2407);
+                    
+                    while (true) {
+                        if ((DateTime.Now - lastDirectoryPing).TotalMinutes >= 1.0) {
+                            lastDirectoryPing = DateTime.Now;
+
+                            string ipString = Settings.Default()
+                                .Get<string>("Server.advertise_ip", ipep.Address.ToString(), true);
+                            (MPPacketHeader, byte[]) packet = Packet.MakeRegisterServerPacket(ipString,
+                                (ushort)serverPort, 0, 0, serverName);
+
+                            List<byte> packetData = new List<byte>();
+                            packetData.AddRange(Packet.StructToBytes(packet.Item1, Packet.Endianness.BigEndian));
+                            packetData.AddRange(packet.Item2);
+
+                            client.SendAsync(packetData.ToArray());
+                        }
+                        
+                        Thread.Sleep(1000);
+                    }
+                }).Start();
+            }
 
             while (true)
             {

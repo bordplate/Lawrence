@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Lawrence
 {
@@ -46,6 +47,8 @@ namespace Lawrence
 
 				Logger.Log($"New server '{name}' @ {ip}:{port}");
 			}
+			
+			WriteServersToFile();
 		}
 
 		public void ClearStale()
@@ -57,7 +60,7 @@ namespace Lawrence
 
 			for (int i = servers.Count - 1; i >= 0; i--)
 			{
-				if ((DateTime.Now - servers[i].LastPing).TotalMinutes > 2)
+				if ((DateTime.Now - servers[i].LastPing).TotalMinutes > 3)
 				{
 					Logger.Log($"Removing stale server '{servers[i].Name}' @ {servers[i].IP}:{servers[i].Port}");
 					servers.RemoveAt(i);
@@ -65,6 +68,17 @@ namespace Lawrence
 			}
 
 			lastClearStale = DateTime.Now;
+		}
+		
+		private void WriteServersToFile()
+		{
+			using (StreamWriter file = new StreamWriter("servers.log", false))
+			{
+				foreach (var server in servers)
+				{
+					file.WriteLine($"({server.PlayerCount}/{server.MaxPlayers}) {server.Name}");
+				}
+			}
 		}
 	}
 }
