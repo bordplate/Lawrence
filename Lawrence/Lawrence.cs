@@ -306,10 +306,17 @@ namespace Lawrence
                 Logger.Log($"Registering server with directory @ {directoryIP}");
                 
                 new Thread(() => {
-                    UdpClient client = new UdpClient(directoryIP, 2407);
-                    
+                    UdpClient client = null;
                     while (true) {
                         if ((DateTime.Now - lastDirectoryPing).TotalMinutes >= 1.0) {
+                            // We can't dispose the client right after sending async, and
+                            //  on Linux we can't reuse the client for some reason.
+                            // So we do this instead. 
+                            if (client != null) {
+                                client.Dispose();
+                            }
+                            
+                            client = new UdpClient(directoryIP, 2407);
                             // Count players
                             int players = 0;
                             foreach (Client c in GetClients()) {
