@@ -68,9 +68,36 @@ namespace Lawrence
         public byte ackCycle;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketConnect {
-        [FieldOffset(0x0)] public UInt16 nickLength;
+        public Int32 userid;
+        public byte passcode1;
+        public byte passcode2;
+        public byte passcode3;
+        public byte passcode4;
+        public byte passcode5;
+        public byte passcode6;
+        public byte passcode7;
+        public byte passcode8;
+        public UInt16 nickLength;
+
+        public string GetUsername(byte[] packetBody) {
+            byte[] usernameBytes = packetBody.Skip(Marshal.SizeOf(this)).ToArray();
+            
+            return Encoding.ASCII.GetString(usernameBytes);
+        }
+    }
+
+    public enum MPPacketConnectResponseStatus : Int32 {
+        ERROR_UNKNOWN = 0,
+        SUCCESS = 1,
+        ERROR_USER_ALREADY_CONNECTED = 2,
+        ERROR_NOT_ALLOWED = 3
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct MPPacketConnectResponse {
+        public MPPacketConnectResponseStatus status;
     }
 
     [StructLayout(LayoutKind.Explicit)]

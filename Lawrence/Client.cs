@@ -65,11 +65,10 @@ namespace Lawrence {
         /// <summary>
         /// Packet types in this list are allowed to be sent before a handshake
         /// </summary>
-        private static readonly List<MPPacketType> _allowedAnonymous = new List<MPPacketType>
-        {
+        private static readonly List<MPPacketType> _allowedAnonymous = new List<MPPacketType> {
             MPPacketType.MP_PACKET_CONNECT,
             MPPacketType.MP_PACKET_SYN,
-            MPPacketType.MP_PACKET_QUERY_GAME_SERVERS,       // Only used in directory mode.
+            MPPacketType.MP_PACKET_QUERY_GAME_SERVERS, // Only used in directory mode.
             MPPacketType.MP_PACKET_TIME_SYNC
         };
         
@@ -80,6 +79,9 @@ namespace Lawrence {
 
         IClientHandler _clientHandler;
 
+        private string _username = null;
+        private int _userid = 0;
+        
         IPEndPoint endpoint;
         bool handshakeCompleted = false;
 
@@ -112,6 +114,14 @@ namespace Lawrence {
 
         public IPEndPoint GetEndpoint() {
             return endpoint;
+        }
+
+        public string GetUsername() {
+            return _username;
+        }
+
+        public int GetUserid() {
+            return _userid;
         }
 
         // Amount of seconds since we last saw activity on this client.
@@ -226,8 +236,7 @@ namespace Lawrence {
                 index += Marshal.SizeOf<MPPacketHeader>();
 
                 if (packetHeader.size > packet.Length - index) {
-                    Logger.Log("Bad packet");
-                    //throw new Exception("Bad packet");
+                    throw new Exception("Bad packet");
                 }
                 
                 byte[] packetBody = packet.Skip(index).Take((int)packetHeader.size)
@@ -280,11 +289,46 @@ namespace Lawrence {
 
                 switch (packetHeader.ptype) {
                     case MPPacketType.MP_PACKET_CONNECT: {
+                        MPPacketConnect connectPacket = Packet.BytesToStruct<MPPacketConnect>(packetBody, Packet.Endianness.BigEndian);
+                        string username = connectPacket.GetUsername(packetBody);
+
+                        MPPacketHeader responseHeader = new MPPacketHeader {
+                            ptype = MPPacketType.MP_PACKET_ACK,
+                            size = (uint)Marshal.SizeOf<MPPacketConnectResponse>(),
+                            requiresAck = packetHeader.requiresAck,
+                            ackCycle = packetHeader.ackCycle
+                        };
+                        
+                        foreach (Client c in Lawrence.GetClients()) {
+                            if (c.GetUsername() == connectPacket.GetUsername(packetBody)) {
+                                if (c.GetUserid() == connectPacket.userid && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
+                                    c.Disconnect();
+                                    break;
+                                } else {
+                                    MPPacketConnectResponse response = new MPPacketConnectResponse {
+                                        status = MPPacketConnectResponseStatus.ERROR_USER_ALREADY_CONNECTED
+                                    };
+                                    
+                                    SendPacket(responseHeader, Packet.StructToBytes(response, Packet.Endianness.BigEndian));
+                                    this.Disconnect();
+                                    return; 
+                                }
+                            }
+                        }
+
+                        MPPacketConnectResponse responseBody = new MPPacketConnectResponse {
+                            status = MPPacketConnectResponseStatus.SUCCESS
+                        };
+
+                        _username = username;
+                        
+                        SendPacket(responseHeader, Packet.StructToBytes(responseBody, Packet.Endianness.BigEndian));
+                        
                         Game.Shared().OnPlayerConnect(this);
 
                         WaitingToConnect = false;
 
-                        Logger.Log("New player connected!");
+                        Logger.Log($"New player {username} connected!");
 
                         break;
                     }
