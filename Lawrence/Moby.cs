@@ -47,7 +47,7 @@ namespace Lawrence
         private int _animationDuration = 0;
         public int animationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }
         
-        private ushort _modeBits = 0x10 | 0x20 | 0x400 | 0x4000;
+        private ushort _modeBits = 0x10 | 0x20 | 0x400 | 0x1000 | 0x4000;
         public ushort modeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
 
         public bool HasChanged { get; protected set; } = false;
