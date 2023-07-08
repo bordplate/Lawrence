@@ -232,17 +232,17 @@ namespace Lawrence
 
         public void ControllerInputHeld(ControllerInput input)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void ControllerInputReleased(ControllerInput input)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void ControllerInputTapped(ControllerInput input)
         {
-            throw new NotImplementedException();
+            
         }
 
         public uint CreateMoby()
