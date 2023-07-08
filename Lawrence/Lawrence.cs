@@ -354,7 +354,7 @@ namespace Lawrence
                     Console.WriteLine(Game.Shared().Execute(command));
                 }
 
-                Thread.Yield();
+                Thread.Sleep(16);
             }
         }
     }
