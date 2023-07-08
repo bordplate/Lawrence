@@ -12,6 +12,7 @@ namespace Lawrence
 {
     class Lawrence
     {
+        public static double LAST_TICK_TIME_MS = 0;
         public static int CLIENT_INACTIVE_TIMEOUT_SECONDS = 30;
         
         const double TargetTickDurationMs = 1000.0 / 60.0; // 16.67 ms per tick for 60 ticks per second
