@@ -26,7 +26,7 @@ jobs:
         run: dotnet restore
         
       - name: Publish for Linux x64
-        uses: ./Lawrence
+        working-directory: ./Lawrence
         run: >
           dotnet publish -c Release -f net7.0 -r linux-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/linux-x64
           cd bin/publish/linux-x64 && zip Lawrence-linux-x64.zip -r .
@@ -49,6 +49,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/publish/linux-x64/Lawrence-linux-x64.zip
+          asset_path: ./Lawrence/Lawrence/bin/publish/linux-x64/Lawrence-linux-x64.zip
           asset_name: Lawrence-linux-x64.zip
           asset_content_type: application/zip
