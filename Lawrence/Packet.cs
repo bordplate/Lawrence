@@ -26,6 +26,7 @@ namespace Lawrence
         MP_PACKET_CONTROLLER_INPUT = 13,
         MP_PACKET_TIME_SYNC = 14,
         MP_PACKET_PLAYER_RESPAWNED = 15,
+        MP_PACKET_TYPE_REGISTER_SERVER = 16,
     }
 
     public enum MPStateType : uint
@@ -176,6 +177,21 @@ namespace Lawrence
         [FieldOffset(0x6)] public ushort maxPlayers;
         [FieldOffset(0x8)] public ushort playerCount;
         [FieldOffset(0xa)] public ushort nameLength;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MPPacketRegisterServer {
+        public uint ip;
+        public ushort port;
+        public ushort maxPlayers;
+        public ushort playerCount;
+        public ushort nameLength;
+        
+        public string GetName(byte[] packetBody) {
+            byte[] nameBytes = packetBody.Skip(Marshal.SizeOf(this)).ToArray();
+            
+            return Encoding.UTF8.GetString(nameBytes);
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -388,6 +404,33 @@ namespace Lawrence
                     bytes.AddRange(Encoding.UTF8.GetBytes(server.Name));
                 }
             }
+
+            header.size = (uint)bytes.Count;
+
+            return (header, bytes.ToArray());
+        }
+
+        public static (MPPacketHeader, byte[]) MakeRegisterServerPacket(string ip, ushort port, ushort maxPlayers,
+            ushort playerCount, string name) {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_TYPE_REGISTER_SERVER;
+
+            List<byte> bytes = new List<byte>();
+
+            IPAddress address;
+            if (!IPAddress.TryParse(ip, out address)) {
+                throw new Exception($"Invalid IP address {ip}");
+            }
+
+            MPPacketRegisterServer packet = new MPPacketRegisterServer();
+            packet.ip = (uint)address.MapToIPv4().Address;
+            packet.port = port;
+            packet.maxPlayers = maxPlayers;
+            packet.playerCount = playerCount;
+            packet.nameLength = (ushort)name.Length;
+            
+            bytes.AddRange(Packet.StructToBytes(packet, Endianness.BigEndian));
+            bytes.AddRange(Encoding.UTF8.GetBytes(name));
 
             header.size = (uint)bytes.Count;
 

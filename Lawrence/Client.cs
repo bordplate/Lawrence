@@ -69,6 +69,7 @@ namespace Lawrence {
             MPPacketType.MP_PACKET_CONNECT,
             MPPacketType.MP_PACKET_SYN,
             MPPacketType.MP_PACKET_QUERY_GAME_SERVERS, // Only used in directory mode.
+            MPPacketType.MP_PACKET_TYPE_REGISTER_SERVER,
             MPPacketType.MP_PACKET_TIME_SYNC
         };
         
@@ -449,6 +450,22 @@ namespace Lawrence {
                         else {
                             Logger.Error(
                                 $"(Player {ID}) tried to query us as directory, but we're not a directory server.");
+                        }
+
+                        break;
+                    }
+                    case MPPacketType.MP_PACKET_TYPE_REGISTER_SERVER: {
+                        if (Lawrence.DirectoryMode()) {
+                            MPPacketRegisterServer serverInfo =
+                                Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, Packet.Endianness.BigEndian);
+
+                            string name = serverInfo.GetName(packetBody);
+
+                            uint ip = serverInfo.ip != 0 ? serverInfo.ip : (uint)this.GetEndpoint().Address.Address;
+
+                            IPAddress address = new IPAddress(ip);
+
+                            Lawrence.Directory().RegisterServer(address.ToString(), serverInfo.port, name, serverInfo.maxPlayers, serverInfo.playerCount);
                         }
 
                         break;

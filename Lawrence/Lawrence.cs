@@ -119,19 +119,22 @@ namespace Lawrence
         {
             // Make space above last entry in log so there's a nice split between last run of the program
             Logger.Raw("\n");
+            string serverName = Settings.Default().Get("Server.name", "");
 
-            if (Settings.Default().Get<bool>("Server.directoryMode", false) || Array.IndexOf(args, "--directory") >= 0)
+            if (Settings.Default().Get<bool>("Server.directoryMode", false, true) || Array.IndexOf(args, "--directory") >= 0)
             {
                 directoryMode = true;
                 directory = new ServerDirectory();
-
-                directory.RegisterServer("10.9.0.2", 2407, "Vetle's server", 20, 0);
-                directory.RegisterServer("127.0.0.1", 2407, "localhost", 20, 0);
-                directory.RegisterServer("10.9.0.5", 2407, "Someone's server", 3000, 1368);
             }
 
-            int serverPort = Settings.Default().Get<int>("Server.port", 2407);
+            int serverPort = directoryMode ? 2407 : Settings.Default().Get<int>("Server.port", 2407);
             string listenAddress = Settings.Default().Get("Server.address", "0.0.0.0");
+            
+            bool advertise = Settings.Default().Get("Server.advertise", false);
+
+            if (!directoryMode && serverName == null || serverName.Trim().Length <= 0) {
+                throw new Exception("You must set a name for the server. Check settings.toml for configuration");
+            }
 
             IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), serverPort);
             server = new UdpClient(ipep);
@@ -240,6 +243,8 @@ namespace Lawrence
             DateTime lastTickEndTime = DateTime.UtcNow;
             Stopwatch watch = new Stopwatch();
             watch.Start();
+
+            DateTime lastDirectoryPing = DateTime.MinValue;
             
             Thread runLoop = new Thread(() => {
                 while (true) {
@@ -252,7 +257,29 @@ namespace Lawrence
                         }
                     }
 
-                    Tick();
+                    if (!directoryMode && advertise && (DateTime.Now - lastDirectoryPing).TotalMinutes >= 1.0) {
+                        Logger.Trace("Registering server");
+                        lastDirectoryPing = DateTime.Now;
+
+                        UdpClient client = new UdpClient(Settings.Default().Get("Server.directory_server", "172.104.144.15", true), 2407);
+                        string ipString = Settings.Default()
+                            .Get<string>("Server.advertise_ip", ipep.Address.ToString(), true);
+                        (MPPacketHeader, byte[]) packet = Packet.MakeRegisterServerPacket(ipString,
+                            (ushort)serverPort, 0, 0, serverName);
+
+                        List<byte> packetData = new List<byte>();
+                        packetData.AddRange(Packet.StructToBytes(packet.Item1, Packet.Endianness.BigEndian));
+                        packetData.AddRange(packet.Item2);
+
+                        client.Send(packetData.ToArray());
+                        
+                        client.Dispose();
+                    }
+
+                    if (!directoryMode) {
+                        // We only process normally if we're not in directory mode.
+                        Tick();
+                    }
 
                     watch.Stop();
                     
@@ -285,6 +312,8 @@ namespace Lawrence
                     watch.Restart();
                 }
             });
+
+            runLoop.Start();
 
             while (true)
             {

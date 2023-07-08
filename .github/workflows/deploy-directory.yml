@@ -1,4 +1,4 @@
-name: Compile and publish releases
+name: Deploy directory server
 
 on: workflow_dispatch
 
