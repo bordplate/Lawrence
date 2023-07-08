@@ -269,9 +269,16 @@ namespace Lawrence
                             Thread.Sleep(sleepTime);
                         }
                     }
-                    else
-                    {
-                        Thread.Sleep((int)(16 - sw.ElapsedMilliseconds));
+
+                    // Update average ticks per second every second
+                    if ((DateTime.UtcNow - _lastAverageUpdateTime).TotalSeconds >= 1.0) {
+                        double averageTickDurationMs = (double)_totalTickDurationMs / _tickCount;
+                        _ticksPerSecond = _tickCount;
+
+                        // Reset the counters
+                        _totalTickDurationMs = 0;
+                        _tickCount = 0;
+                        _lastAverageUpdateTime = DateTime.UtcNow;
                     }
 
                     watch.Restart();
