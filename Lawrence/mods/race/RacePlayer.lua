@@ -1,5 +1,4 @@
 require 'Checkpoint'
-require 'NPCTest'
 
 RacePlayer = class('RacePlayer', Player)
 
@@ -112,7 +111,8 @@ end
 function RacePlayer:OnTick()
     self.timerLabel:SetText(millisToTime(Game:Time() - self.startTime))
 
-    -- Hacky way to give all items due to a bug that locks up network communication when giving all items at the same time
+    -- Hacky way to give all items because of an issue where
+    --  network communication locks up when giving all items at the same time
     if (self.x ~= 0 and self.itemNext < 36) then
         self.itemTimer = self.itemTimer + 1
         if (self.itemTimer % 10) == 0 then

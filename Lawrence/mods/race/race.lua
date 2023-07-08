@@ -1,5 +1,4 @@
 require 'RaceUniverse'
-require 'NPCTest'
 
 ----
 -- Game mode functions
