@@ -1,0 +1,23 @@
+name: Compile and publish releases
+
+on: workflow_dispatch
+
+jobs:
+  deploy:
+    runs-on: 'self-hosted'
+    steps:
+      - name: Download latest release
+        uses: robinraju/release-downloader@v1.8
+        with:
+          latest: true
+          fileName: 'Lawrence-linux-x64.zip'
+          extract: true
+          
+      - name: Stop service
+        run: sudo systemctl stop lawrence-directory
+        
+      - name: Overwrite old data
+        run: ls -l * && cp -R * /opt/LawrenceDirectory/
+        
+      - name: Start service
+        run: sudo systemctl start lawrence-directory
