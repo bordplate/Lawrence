@@ -597,16 +597,19 @@ namespace Lawrence {
                     _unacked.resendTimer--;
                 } else {
                     if (timeNow - unacked.timestamp > 10) {
-                        Console.WriteLine($"Player {ID} has stale packet they never ack. Can this client please ack this packet?");
+                        Logger.Trace($"Player {ID} has stale packet they never ack, waited: {timeNow - unacked.timestamp}: ({unacked.ackIndex}/{unacked.ackCycle})");
                     }
+                    
+                    Lawrence.SendTo(_unacked.packet, this.GetEndpoint());
 
-                    buffer.AddRange(_unacked.packet);
                     _unacked.resendTimer = 60;
                 }
 
                 this.unacked[index] = _unacked;
                 index++;
             }
+            
+            Flush();
         }
 
         public void Disconnect() {

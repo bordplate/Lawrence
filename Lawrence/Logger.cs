@@ -24,13 +24,15 @@ namespace Lawrence {
 
             lock (_syncLock) {
                 // Write to file
-                using (var streamWriter = new StreamWriter(_logFile, true)) {
-                    streamWriter.WriteLine(logEntry);
+                if (priority != Priority.Trace) {
+                    using (var streamWriter = new StreamWriter(_logFile, true)) {
+                        streamWriter.WriteLine(logEntry);
 
-                    if (exception != null) {
-                        streamWriter.WriteLine($"Exception: {exception.GetType().FullName}");
-                        streamWriter.WriteLine($"Message: {exception.Message}");
-                        streamWriter.WriteLine($"StackTrace: {exception.StackTrace}");
+                        if (exception != null) {
+                            streamWriter.WriteLine($"Exception: {exception.GetType().FullName}");
+                            streamWriter.WriteLine($"Message: {exception.Message}");
+                            streamWriter.WriteLine($"StackTrace: {exception.StackTrace}");
+                        }
                     }
                 }
 

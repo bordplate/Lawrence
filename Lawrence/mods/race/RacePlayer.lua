@@ -23,11 +23,11 @@ function RacePlayer:Made()
     self:AddLabel(self.checkpointLabel)
     
     self:AddLabel(self.placementLabel)
-
-    self.itemTimer = 0
-    self.itemNext = 3
     
-    self:GiveItem(2)
+    -- Give all items
+    for i = 2, 35 do
+        self:GiveItem(i)
+    end
     
     self.timerLabel = Label:new("00:00.000", 320, 10, 0xC0FFA888)
     self:AddLabel(self.timerLabel)
@@ -110,16 +110,6 @@ end
 
 function RacePlayer:OnTick()
     self.timerLabel:SetText(millisToTime(Game:Time() - self.startTime))
-
-    -- Hacky way to give all items because of an issue where
-    --  network communication locks up when giving all items at the same time
-    if (self.x ~= 0 and self.itemNext < 36) then
-        self.itemTimer = self.itemTimer + 1
-        if (self.itemTimer % 10) == 0 then
-            self:GiveItem(self.itemNext)
-            self.itemNext = self.itemNext + 1
-        end
-    end
 
     self.coordsXLabel:SetText("x: " .. self.x)
     self.coordsYLabel:SetText("y: " .. self.y)

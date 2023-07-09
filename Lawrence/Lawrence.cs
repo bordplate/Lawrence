@@ -346,6 +346,12 @@ namespace Lawrence
 
             while (true)
             {
+                Thread.Sleep(16);
+
+                if (!Environment.UserInteractive) {
+                    continue;
+                }
+                
                 Console.Write("\r> ");
                 string command = Console.ReadLine();
 
@@ -353,8 +359,6 @@ namespace Lawrence
                 {
                     Console.WriteLine(Game.Shared().Execute(command));
                 }
-
-                Thread.Sleep(16);
             }
         }
     }
