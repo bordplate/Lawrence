@@ -301,7 +301,7 @@ namespace Lawrence {
                         };
                         
                         foreach (Client c in Lawrence.GetClients()) {
-                            if (c.GetUsername() == connectPacket.GetUsername(packetBody)) {
+                            if (c != this && c.GetUsername() == connectPacket.GetUsername(packetBody)) {
                                 if (c.GetUserid() == connectPacket.userid && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
                                     c.Disconnect();
                                     break;
@@ -322,6 +322,7 @@ namespace Lawrence {
                         };
 
                         _username = username;
+                        _userid = connectPacket.userid;
                         
                         SendPacket(responseHeader, Packet.StructToBytes(responseBody, Packet.Endianness.BigEndian));
                         
