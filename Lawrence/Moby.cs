@@ -41,8 +41,8 @@ namespace Lawrence
         private float _alpha = 1.0f;
         public float alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
 
-        private int _animationID = 0;
-        public int animationID { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
+        protected int _animationID = 0;
+        public virtual int animationID { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
         
         private int _animationDuration = 0;
         public int animationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }

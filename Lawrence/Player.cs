@@ -25,6 +25,20 @@ namespace Lawrence
             set { base.z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
         }
 
+        // Some animations can cause crashes in other games, we filter those for the time being. 
+        private List<int> _filteredAnimationIDs = new List<int> {
+            130  // Gold bolt collect animation
+        };
+
+        public override int animationID {
+            get => _animationID;
+            set {
+                if (_animationID != value && !_filteredAnimationIDs.Contains(value)) {
+                    _animationID = value;
+                    HasChanged = true;
+                }
+            }
+        }
 
         public Player(Client client) {
             _client = client;
