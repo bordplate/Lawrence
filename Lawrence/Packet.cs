@@ -121,6 +121,7 @@ namespace Lawrence
         [FieldOffset(0x2e)] public byte alpha;
         [FieldOffset(0x2f)] public sbyte padding;
         [FieldOffset(0x30)] public ushort modeBits;
+        [FieldOffset(0x32)] public ushort state;
     }
 
     [StructLayout(LayoutKind.Explicit)]

@@ -25,6 +25,12 @@ namespace Lawrence
             set { base.z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
         }
 
+        private ushort _state = 0;
+        public ushort state {
+            get { return _state; }
+            set { _state = value; _client.SendPacket(Packet.MakeSetPlayerStatePacket(value)); }
+        }
+
         // Some animations can cause crashes in other games, we filter those for the time being. 
         private List<int> _filteredAnimationIDs = new List<int> {
             130  // Gold bolt collect animation
@@ -277,6 +283,7 @@ namespace Lawrence
                 this._x = mobyUpdate.x;
                 this._y = mobyUpdate.y;
                 this._z = mobyUpdate.z;
+                this._state = mobyUpdate.state;
                 this.rotX = (float)(180 / Math.PI) * mobyUpdate.rotX;
                 this.rotY = (float)(180 / Math.PI) * mobyUpdate.rotY;
                 this.rotZ = (float)(180 / Math.PI) * mobyUpdate.rotZ;
