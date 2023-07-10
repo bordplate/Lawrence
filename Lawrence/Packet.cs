@@ -477,6 +477,23 @@ namespace Lawrence
 
             return (header, StructToBytes<MPPacketSetState>(setItemState, Endianness.BigEndian));
         }
+        
+        public static (MPPacketHeader, byte[]) MakeSetPlayerStatePacket(ushort state)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetState setPlayerState = new MPPacketSetState();
+            setPlayerState.stateType = MPStateType.MP_STATE_TYPE_PLAYER;
+            setPlayerState.value = state;
+
+            var size = Marshal.SizeOf(setPlayerState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetState>(setPlayerState, Endianness.BigEndian));
+        }
 
         public static (MPPacketHeader, byte[]) MakeSetPositionPacket(ushort property, float position) {
             MPPacketHeader header = new MPPacketHeader();
