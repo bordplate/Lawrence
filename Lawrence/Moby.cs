@@ -180,6 +180,22 @@ namespace Lawrence
 
             return (float)Math.Sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
         }
+        
+        public bool IsWithinCube(float x1, float y1, float z1, float x2, float y2, float z2)
+        {
+            // Ensure x1, y1, z1 is the min point and x2, y2, z2 is the max point
+            float minX = Math.Min(x1, x2);
+            float minY = Math.Min(y1, y2);
+            float minZ = Math.Min(z1, z2);
+            float maxX = Math.Max(x1, x2);
+            float maxY = Math.Max(y1, y2);
+            float maxZ = Math.Max(z1, z2);
+
+            // Check if this Moby's position is within the cube defined by the two points
+            return minX <= x && x <= maxX &&
+                   minY <= y && y <= maxY &&
+                   minZ <= z && z <= maxZ;
+        }
 
         public virtual void OnCollision(Moby collidee) {
             CallLuaFunction("OnCollision", new object[] { LuaEntity(), collidee.LuaEntity() });

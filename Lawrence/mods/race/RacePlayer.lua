@@ -78,10 +78,11 @@ function RacePlayer:OnCollision(moby)
         if self.checkpoint < #self.course.checkpoints then
             self.checkpoint = self.checkpoint + 1
             
+            self:ToastMessage("Checkpoint")
+            
             self:SpawnCheckpoint()
         else
-            local winLabel = Label:new("You win!", 200, 200, 0xC0FFA888)
-            self:AddLabel(winLabel)
+            self:ToastMessage("You win")
         end
 
         moby:Delete()
@@ -110,6 +111,9 @@ end
 
 function RacePlayer:OnTick()
     self.timerLabel:SetText(millisToTime(Game:Time() - self.startTime))
+    
+    --self.state = 114
+    --self.state = 0
 
     self.coordsXLabel:SetText("x: " .. self.x)
     self.coordsYLabel:SetText("y: " .. self.y)
