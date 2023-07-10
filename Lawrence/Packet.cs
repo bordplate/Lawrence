@@ -26,7 +26,8 @@ namespace Lawrence
         MP_PACKET_CONTROLLER_INPUT = 13,
         MP_PACKET_TIME_SYNC = 14,
         MP_PACKET_PLAYER_RESPAWNED = 15,
-        MP_PACKET_TYPE_REGISTER_SERVER = 16,
+        MP_PACKET_REGISTER_SERVER = 16,
+        MP_PACKET_TOAST_MESSAGE = 17,
     }
 
     public enum MPStateType : uint
@@ -414,7 +415,7 @@ namespace Lawrence
         public static (MPPacketHeader, byte[]) MakeRegisterServerPacket(string ip, ushort port, ushort maxPlayers,
             ushort playerCount, string name) {
             MPPacketHeader header = new MPPacketHeader();
-            header.ptype = MPPacketType.MP_PACKET_TYPE_REGISTER_SERVER;
+            header.ptype = MPPacketType.MP_PACKET_REGISTER_SERVER;
 
             List<byte> bytes = new List<byte>();
 

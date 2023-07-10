@@ -70,7 +70,7 @@ namespace Lawrence {
             MPPacketType.MP_PACKET_CONNECT,
             MPPacketType.MP_PACKET_SYN,
             MPPacketType.MP_PACKET_QUERY_GAME_SERVERS, // Only used in directory mode.
-            MPPacketType.MP_PACKET_TYPE_REGISTER_SERVER,
+            MPPacketType.MP_PACKET_REGISTER_SERVER,
             MPPacketType.MP_PACKET_TIME_SYNC
         };
         
@@ -459,7 +459,7 @@ namespace Lawrence {
 
                         break;
                     }
-                    case MPPacketType.MP_PACKET_TYPE_REGISTER_SERVER: {
+                    case MPPacketType.MP_PACKET_REGISTER_SERVER: {
                         if (Lawrence.DirectoryMode()) {
                             MPPacketRegisterServer serverInfo =
                                 Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, Packet.Endianness.BigEndian);
