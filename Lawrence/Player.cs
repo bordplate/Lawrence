@@ -399,6 +399,10 @@ namespace Lawrence
                 SendPacket(Packet.MakeSetHUDTextPacket((ushort)i, label.Text(), label.X(), label.Y(), label.Color()));
             }
         }
+        
+        public void ToastMessage(string message) {
+            SendPacket(Packet.MakeToastMessagePacket(message));
+        }
     }
     #endregion
 }

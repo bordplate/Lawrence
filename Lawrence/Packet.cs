@@ -210,6 +210,10 @@ namespace Lawrence
         public ulong serverSendTime;
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct MPPacketToastMessage {
+        public UInt32 messageType;
+    }
 
     public class Packet
     {
@@ -527,6 +531,24 @@ namespace Lawrence
             header.size = (uint)bytes.Count;
             
             return (header, bytes.ToArray());
+        }
+
+        public static (MPPacketHeader, byte[]) MakeToastMessagePacket(string message) {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_TOAST_MESSAGE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketToastMessage messagePacket = new MPPacketToastMessage();
+            messagePacket.messageType = 0;
+            
+            header.size = (uint)Marshal.SizeOf(messagePacket) + 0x50;
+
+            byte[] buffer = new byte[(int)header.size];
+            StructToBytes<MPPacketToastMessage>(messagePacket, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+            Encoding.ASCII.GetBytes(message).CopyTo(buffer, 4);
+
+            return (header, buffer);
         }
 
         public static byte[] headerToBytes(MPPacketHeader header)
