@@ -59,6 +59,7 @@ namespace Lawrence {
         abstract void Delete();
         abstract Moby Moby();
         abstract void PlayerRespawned();
+        abstract void GameStateChanged(GameState state);
     }
 
     public partial class Client {
@@ -436,7 +437,8 @@ namespace Lawrence {
 
                         if (state.stateType == MPStateType.MP_STATE_TYPE_GAME) {
                             gameState = (GameState)state.value;
-                            
+
+                            _clientHandler.GameStateChanged(gameState);
 
                             // TODO: Tell client handler about game state change
                         }
@@ -479,7 +481,7 @@ namespace Lawrence {
                         MPPacketControllerInput input =
                             Packet.BytesToStruct<MPPacketControllerInput>(packetBody, Packet.Endianness.BigEndian);
                         if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
-                            _clientHandler.ControllerInputTapped((ControllerInput)input.input);
+                            _clientHandler.ControllerInputHeld((ControllerInput)input.input);
                         }
 
                         if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0) {

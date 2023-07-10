@@ -10,6 +10,8 @@ namespace Lawrence
     public partial class Player : Moby {
         private readonly Client _client;
 
+        public GameState GameState = 0;
+
         public override float x {
             get { return _x; }
             set { base.x = value; _client.SendPacket(Packet.MakeSetPositionPacket(0, value)); }
@@ -252,17 +254,17 @@ namespace Lawrence
 
         public void ControllerInputHeld(ControllerInput input)
         {
-            
+            CallLuaFunction("OnControllerInputHeld", LuaEntity(), (int)input);
         }
 
         public void ControllerInputReleased(ControllerInput input)
         {
-            
+            CallLuaFunction("OnControllerInputReleased", LuaEntity(), (int)input);
         }
 
         public void ControllerInputTapped(ControllerInput input)
         {
-            
+            CallLuaFunction("OnControllerInputTapped", LuaEntity(), (int)input);
         }
 
         public uint CreateMoby()
@@ -303,6 +305,11 @@ namespace Lawrence
 
         public void PlayerRespawned() {
             CallLuaFunction("OnRespawned", LuaEntity());
+        }
+
+        public void GameStateChanged(GameState gameState) {
+            this.GameState = gameState;
+            CallLuaFunction("OnGameStateChanged", LuaEntity(), (int)gameState);
         }
     }
     #endregion
