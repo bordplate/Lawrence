@@ -71,6 +71,10 @@ namespace Lawrence
             Remove(notification.Entity);
         }
 
+        public virtual void DeleteAllChildrenWithOClass(ushort oClass) {
+            SendPacket(Packet.MakeDeleteAllMobysPacket(oClass));
+        }
+
         #region Getters/setters
 
         public Guid GUID() {

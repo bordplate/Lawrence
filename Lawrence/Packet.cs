@@ -125,10 +125,11 @@ namespace Lawrence
         [FieldOffset(0x32)] public ushort state;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketMobyCreate
     {
-        [FieldOffset(0x0)] public UInt32 uuid;
+        public UInt32 uuid;
+        public UInt32 flags;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -325,6 +326,23 @@ namespace Lawrence
 
             MPPacketMobyCreate body = new MPPacketMobyCreate();
             body.uuid = mobyUUID;
+            body.flags = 1;
+
+            header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
+
+            return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
+        }
+        
+        public static (MPPacketHeader, byte[]) MakeDeleteAllMobysPacket(ushort oClass)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_MOBY_DELETE;
+            header.requiresAck = 255;  // 255 represents unfilled fields that the client will fill before sending
+            header.ackCycle = 255; 
+
+            MPPacketMobyCreate body = new MPPacketMobyCreate();
+            body.uuid = oClass;
+            body.flags = 2;
 
             header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
 
