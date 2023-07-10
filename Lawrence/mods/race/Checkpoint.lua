@@ -19,8 +19,16 @@ function Checkpoint:initialize(internalEntity)
 end
 
 function Checkpoint:OnTick()
-    --self.time = self.time + deltaTime  -- update time
     self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
     self.bounceZ = (self.amplitude * math.sin(self.frequency * Game:Time()))
     self.z = self.z + self.bounceZ  -- update z position
+
+    if not self:Parent():LuaEntity():Is(RacePlayer) then
+        print("Parent not player")
+        return
+    end
+
+    if self:DistanceTo(self:Parent()) < 7.0 then
+        self:Parent():LuaEntity():OnCollision(self)
+    end
 end
