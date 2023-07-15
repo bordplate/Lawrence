@@ -23,7 +23,7 @@ function Checkpoint:OnTick()
     self.bounceZ = (self.amplitude * math.sin(self.frequency * Game:Time()))
     self.z = self.z + self.bounceZ  -- update z position
 
-    if not self:Parent():LuaEntity():Is(RacePlayer) then
+    if self:Parent() == nil and not self:Parent():LuaEntity():Is(RacePlayer) then
         print("Parent not player")
         return
     end

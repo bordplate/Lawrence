@@ -29,9 +29,6 @@ function RacePlayer:Made()
         self:GiveItem(i)
     end
     
-    self.timerLabel = Label:new("00:00.000", 320, 10, 0xC0FFA888)
-    self:AddLabel(self.timerLabel)
-    
     self.startTime = Game:Time()
 end
 
@@ -78,11 +75,11 @@ function RacePlayer:OnCollision(moby)
         if self.checkpoint < #self.course.checkpoints then
             self.checkpoint = self.checkpoint + 1
             
-            self:ToastMessage("Checkpoint")
+            self:ToastMessage("Checkpoint", 0xbc)
             
             self:SpawnCheckpoint()
         else
-            self:ToastMessage("You win")
+            self:ToastMessage("You win", 0xbc)
         end
 
         moby:Delete()
@@ -101,17 +98,7 @@ function RacePlayer:DistanceToNextCheckpoint()
     return self:DistanceTo(self.checkpointMoby)
 end
 
-function millisToTime(millis)
-    local total_seconds = math.floor(millis / 1000)
-    local minutes = math.floor(total_seconds / 60)
-    local seconds = total_seconds - (minutes * 60)
-    local milliseconds = millis - (total_seconds * 1000)
-    return string.format("%02d:%02d.%03d", minutes, seconds, milliseconds)
-end
-
 function RacePlayer:OnTick()
-    self.timerLabel:SetText(millisToTime(Game:Time() - self.startTime))
-    
     --self.state = 114
     --self.state = 0
 
