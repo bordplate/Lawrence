@@ -228,6 +228,12 @@ namespace Lawrence
                 entity._parent = this;
             }
 
+            if (entity is Player player) {
+                foreach (Label label in _labels) {
+                    player.AddLabel(label);
+                }
+            }
+
             _children.Add(entity);
         }
 
@@ -336,13 +342,19 @@ namespace Lawrence
     #endregion
 
     partial class Entity {
+        private List<Label> _labels = new List<Label>();
+        
         public virtual void AddLabel(Label label) {
+            _labels.Add(label);
+            
             foreach (Player player in Find<Player>()) {
                 player.AddLabel(label);
             }
         }
 
         public virtual void RemoveLabel(Label label) {
+            _labels.Remove(label);
+            
             foreach (Player player in Find<Player>()) {
                 player.RemoveLabel(label);
             }
