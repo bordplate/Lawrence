@@ -213,6 +213,7 @@ namespace Lawrence
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketToastMessage {
         public UInt32 messageType;
+        public UInt32 duration;
     }
 
     public class Packet
@@ -550,7 +551,7 @@ namespace Lawrence
             return (header, bytes.ToArray());
         }
 
-        public static (MPPacketHeader, byte[]) MakeToastMessagePacket(string message) {
+        public static (MPPacketHeader, byte[]) MakeToastMessagePacket(string message, uint duration = 20) {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_TOAST_MESSAGE;
             header.requiresAck = 255;
@@ -558,12 +559,13 @@ namespace Lawrence
 
             MPPacketToastMessage messagePacket = new MPPacketToastMessage();
             messagePacket.messageType = 0;
-            
+            messagePacket.duration = duration;
+
             header.size = (uint)Marshal.SizeOf(messagePacket) + 0x50;
 
             byte[] buffer = new byte[(int)header.size];
             StructToBytes<MPPacketToastMessage>(messagePacket, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
-            Encoding.ASCII.GetBytes(message).CopyTo(buffer, 4);
+            Encoding.ASCII.GetBytes(message).CopyTo(buffer, 8);
 
             return (header, buffer);
         }

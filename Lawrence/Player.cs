@@ -403,6 +403,10 @@ namespace Lawrence
         public void ToastMessage(string message) {
             SendPacket(Packet.MakeToastMessagePacket(message));
         }
+
+        public void ToastMessage(string message, uint duration) {
+            SendPacket(Packet.MakeToastMessagePacket(message, duration));
+        }
     }
     #endregion
 }
