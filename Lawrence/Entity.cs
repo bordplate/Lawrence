@@ -338,6 +338,10 @@ namespace Lawrence
                 player.SendPacket(packet);
             }
         }
+
+        public void BlockGoldBolt(int planet, int number) {
+            SendPacket(Packet.MakeBlockGoldBoltPacket(planet, number));
+        }
     }
     #endregion
 

@@ -60,6 +60,7 @@ namespace Lawrence {
         abstract Moby Moby();
         abstract void PlayerRespawned();
         abstract void GameStateChanged(GameState state);
+        abstract void CollectedGoldBolt(int planet, int number);
     }
 
     public partial class Client {
@@ -441,6 +442,11 @@ namespace Lawrence {
                             _clientHandler.GameStateChanged(gameState);
 
                             // TODO: Tell client handler about game state change
+                        }
+
+                        if (state.stateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
+                            Logger.Log($"Player got bolt #{state.value}");
+                            _clientHandler.CollectedGoldBolt((int)state.offset, (int)state.value);
                         }
 
                         break;

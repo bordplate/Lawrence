@@ -66,6 +66,16 @@ namespace Lawrence
             return null;
         }
 
+        public Level GetLevelByGameID(ushort levelID) {
+            foreach (Level level in _levels) {
+                if (levelID == level.GetGameID()) {
+                    return level;
+                }
+            }
+
+            return null;
+        }
+
         public void Start(bool primary) {
             // If we set this as primary universe, we notify the other ones to tell them they should not be primary anymore. 
             if (primary) {

@@ -116,6 +116,10 @@ namespace Lawrence
         public void SetRespawn(float x, float y, float z, float rotationZ) {
             SendPacket(Packet.MakeSetRespawnPacket(x, y, z, rotationZ));
         }
+
+        public void Damage(int damage) {
+            SendPacket(Packet.MakeDamagePacket((uint)damage));
+        }
     }
     #endregion
 
@@ -224,6 +228,13 @@ namespace Lawrence
     #region Client events
     partial class Player : IClientHandler
     {
+        /// <summary>
+        /// Called from a player whenever a moby they manage has collided with another moby. 
+        /// </summary>
+        /// <param name="collider"></param>
+        /// <param name="collidee"></param>
+        /// <param name="aggressive">Set when the collision is an attack.</param>
+        /// <exception cref="InvalidOperationException"></exception>
         public void Collision(Moby collider, Moby collidee, bool aggressive = false)
         {
             if (collider == null) {
@@ -252,26 +263,50 @@ namespace Lawrence
             }
         }
 
+        /// <summary>
+        /// Called for as long as a player is holding any buttons. 
+        /// </summary>
+        /// <param name="input">The currently held buttons.</param>
         public void ControllerInputHeld(ControllerInput input)
         {
             CallLuaFunction("OnControllerInputHeld", LuaEntity(), (int)input);
         }
 
+        /// <summary>
+        /// Called when a player releases a button
+        /// </summary>
+        /// <param name="input">The currently held inputs</param>
         public void ControllerInputReleased(ControllerInput input)
         {
             CallLuaFunction("OnControllerInputReleased", LuaEntity(), (int)input);
         }
 
+        /// <summary>
+        /// Called whenever a player has pressed a button, only fires once while a player is holding a button. 
+        /// </summary>
+        /// <param name="input">The pressed inputs, including any other buttons that are held.</param>
         public void ControllerInputTapped(ControllerInput input)
         {
             CallLuaFunction("OnControllerInputTapped", LuaEntity(), (int)input);
         }
 
+        /// <summary>
+        /// Called when a client wants to create a moby. A client could want to do this to spawn weapons they are holding,
+        ///  a projectile from a weapon, Clank as a backpack, etc.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
         public uint CreateMoby()
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Called when a client sends updates about a Moby they manage. This is typically an update about their
+        ///  hero moby (typically Ratchet, but potentially Clank, Big Clank, Hologuise, and more). 
+        /// </summary>
+        /// <param name="mobyUpdate">Packet describing the current state of the moby.</param>
+        /// <exception cref="NotImplementedException">Clients can not yet send updates about mobys other than their hero moby. </exception>
         public void UpdateMoby(MPPacketMobyUpdate mobyUpdate)
         {
             // Update this moby if 0, update child moby if not 0
@@ -293,23 +328,47 @@ namespace Lawrence
                 this.alpha = mobyUpdate.alpha / 128.0f;
                 this.animationID = mobyUpdate.animationID;
                 this.animationDuration = mobyUpdate.animationDuration;
+
+                if (mobyUpdate.level != this.Level().GetGameID()) {
+                    Level lastLevel = _level;
+                    
+                    _level = Universe().GetLevelByGameID(mobyUpdate.level);
+                    _level.Add(this);
+                    Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
+                }
             } else {
                 // Update child moby 
                 throw new NotImplementedException("Players can't spawn child mobys yet");
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public Moby Moby() {
             return this;
         }
 
+        /// <summary>
+        /// Called after a player has respawned. 
+        /// </summary>
         public void PlayerRespawned() {
             CallLuaFunction("OnRespawned", LuaEntity());
         }
 
+        /// <summary>
+        /// Called when a player's game state changes. E.g. from in-game to pause menu, cutscene, in-level movie (ILM)
+        ///  or similar. 
+        /// </summary>
+        /// <param name="gameState">Game state this Player's client has changed to</param>
         public void GameStateChanged(GameState gameState) {
             this.GameState = gameState;
             CallLuaFunction("OnGameStateChanged", LuaEntity(), (int)gameState);
+        }
+
+        public void CollectedGoldBolt(int planet, int number) {
+            CallLuaFunction("OnCollectedGoldBolt", LuaEntity(), planet, number);
         }
     }
     #endregion
@@ -400,10 +459,19 @@ namespace Lawrence
             }
         }
         
+        /// <summary>
+        /// Shows a toast message on screen for 188 ticks by default.
+        /// </summary>
+        /// <param name="message">Message to show to player</param>
         public void ToastMessage(string message) {
             SendPacket(Packet.MakeToastMessagePacket(message));
         }
 
+        /// <summary>
+        /// Shows a toast message on screen for specified amount of ticks
+        /// </summary>
+        /// <param name="message">Message to show to player</param>
+        /// <param name="duration">Duration in game ticks</param>
         public void ToastMessage(string message, uint duration) {
             SendPacket(Packet.MakeToastMessagePacket(message, duration));
         }
