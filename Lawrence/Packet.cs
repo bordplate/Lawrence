@@ -260,16 +260,16 @@ namespace Lawrence
             bonkState.stateType = MPStateType.MP_STATE_TYPE_PLAYER;
             bonkState.value = 0x16;
 
-            MPPacketSetState damageState = new MPPacketSetState();
-            damageState.stateType = MPStateType.MP_STATE_TYPE_DAMAGE;
-            damageState.value = 1;  // Damage player by 1 health
+            // MPPacketSetState damageState = new MPPacketSetState();
+            // damageState.stateType = MPStateType.MP_STATE_TYPE_DAMAGE;
+            // damageState.value = damage;  // Damage player by 1 health
 
-            var size = Marshal.SizeOf(bonkState) + Marshal.SizeOf(damageState);
+            var size = Marshal.SizeOf(bonkState);// + Marshal.SizeOf(damageState);
             header.size = (uint)size;
             List<byte> bytes = new List<byte>();
             
             bytes.AddRange(StructToBytes<MPPacketSetState>(bonkState, Endianness.BigEndian));
-            bytes.AddRange(StructToBytes<MPPacketSetState>(damageState, Endianness.BigEndian));
+            // bytes.AddRange(StructToBytes<MPPacketSetState>(damageState, Endianness.BigEndian));
 
             return (header, bytes.ToArray());
         }
@@ -397,7 +397,7 @@ namespace Lawrence
             destinationPlanetState.stateType = MPStateType.MP_STATE_TYPE_PLANET;
             destinationPlanetState.value = (uint)planet;
 
-            var size = Marshal.SizeOf(destinationPlanetState);// + Marshal.SizeOf(damageState);
+            var size = Marshal.SizeOf(destinationPlanetState);
             header.size = (uint)size;
 
             return (header, StructToBytes<MPPacketSetState>(destinationPlanetState, Endianness.BigEndian));

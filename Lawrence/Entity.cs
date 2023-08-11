@@ -243,7 +243,7 @@ namespace Lawrence
             }
         }
 
-        public void Remove(Entity entity, bool unparent = true) {
+        public virtual void Remove(Entity entity, bool unparent = true) {
             if (unparent) {
                 entity._parent = null;
             }

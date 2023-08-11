@@ -73,7 +73,7 @@ namespace Lawrence
     #region Lua
     partial class Player { 
         /// <summary>
-        /// 
+        /// Initializes the Lua Player entity for t
         /// </summary>
         /// <exception cref="Exception"></exception>
         private void InitializeInteralLuaEntity() {
@@ -211,6 +211,10 @@ namespace Lawrence
             _client.UpdateMoby(moby);
         }
 
+        public void NotifyDelete(Moby entity) {
+            _client.DeleteMoby(entity);
+        }
+
         /// <summary>
         /// Send a packet to the Player
         /// </summary>
@@ -331,6 +335,8 @@ namespace Lawrence
 
                 if (mobyUpdate.level != this.Level().GetGameID()) {
                     Level lastLevel = _level;
+                    
+                    _level.Remove(this, false);
                     
                     _level = Universe().GetLevelByGameID(mobyUpdate.level);
                     _level.Add(this);

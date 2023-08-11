@@ -76,4 +76,14 @@ public class Level : Entity {
     public void Add(Entity entity) {
         this.Add(entity, false);
     }
+
+    public void Remove(Entity entity, bool unparent = true) {
+        base.Remove(entity, unparent);
+
+        if (entity is Moby moby) {
+            foreach (Player player in Find<Player>()) {
+                player.NotifyDelete(moby);
+            }
+        }
+    }
 }

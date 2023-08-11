@@ -440,8 +440,6 @@ namespace Lawrence {
                             gameState = (GameState)state.value;
 
                             _clientHandler.GameStateChanged(gameState);
-
-                            // TODO: Tell client handler about game state change
                         }
 
                         if (state.stateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
