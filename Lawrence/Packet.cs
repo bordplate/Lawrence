@@ -75,6 +75,7 @@ namespace Lawrence
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketConnect {
         public Int32 userid;
+        public UInt32 version;
         public byte passcode1;
         public byte passcode2;
         public byte passcode3;
@@ -96,7 +97,9 @@ namespace Lawrence
         ERROR_UNKNOWN = 0,
         SUCCESS = 1,
         ERROR_USER_ALREADY_CONNECTED = 2,
-        ERROR_NOT_ALLOWED = 3
+        ERROR_NOT_ALLOWED = 3,
+        ERROR_OUTDATED = 4,
+        ERROR_WRONG_PASSCODE = 5
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

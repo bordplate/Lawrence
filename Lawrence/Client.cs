@@ -75,6 +75,10 @@ namespace Lawrence {
             MPPacketType.MP_PACKET_TIME_SYNC
         };
         
+        // Which API version we're currently on and which is the minimum version we support. 
+        uint API_VERSION = 1;
+        uint API_VERSION_MIN = 1;
+        
         /// <summary>
         /// When true, this client is waiting to connect, and is not yet part of the regular OnTick loop
         /// </summary>
@@ -292,16 +296,46 @@ namespace Lawrence {
 
                 switch (packetHeader.ptype) {
                     case MPPacketType.MP_PACKET_CONNECT: {
-                        MPPacketConnect connectPacket = Packet.BytesToStruct<MPPacketConnect>(packetBody, Packet.Endianness.BigEndian);
-                        string username = connectPacket.GetUsername(packetBody);
-
                         MPPacketHeader responseHeader = new MPPacketHeader {
                             ptype = MPPacketType.MP_PACKET_ACK,
                             size = (uint)Marshal.SizeOf<MPPacketConnectResponse>(),
                             requiresAck = packetHeader.requiresAck,
                             ackCycle = packetHeader.ackCycle
                         };
+
+                        if (packetSize < (uint)Marshal.SizeOf<MPPacketConnect>()) {
+                            // Legacy client, we tell it to fuck off with an unknown error code, since it doesn't know about
+                            //  the "outdated version" return code. 
+                            Logger.Log("Legacy client tried to connect.");
+                            
+                            MPPacketConnectResponse response = new MPPacketConnectResponse {
+                                status = MPPacketConnectResponseStatus.ERROR_UNKNOWN
+                            };
+                                    
+                            SendPacket(responseHeader, Packet.StructToBytes(response, Packet.Endianness.BigEndian));
+                            this.Disconnect();
+                            return; 
+                        }
+
+                        // Decode the packet
+                        MPPacketConnect connectPacket = Packet.BytesToStruct<MPPacketConnect>(packetBody, Packet.Endianness.BigEndian);
+                        string username = connectPacket.GetUsername(packetBody);
                         
+                        // Check that the API versions are compatible
+                        if (connectPacket.version < API_VERSION_MIN) {
+                            Logger.Log($"{username} tried to connect with old version {connectPacket.version}. Minimum version: {API_VERSION_MIN}. Latest: {API_VERSION}");
+                            // Client is outdated, tell them to update.
+                            MPPacketConnectResponse response = new MPPacketConnectResponse {
+                                status = connectPacket.version == 0 ? 
+                                    MPPacketConnectResponseStatus.ERROR_UNKNOWN : // Legacy alpha doesn't support ERROR_OUTDATED
+                                    MPPacketConnectResponseStatus.ERROR_OUTDATED
+                            };
+
+                            SendPacket(responseHeader, Packet.StructToBytes(response, Packet.Endianness.BigEndian));
+                            this.Disconnect();
+                            return; 
+                        }
+
                         foreach (Client c in Lawrence.GetClients()) {
                             if (c != this && c.GetUsername() == connectPacket.GetUsername(packetBody)) {
                                 if (c.GetUserid() == connectPacket.userid && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
