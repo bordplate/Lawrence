@@ -7,8 +7,6 @@ function Universe:initialize()
     local universeEntity = Game:NewUniverse(self)
 
     Entity.initialize(self, universeEntity)
-
-
 end
 
 -- Called every tick of the game
