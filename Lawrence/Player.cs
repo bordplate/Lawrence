@@ -26,6 +26,11 @@ namespace Lawrence
             get { return _z; }
             set { base.z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
         }
+        
+        public override float rotZ {
+            get { return _rotZ; }
+            set { base.rotZ = value; _client.SendPacket(Packet.MakeSetPositionPacket(6, (float)(((Math.PI / 180) * value) - Math.PI))); }
+        }
 
         private ushort _state = 0;
         public ushort state {
@@ -114,7 +119,7 @@ namespace Lawrence
         }
 
         public void SetRespawn(float x, float y, float z, float rotationZ) {
-            SendPacket(Packet.MakeSetRespawnPacket(x, y, z, rotationZ));
+            SendPacket(Packet.MakeSetRespawnPacket(x, y, z, (float)(((Math.PI / 180) * rotationZ) - Math.PI)));
         }
 
         public void Damage(int damage) {
@@ -325,9 +330,9 @@ namespace Lawrence
                 this._y = mobyUpdate.y;
                 this._z = mobyUpdate.z;
                 this._state = mobyUpdate.state;
-                this.rotX = (float)(180 / Math.PI) * mobyUpdate.rotX;
-                this.rotY = (float)(180 / Math.PI) * mobyUpdate.rotY;
-                this.rotZ = (float)(180 / Math.PI) * mobyUpdate.rotZ;
+                this.rotX = (float)((180 / Math.PI) * (mobyUpdate.rotX + Math.PI));
+                this.rotY = (float)((180 / Math.PI) * (mobyUpdate.rotY + Math.PI));
+                this._rotZ = (float)((180 / Math.PI) * (mobyUpdate.rotZ + Math.PI));
                 this.scale = mobyUpdate.scale;
                 this.alpha = mobyUpdate.alpha / 128.0f;
                 this.animationID = mobyUpdate.animationID;

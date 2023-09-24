@@ -32,8 +32,8 @@ namespace Lawrence
         private float _rotY = 0.0f;
         public float rotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
         
-        private float _rotZ = 0.0f;
-        public float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
+        protected float _rotZ = 0.0f;
+        public virtual float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
         
         private float _scale = 1.0f;
         public float scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
