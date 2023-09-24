@@ -1,0 +1,14 @@
+{
+  "name": "Rilgar",
+  "checkpoints": [
+    {"x": 358, "y": 125, "z": 64, "rotation": 300.0},
+    {"x": 357, "y": 173, "z": 66, "rotation": 28.0},
+    {"x": 342, "y": 211, "z": 67, "rotation": 14.0},
+    {"x": 371, "y": 247, "z": 73, "rotation": 300.0}
+  ],
+  "start": {"x": 341, "y": 114, "z": 65, "rotation": 300.0},
+  "laps": 1,
+  "planet": "Rilgar",
+  "delete": [],
+  "deleteUIDs": []
+}

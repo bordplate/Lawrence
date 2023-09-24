@@ -115,5 +115,24 @@ namespace Lawrence {
                 }
             }
         }
+        
+        /// <summary>
+        /// Post notifications of type T only to objects of type E
+        /// </summary>
+        /// <param name="notification"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="E"></typeparam>
+        public void Post<T, E>(T notification) where T : Notification {
+            string notificationName = typeof(T).Name;
+            if (_subscribers.TryGetValue(notificationName, out var callbacks)) {
+                // We use GetRange on callbacks here because otherwise we'd crash due to "modified collection" during
+                //   the loop. 
+                foreach (Action<T> callback in callbacks.GetRange(0, callbacks.Count)) {
+                    if (callback.Target is E) {
+                        callback(notification);
+                    }
+                }
+            }
+        }
     }
 }
