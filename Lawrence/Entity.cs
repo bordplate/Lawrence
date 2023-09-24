@@ -74,6 +74,10 @@ namespace Lawrence
         public virtual void DeleteAllChildrenWithOClass(ushort oClass) {
             SendPacket(Packet.MakeDeleteAllMobysPacket(oClass));
         }
+        
+        public virtual void DeleteAllChildrenWithUID(ushort uid) {
+            SendPacket(Packet.MakeDeleteAllMobysUIDPacket(uid));
+        }
 
         #region Getters/setters
 

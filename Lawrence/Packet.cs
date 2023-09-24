@@ -358,6 +358,22 @@ namespace Lawrence
 
             return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
         }
+        
+        public static (MPPacketHeader, byte[]) MakeDeleteAllMobysUIDPacket(ushort uid)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_MOBY_DELETE;
+            header.requiresAck = 255;  // 255 represents unfilled fields that the client will fill before sending
+            header.ackCycle = 255; 
+
+            MPPacketMobyCreate body = new MPPacketMobyCreate();
+            body.uuid = uid;
+            body.flags = 8;
+
+            header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
+
+            return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
+        }
 
         public static (MPPacketHeader, byte[]) MakeMobyUpdatePacket(ushort id, Moby moby)
         {
