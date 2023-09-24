@@ -21,6 +21,10 @@ namespace Lawrence
         private List<Mod> mods = new List<Mod>();
 
         private long _ticks = 0;
+        
+        /// <summary>
+        /// Time in milliseconds
+        /// </summary>
         private ulong _time = 0;
         private ulong _deltaTime = 0;
 
@@ -173,6 +177,10 @@ namespace Lawrence
 			return Game.SharedGame;
 		}
 
+        /// <summary>
+        /// Gets the time since Jan 1 1970 in milliseconds.
+        /// </summary>
+        /// <returns>Current time in milliseconds.</returns>
         public ulong Time() {
             return _time;
         }
