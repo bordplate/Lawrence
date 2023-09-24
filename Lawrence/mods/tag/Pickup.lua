@@ -6,7 +6,8 @@
 Pickup = class('Pickup', Moby)
 
 function Pickup:Made()
-    
+    self:SetOClass(500)
+    self.scale = 0.012
 end
 
 function Pickup:OnCollision(moby)

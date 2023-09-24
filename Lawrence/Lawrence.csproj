@@ -28,7 +28,6 @@
     <PackageReference Include="Nett" Version="0.15.0" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="mods\race\races\" />
     <Folder Include="UI\" />
     <Folder Include="runtime\" />
   </ItemGroup>
