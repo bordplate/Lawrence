@@ -41,6 +41,8 @@ namespace Lawrence
         MP_STATE_TYPE_SET_RESPAWN = 7,
         MP_STATE_TYPE_COLLECTED_GOLD_BOLT = 8,
         MP_STATE_TYPE_BLOCK_GOLD_BOLT = 9,
+        MP_STATE_TYPE_PLAYER_INPUT = 10,
+        MP_STATE_TYPE_ARBITRARY = 11
     }
 
     public enum MPPacketFlags : ushort
@@ -515,6 +517,59 @@ namespace Lawrence
             header.size = (uint)size;
 
             return (header, StructToBytes<MPPacketSetState>(setPlayerState, Endianness.BigEndian));
+        }
+        
+        public static (MPPacketHeader, byte[]) MakeSetPlayerInputStatePacket(uint state)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetState setPlayerState = new MPPacketSetState();
+            setPlayerState.stateType = MPStateType.MP_STATE_TYPE_PLAYER_INPUT;
+            setPlayerState.value = state;
+
+            var size = Marshal.SizeOf(setPlayerState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetState>(setPlayerState, Endianness.BigEndian));
+        }
+        
+        public static (MPPacketHeader, byte[]) MakeSetAddressValuePacket(uint address, uint value)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetState setPlayerState = new MPPacketSetState();
+            setPlayerState.stateType = MPStateType.MP_STATE_TYPE_ARBITRARY;
+            setPlayerState.offset = address;
+            setPlayerState.value = value;
+
+            var size = Marshal.SizeOf(setPlayerState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetState>(setPlayerState, Endianness.BigEndian));
+        }
+        
+        public static (MPPacketHeader, byte[]) MakeSetAddressFloatPacket(uint address, float value)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetStateFloat setPlayerState = new MPPacketSetStateFloat();
+            setPlayerState.stateType = MPStateType.MP_STATE_TYPE_ARBITRARY;
+            setPlayerState.offset = address;
+            setPlayerState.value = value;
+
+            var size = Marshal.SizeOf(setPlayerState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetStateFloat>(setPlayerState, Endianness.BigEndian));
         }
 
         public static (MPPacketHeader, byte[]) MakeSetPositionPacket(ushort property, float position) {

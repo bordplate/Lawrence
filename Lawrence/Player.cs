@@ -125,6 +125,28 @@ namespace Lawrence
         public void Damage(int damage) {
             SendPacket(Packet.MakeDamagePacket((uint)damage));
         }
+
+        public string Username() {
+            return _client.GetUsername() ?? "<Unknown>";
+        }
+
+        public void SetInputState(uint state) {
+            SendPacket(Packet.MakeSetPlayerInputStatePacket(state));
+        }
+
+        public void LockMovement() {
+            state = 114;
+            SetInputState(0x9);
+        }
+
+        public void UnlockMovement() {
+            state = 0;
+            SetInputState(0);
+        }
+
+        public void SetSpeed(float speed) {
+            SendPacket(Packet.MakeSetAddressFloatPacket(0x969e74, speed));
+        }
     }
     #endregion
 
@@ -230,6 +252,14 @@ namespace Lawrence
         public override void SendPacket((MPPacketHeader, byte[]) packet)
         {
             _client.SendPacket(packet);
+        }
+
+        public bool Disconnected() {
+            return _client.IsDisconnected();
+        }
+
+        public void Disconnect() {
+            _client.Disconnect();
         }
     }
     #endregion
