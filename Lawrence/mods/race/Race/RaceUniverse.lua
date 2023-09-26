@@ -4,7 +4,7 @@ require 'Race.Course'
 
 RaceUniverse = class("RaceUniverse", Universe)
 
-COURSE_FILES = {"kalebo.json", "eudora_backwards.json", "poki.json", "rilgar.json", "orxon.json", "aridia.json"}
+COURSE_FILES = {"gemlik.json", "eudora_backwards.json", "poki.json", "rilgar.json", "orxon.json", "aridia.json"}
 
 -- All of these units are in seconds
 WAITING_TIMEOUT = 30
