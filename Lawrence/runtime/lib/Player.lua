@@ -13,3 +13,7 @@ function Player:SpawnInstanced(mobyType)
     
     return moby
 end
+
+function Player:OnUnlockItem(item)
+    self:GiveItem(item)
+end

@@ -42,7 +42,8 @@ namespace Lawrence
         MP_STATE_TYPE_COLLECTED_GOLD_BOLT = 8,
         MP_STATE_TYPE_BLOCK_GOLD_BOLT = 9,
         MP_STATE_TYPE_PLAYER_INPUT = 10,
-        MP_STATE_TYPE_ARBITRARY = 11
+        MP_STATE_TYPE_ARBITRARY = 11,
+        MP_STATE_TYPE_UNLOCK_ITEM = 12
     }
 
     public enum MPPacketFlags : ushort

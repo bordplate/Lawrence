@@ -411,6 +411,10 @@ namespace Lawrence
         public void CollectedGoldBolt(int planet, int number) {
             CallLuaFunction("OnCollectedGoldBolt", LuaEntity(), planet, number);
         }
+
+        public void UnlockItem(int itemId) {
+            CallLuaFunction("OnUnlockItem", LuaEntity(), itemId);
+        }
     }
     #endregion
     
