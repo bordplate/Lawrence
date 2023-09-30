@@ -17,5 +17,10 @@ function RandoPlayer:OnTick()
 end
 
 function RandoPlayer:OnUnlockItem(item)
-    Player.OnUnlockItem(self, item) -- insert rando code here to change item
+    --Player.OnUnlockItem(self, item)
+    -- instead of straight up unlocking, should ask self.randoUniverse.(map???)which item to give
+    -- this way the Universe decides what items are given and what rules are used to do so
+    -- which is independent from the player so all players in one universe have the same seed
+    local randoItem = self.randoUniverse.itemMap[item]
+    self:GiveItem(randoItem)
 end
