@@ -11,7 +11,7 @@ end
 -- When a new player joins this Universe. 
 function LobbyUniverse:OnPlayerJoin(player)
     print("Player is joining Lobby")
-    player:LoadLevel("KaleboIII")
+    player:LoadLevel("KaleboIII", false)
     player:Make(LobbyPlayer)
 end
 

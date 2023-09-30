@@ -107,11 +107,11 @@ namespace Lawrence
     
     #region Gameplay related function
     partial class Player {
-        public void LoadLevel(string level) {
+        public void LoadLevel(string level, bool unlockLevel = true) {
             _level = Universe().GetLevelByName(level);
             _level.Add(this);
 
-            SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID()));
+            SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID(), unlockLevel));
         }
 
         public void GiveItem(ushort item) {
