@@ -10,6 +10,7 @@ function LobbyPlayer:Made()
     self.waitingLabel = Label:new("Waiting for current race to end...", 250, 200, 0xC0FFA888)
     
     self.joinRando = nil
+    self.stayInLobbyMessage = 0
 end
 
 function LobbyPlayer:OnControllerInputTapped(input)
@@ -41,30 +42,34 @@ function LobbyPlayer:OnTick()
         self.prev_state = self.state
     end
 
+    -- print("x: " .. self.x .. " y: " .. self.y .. " z: " .. self.z)
+
     if self.joinRando == nil and not self:IsWithinCube(
-        301, 277, 117,
-        321, 300, 125
+        138, 105, 30,
+        155, 80, 40
     ) then
-        self.x = 310
-        self.y = 282
-        self.z = 120
+        self.x = 146
+        self.y = 96
+        self.z = 33
 
-        self.state = 0
+        self.stayInLobbyMessage = 100
 
-        -- Delete some of the mobys in the player's game that we don't want to have in the lobby room. 
-        self:DeleteAllChildrenWithOClass(1134)  -- Gold bolts
-        self:DeleteAllChildrenWithOClass(1135)  -- Transporters
-        self:DeleteAllChildrenWithOClass(315)   -- Transporter teeth
+        -- self.state = 0
+
+        -- -- Delete some of the mobys in the player's game that we don't want to have in the lobby room. 
+        -- self:DeleteAllChildrenWithOClass(1134)  -- Gold bolts
+        -- self:DeleteAllChildrenWithOClass(1135)  -- Transporters
+        -- self:DeleteAllChildrenWithOClass(315)   -- Transporter teeth
 
         -- Spawn the moby that represents starting the race. 
         if self.startCasualRandoMoby == nil then
             self.startCasualRandoMoby = self:SpawnInstanced(startCasualRandoMoby)
-            self.startCasualRandoMoby:SetPosition(304, 289, 119)
+            self.startCasualRandoMoby:SetPosition(146, 93, 33)
         end
-        if self.startSpeedrunRandoMoby == nil then
-            self.startSpeedrunRandoMoby = self:SpawnInstanced(startSpeedrunRandoMoby)
-            self.startSpeedrunRandoMoby:SetPosition(310, 295, 119)
-        end
+        -- if self.startSpeedrunRandoMoby == nil then
+        --     self.startSpeedrunRandoMoby = self:SpawnInstanced(startSpeedrunRandoMoby)
+        --     self.startSpeedrunRandoMoby:SetPosition(310, 295, 119)
+        -- end
     end
 
 
@@ -74,5 +79,10 @@ function LobbyPlayer:OnTick()
     end
     if self.startSpeedrunRandoMoby ~= nil and self:DistanceTo(self.startSpeedrunRandoMoby) < 3 then
         self:ToastMessage("\x12 Start Speedrun Rando")
+    end
+
+    if self.stayInLobbyMessage > 0 then
+        self.stayInLobbyMessage = self.stayInLobbyMessage - 1
+        self:ToastMessage("Please stay in the Lobby!")
     end
 end

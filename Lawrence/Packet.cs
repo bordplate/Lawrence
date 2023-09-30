@@ -408,7 +408,7 @@ namespace Lawrence
             return (moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Endianness.BigEndian));
         }
 
-        public static (MPPacketHeader, byte[]) MakeGoToPlanetPacket(int planet, bool unlockPlanet = true)
+        public static (MPPacketHeader, byte[]) MakeGoToPlanetPacket(int planet)
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
@@ -418,7 +418,6 @@ namespace Lawrence
             MPPacketSetState destinationPlanetState = new MPPacketSetState();
             destinationPlanetState.stateType = MPStateType.MP_STATE_TYPE_PLANET;
             destinationPlanetState.value = (uint)planet;
-            destinationPlanetState.offset = (uint)(unlockPlanet ? 1 : 0);
 
             var size = Marshal.SizeOf(destinationPlanetState);
             header.size = (uint)size;

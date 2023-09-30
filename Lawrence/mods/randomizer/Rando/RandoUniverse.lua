@@ -21,7 +21,8 @@ end
 function RandoUniverse:OnPlayerJoin(player)
     player = player:Make(RandoPlayer)
     player.randoUniverse = self
-    player:LoadLevel("Novalis")
+    --player:LoadLevel("Veldin1")
+    player:OnUnlockItem(0xa) -- bomb glove
 end
 
 function RandoUniverse:generateItemMap()

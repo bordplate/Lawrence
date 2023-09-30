@@ -4,7 +4,7 @@ function StartRandoMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     -- Crate
-    self:SetOClass(556)
+    self:SetOClass(1438)
 
     self.rotationSpeed = 0.01*math.pi
     self.amplitude = 0.01  -- the height of the bouncing
@@ -12,7 +12,7 @@ function StartRandoMoby:initialize(internalEntity)
     self.bounceZ = self.z
 
     self.alpha = 1
-    self.scale = 0.2
+    self.scale = 0.05
 
     self.rotY = 0.0
 end
