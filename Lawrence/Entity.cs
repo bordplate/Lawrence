@@ -148,6 +148,21 @@ namespace Lawrence
                 return function;
             }
 
+            while ((LuaTable)classTable["super"] is LuaTable) {
+                classTable = (LuaTable)classTable["super"];
+
+                declaredMethods = (LuaTable)classTable["__declaredMethods"];
+
+                if (declaredMethods[functionName] != null && declaredMethods[functionName] is LuaFunction) {
+                    LuaFunction function = (LuaFunction)declaredMethods[functionName];
+
+                    _luaFunctions.Add(functionName, function);
+
+                    return function;
+                }
+            }
+            
+
             return null;
         }
 

@@ -27,6 +27,9 @@ end
 function LobbyPlayer:OnRespawned()
 end
 
+function LobbyPlayer:OnUnlockItem(item)
+end
+
 function LobbyPlayer:OnTick()
     -- Player is locked to state 100 when spawning
     if self.state == 100 then
