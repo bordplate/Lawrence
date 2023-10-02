@@ -17,3 +17,7 @@ end
 function Player:OnUnlockItem(item)
     self:GiveItem(item)
 end
+
+function Player:OnUnlockPlanet(planet)
+    self:UnlockPlanet(planet)
+end

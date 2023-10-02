@@ -155,6 +155,11 @@ namespace Lawrence
         public void GiveBolts(uint bolts) {
             SendPacket(Packet.MakeGiveBoltsPacket(bolts));
         }
+
+        public void UnlockPlanet(int planet) {
+            SendPacket(Packet.MakeUnlockPlanetPacket(planet));
+        }
+
     }
     #endregion
 
@@ -422,6 +427,10 @@ namespace Lawrence
 
         public void UnlockItem(int itemId) {
             CallLuaFunction("OnUnlockItem", LuaEntity(), itemId);
+        }
+
+        public void OnUnlockPlanet(int planet) {
+            CallLuaFunction("OnUnlockPlanet", LuaEntity(), planet);
         }
     }
     #endregion

@@ -44,7 +44,8 @@ namespace Lawrence
         MP_STATE_TYPE_PLAYER_INPUT = 10,
         MP_STATE_TYPE_ARBITRARY = 11,
         MP_STATE_TYPE_UNLOCK_ITEM = 12,
-        MP_STATE_TYPE_GIVE_BOLTS = 13
+        MP_STATE_TYPE_GIVE_BOLTS = 13,
+        MP_STATE_TYPE_UNLOCK_PLANET = 14
     }
 
     public enum MPPacketFlags : ushort
@@ -504,6 +505,23 @@ namespace Lawrence
             MPPacketSetState setItemState = new MPPacketSetState();
             setItemState.stateType = MPStateType.MP_STATE_TYPE_ITEM;
             setItemState.value = ((uint)(give ? 1 : 0) << 16) | (uint)item;
+
+            var size = Marshal.SizeOf(setItemState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetState>(setItemState, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeUnlockPlanetPacket(int planet)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketSetState setItemState = new MPPacketSetState();
+            setItemState.stateType = MPStateType.MP_STATE_TYPE_UNLOCK_PLANET;
+            setItemState.value = (uint)planet;
 
             var size = Marshal.SizeOf(setItemState);
             header.size = (uint)size;
