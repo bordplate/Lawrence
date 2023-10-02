@@ -43,7 +43,8 @@ namespace Lawrence
         MP_STATE_TYPE_BLOCK_GOLD_BOLT = 9,
         MP_STATE_TYPE_PLAYER_INPUT = 10,
         MP_STATE_TYPE_ARBITRARY = 11,
-        MP_STATE_TYPE_UNLOCK_ITEM = 12
+        MP_STATE_TYPE_UNLOCK_ITEM = 12,
+        MP_STATE_TYPE_GIVE_BOLTS = 13
     }
 
     public enum MPPacketFlags : ushort
@@ -165,6 +166,13 @@ namespace Lawrence
         public MPStateType stateType;
         public uint offset;
         public float value;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct MPPacketBolts
+    {
+        public MPStateType stateType;
+        public uint value;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -571,6 +579,23 @@ namespace Lawrence
             header.size = (uint)size;
 
             return (header, StructToBytes<MPPacketSetStateFloat>(setPlayerState, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeGiveBoltsPacket(uint bolts)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketBolts giveBolts = new MPPacketBolts();
+            giveBolts.stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS;
+            giveBolts.value = bolts;
+
+            var size = Marshal.SizeOf(giveBolts);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketBolts>(giveBolts, Endianness.BigEndian));
         }
 
         public static (MPPacketHeader, byte[]) MakeSetPositionPacket(ushort property, float position) {

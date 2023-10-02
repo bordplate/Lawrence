@@ -147,6 +147,14 @@ namespace Lawrence
         public void SetSpeed(float speed) {
             SendPacket(Packet.MakeSetAddressFloatPacket(0x969e74, speed));
         }
+
+        public void SetBolts(uint bolts) {
+            SendPacket(Packet.MakeSetAddressValuePacket(0x969CA0, bolts));
+        }
+
+        public void GiveBolts(uint bolts) {
+            SendPacket(Packet.MakeGiveBoltsPacket(bolts));
+        }
     }
     #endregion
 

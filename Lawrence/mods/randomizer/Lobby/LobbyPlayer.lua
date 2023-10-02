@@ -10,7 +10,6 @@ function LobbyPlayer:Made()
     self.waitingLabel = Label:new("Waiting for current race to end...", 250, 200, 0xC0FFA888)
     
     self.joinRando = nil
-    self.stayInLobbyMessage = 0
 end
 
 function LobbyPlayer:OnControllerInputTapped(input)
@@ -52,7 +51,7 @@ function LobbyPlayer:OnTick()
         self.y = 96
         self.z = 33
 
-        self.stayInLobbyMessage = 100
+        self:ToastMessage("Please stay in the lobby!", 100)
 
         -- self.state = 0
 
@@ -79,10 +78,5 @@ function LobbyPlayer:OnTick()
     end
     if self.startSpeedrunRandoMoby ~= nil and self:DistanceTo(self.startSpeedrunRandoMoby) < 3 then
         self:ToastMessage("\x12 Start Speedrun Rando")
-    end
-
-    if self.stayInLobbyMessage > 0 then
-        self.stayInLobbyMessage = self.stayInLobbyMessage - 1
-        self:ToastMessage("Please stay in the Lobby!")
     end
 end

@@ -23,6 +23,8 @@ function RandoUniverse:OnPlayerJoin(player)
     player.randoUniverse = self
     --player:LoadLevel("Veldin1")
     player:OnUnlockItem(0xa) -- bomb glove
+    player:SetBolts(150000)
+    -- player:GiveBolts(5)
 end
 
 function RandoUniverse:generateItemMap()
