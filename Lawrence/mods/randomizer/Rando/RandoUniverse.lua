@@ -13,9 +13,6 @@ function RandoUniverse:initialize()
 
     -- generate a randomisation map
     self:generateItemMap()
-    -- for k,v in pairs(keyid) do
-    --     print("pair: " .. k .. ": " .. v)
-    -- end
 end
 
 function RandoUniverse:OnPlayerJoin(player)
@@ -31,7 +28,7 @@ function RandoUniverse:generateItemMap()
     local itemList = {}
     local randomItemList = {}
     for k,v in pairs(keyid) do -- create the list of all items twice
-        table.insert(itemList, v)
+        table.insert(itemList, v[1])
         table.insert(randomItemList, v)
     end
 

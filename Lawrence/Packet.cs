@@ -495,7 +495,7 @@ namespace Lawrence
             return (header, bytes.ToArray());
         }
 
-        public static (MPPacketHeader, byte[]) MakeSetItemPacket(ushort item, bool give)
+        public static (MPPacketHeader, byte[]) MakeSetItemPacket(ushort item, bool equip)
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
@@ -504,7 +504,7 @@ namespace Lawrence
 
             MPPacketSetState setItemState = new MPPacketSetState();
             setItemState.stateType = MPStateType.MP_STATE_TYPE_ITEM;
-            setItemState.value = ((uint)(give ? 1 : 0) << 16) | (uint)item;
+            setItemState.value = ((uint)(equip ? 1 : 0) << 16) | (uint)item;
 
             var size = Marshal.SizeOf(setItemState);
             header.size = (uint)size;

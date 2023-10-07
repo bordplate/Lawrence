@@ -22,5 +22,5 @@ function RandoPlayer:OnUnlockItem(item)
     -- this way the Universe decides what items are given and what rules are used to do so
     -- which is independent from the player so all players in one universe have the same seed
     local randoItem = self.randoUniverse.itemMap[item]
-    self:GiveItem(randoItem)
+    self:GiveItem(randoItem[1], randoItem[2]) -- the values in itemMap are pairs stating {item, equip} with equip deciding wether the item is equiped on unlock
 end

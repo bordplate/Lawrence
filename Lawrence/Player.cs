@@ -114,8 +114,8 @@ namespace Lawrence
             SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID()));
         }
 
-        public void GiveItem(ushort item) {
-            SendPacket(Packet.MakeSetItemPacket(item, true));
+        public void GiveItem(ushort item, bool equip = false) {
+            SendPacket(Packet.MakeSetItemPacket(item, equip));
         }
 
         public void SetRespawn(float x, float y, float z, float rotationZ) {
