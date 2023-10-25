@@ -61,6 +61,8 @@ namespace Lawrence {
         abstract void PlayerRespawned();
         abstract void GameStateChanged(GameState state);
         abstract void CollectedGoldBolt(int planet, int number);
+        abstract void UnlockItem(int item);
+        abstract void OnUnlockPlanet(int planet);
     }
 
     public partial class Client {
@@ -479,6 +481,16 @@ namespace Lawrence {
                         if (state.stateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
                             Logger.Log($"Player got bolt #{state.value}");
                             _clientHandler.CollectedGoldBolt((int)state.offset, (int)state.value);
+                        }
+
+                        if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
+                            Logger.Log($"Player got item #{state.value}");
+                            _clientHandler.UnlockItem((int)state.value);
+                        }
+
+                        if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_PLANET) {
+                            Logger.Log($"Player unlocked planet #{state.value}");
+                            _clientHandler.OnUnlockPlanet((int)state.value);
                         }
 
                         break;

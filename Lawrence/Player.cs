@@ -114,8 +114,8 @@ namespace Lawrence
             SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID()));
         }
 
-        public void GiveItem(ushort item) {
-            SendPacket(Packet.MakeSetItemPacket(item, true));
+        public void GiveItem(ushort item, bool equip = false) {
+            SendPacket(Packet.MakeSetItemPacket(item, equip));
         }
 
         public void SetRespawn(float x, float y, float z, float rotationZ) {
@@ -147,6 +147,19 @@ namespace Lawrence
         public void SetSpeed(float speed) {
             SendPacket(Packet.MakeSetAddressFloatPacket(0x969e74, speed));
         }
+
+        public void SetBolts(uint bolts) {
+            SendPacket(Packet.MakeSetAddressValuePacket(0x969CA0, bolts));
+        }
+
+        public void GiveBolts(uint bolts) {
+            SendPacket(Packet.MakeGiveBoltsPacket(bolts));
+        }
+
+        public void UnlockPlanet(int planet) {
+            SendPacket(Packet.MakeUnlockPlanetPacket(planet));
+        }
+
     }
     #endregion
 
@@ -410,6 +423,14 @@ namespace Lawrence
 
         public void CollectedGoldBolt(int planet, int number) {
             CallLuaFunction("OnCollectedGoldBolt", LuaEntity(), planet, number);
+        }
+
+        public void UnlockItem(int itemId) {
+            CallLuaFunction("OnUnlockItem", LuaEntity(), itemId);
+        }
+
+        public void OnUnlockPlanet(int planet) {
+            CallLuaFunction("OnUnlockPlanet", LuaEntity(), planet);
         }
     }
     #endregion

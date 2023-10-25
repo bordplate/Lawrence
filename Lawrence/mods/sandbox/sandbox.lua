@@ -9,6 +9,7 @@ end
 -- When a new player joins this Universe. 
 function SandboxUniverse:OnPlayerJoin(player)
     player:LoadLevel("Veldin1")
+    player:SetBolts(200000)
 end
 
 function SandboxUniverse:OnTick()
