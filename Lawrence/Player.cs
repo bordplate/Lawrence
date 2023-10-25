@@ -111,7 +111,7 @@ namespace Lawrence
             _level = Universe().GetLevelByName(level);
             _level.Add(this);
 
-            SendPacket(Packet.MakeGoToPlanetPacket(_level.GetGameID()));
+            SendPacket(Packet.MakeGoToLevelPacket(_level.GetGameID()));
         }
 
         public void GiveItem(ushort item, bool equip = false) {
@@ -156,8 +156,8 @@ namespace Lawrence
             SendPacket(Packet.MakeGiveBoltsPacket(bolts));
         }
 
-        public void UnlockPlanet(int planet) {
-            SendPacket(Packet.MakeUnlockPlanetPacket(planet));
+        public void UnlockLevel(int level) {
+            SendPacket(Packet.MakeUnlockLevelPacket(level));
         }
 
     }
@@ -425,12 +425,12 @@ namespace Lawrence
             CallLuaFunction("OnCollectedGoldBolt", LuaEntity(), planet, number);
         }
 
-        public void UnlockItem(int itemId) {
-            CallLuaFunction("OnUnlockItem", LuaEntity(), itemId);
+        public void UnlockItem(int itemId, bool equip) {
+            CallLuaFunction("OnUnlockItem", LuaEntity(), itemId, equip);
         }
 
-        public void OnUnlockPlanet(int planet) {
-            CallLuaFunction("OnUnlockPlanet", LuaEntity(), planet);
+        public void OnUnlockLevel(int level) {
+            CallLuaFunction("OnUnlockLevel", LuaEntity(), level);
         }
     }
     #endregion

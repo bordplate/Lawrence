@@ -61,8 +61,8 @@ namespace Lawrence {
         abstract void PlayerRespawned();
         abstract void GameStateChanged(GameState state);
         abstract void CollectedGoldBolt(int planet, int number);
-        abstract void UnlockItem(int item);
-        abstract void OnUnlockPlanet(int planet);
+        abstract void UnlockItem(int item, bool equip);
+        abstract void OnUnlockLevel(int level);
     }
 
     public partial class Client {
@@ -78,8 +78,8 @@ namespace Lawrence {
         };
         
         // Which API version we're currently on and which is the minimum version we support. 
-        uint API_VERSION = 1;
-        uint API_VERSION_MIN = 1;
+        uint API_VERSION = 2;
+        uint API_VERSION_MIN = 2;
         
         /// <summary>
         /// When true, this client is waiting to connect, and is not yet part of the regular OnTick loop
@@ -484,13 +484,17 @@ namespace Lawrence {
                         }
 
                         if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
-                            Logger.Log($"Player got item #{state.value}");
-                            _clientHandler.UnlockItem((int)state.value);
+                            // TODO: Clean up this bitwise magic into readable flags
+                            uint item = state.value & 0xFFFF;
+                            bool equip = (state.value >> 16) == 1;
+                            
+                            Logger.Log($"Player got item #{item}: equip: {equip}");
+                            _clientHandler.UnlockItem((int)state.value, equip);
                         }
 
-                        if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_PLANET) {
-                            Logger.Log($"Player unlocked planet #{state.value}");
-                            _clientHandler.OnUnlockPlanet((int)state.value);
+                        if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
+                            Logger.Log($"Player unlocked level #{state.value}");
+                            _clientHandler.OnUnlockLevel((int)state.value);
                         }
 
                         break;
@@ -499,7 +503,7 @@ namespace Lawrence {
                         if (Lawrence.DirectoryMode()) {
                             List<Server> servers = Lawrence.Directory().Servers();
 
-                            SendPacket(Packet.MakeQuerySerserResponsePacket(servers, packetHeader.requiresAck,
+                            SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.requiresAck,
                                 packetHeader.ackCycle));
                         }
                         else {

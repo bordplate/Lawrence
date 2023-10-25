@@ -14,10 +14,10 @@ function Player:SpawnInstanced(mobyType)
     return moby
 end
 
-function Player:OnUnlockItem(item)
-    self:GiveItem(item)
+function Player:OnUnlockItem(item, equip)
+    self:GiveItem(item, equip)
 end
 
-function Player:OnUnlockPlanet(planet)
-    self:UnlockPlanet(planet)
+function Player:OnUnlockLevel(level)
+    self:UnlockLevel(level)
 end
