@@ -42,7 +42,10 @@ namespace Lawrence
         MP_STATE_TYPE_COLLECTED_GOLD_BOLT = 8,
         MP_STATE_TYPE_BLOCK_GOLD_BOLT = 9,
         MP_STATE_TYPE_PLAYER_INPUT = 10,
-        MP_STATE_TYPE_ARBITRARY = 11
+        MP_STATE_TYPE_ARBITRARY = 11,
+        MP_STATE_TYPE_UNLOCK_ITEM = 12,
+        MP_STATE_TYPE_GIVE_BOLTS = 13,
+        MP_STATE_TYPE_UNLOCK_LEVEL = 14
     }
 
     public enum MPPacketFlags : ushort
@@ -164,6 +167,13 @@ namespace Lawrence
         public MPStateType stateType;
         public uint offset;
         public float value;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct MPPacketBolts
+    {
+        public MPStateType stateType;
+        public uint value;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -407,24 +417,24 @@ namespace Lawrence
             return (moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Endianness.BigEndian));
         }
 
-        public static (MPPacketHeader, byte[]) MakeGoToPlanetPacket(int planet)
+        public static (MPPacketHeader, byte[]) MakeGoToLevelPacket(int level)
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
             header.requiresAck = 255;
             header.ackCycle = 255;
 
-            MPPacketSetState destinationPlanetState = new MPPacketSetState();
-            destinationPlanetState.stateType = MPStateType.MP_STATE_TYPE_PLANET;
-            destinationPlanetState.value = (uint)planet;
+            MPPacketSetState destinationLevelState = new MPPacketSetState();
+            destinationLevelState.stateType = MPStateType.MP_STATE_TYPE_PLANET;
+            destinationLevelState.value = (uint)level;
 
-            var size = Marshal.SizeOf(destinationPlanetState);
+            var size = Marshal.SizeOf(destinationLevelState);
             header.size = (uint)size;
 
-            return (header, StructToBytes<MPPacketSetState>(destinationPlanetState, Endianness.BigEndian));
+            return (header, StructToBytes<MPPacketSetState>(destinationLevelState, Endianness.BigEndian));
         }
 
-        public static (MPPacketHeader, byte[]) MakeQuerySerserResponsePacket(List<Server> servers, byte ackId, byte ackCycle)
+        public static (MPPacketHeader, byte[]) MakeQueryServerResponsePacket(List<Server> servers, byte ackId, byte ackCycle)
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_ACK;
@@ -485,7 +495,28 @@ namespace Lawrence
             return (header, bytes.ToArray());
         }
 
-        public static (MPPacketHeader, byte[]) MakeSetItemPacket(ushort item, bool give)
+        public static (MPPacketHeader, byte[]) MakeSetItemPacket(ushort item, bool equip)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            uint flags = 0;
+            flags |= 1;  // FLAG_ITEM_GIVE
+            flags |= equip ? (uint)2 : (uint)0;  // FLAG_ITEM_EQUIP
+
+            MPPacketSetState setItemState = new MPPacketSetState();
+            setItemState.stateType = MPStateType.MP_STATE_TYPE_ITEM;
+            setItemState.value = (flags << 16) | (uint)item;
+
+            var size = Marshal.SizeOf(setItemState);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketSetState>(setItemState, Endianness.BigEndian));
+        }
+
+        public static (MPPacketHeader, byte[]) MakeUnlockLevelPacket(int level)
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
@@ -493,8 +524,8 @@ namespace Lawrence
             header.ackCycle = 255;
 
             MPPacketSetState setItemState = new MPPacketSetState();
-            setItemState.stateType = MPStateType.MP_STATE_TYPE_ITEM;
-            setItemState.value = ((uint)(give ? 1 : 0) << 16) | (uint)item;
+            setItemState.stateType = MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL;
+            setItemState.value = (uint)level;
 
             var size = Marshal.SizeOf(setItemState);
             header.size = (uint)size;
@@ -572,6 +603,23 @@ namespace Lawrence
             return (header, StructToBytes<MPPacketSetStateFloat>(setPlayerState, Endianness.BigEndian));
         }
 
+        public static (MPPacketHeader, byte[]) MakeGiveBoltsPacket(uint bolts)
+        {
+            MPPacketHeader header = new MPPacketHeader();
+            header.ptype = MPPacketType.MP_PACKET_SET_STATE;
+            header.requiresAck = 255;
+            header.ackCycle = 255;
+
+            MPPacketBolts giveBolts = new MPPacketBolts();
+            giveBolts.stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS;
+            giveBolts.value = bolts;
+
+            var size = Marshal.SizeOf(giveBolts);
+            header.size = (uint)size;
+
+            return (header, StructToBytes<MPPacketBolts>(giveBolts, Endianness.BigEndian));
+        }
+
         public static (MPPacketHeader, byte[]) MakeSetPositionPacket(ushort property, float position) {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
@@ -646,7 +694,7 @@ namespace Lawrence
             return (header, buffer);
         }
         
-        public static (MPPacketHeader, byte[]) MakeBlockGoldBoltPacket(int planet, int number)
+        public static (MPPacketHeader, byte[]) MakeBlockGoldBoltPacket(int level, int number)
         {
             MPPacketHeader header = new MPPacketHeader();
             header.ptype = MPPacketType.MP_PACKET_SET_STATE;
@@ -656,7 +704,7 @@ namespace Lawrence
             MPPacketSetState blockGoldBolt = new MPPacketSetState();
             blockGoldBolt.stateType = MPStateType.MP_STATE_TYPE_BLOCK_GOLD_BOLT;
             blockGoldBolt.value = (ushort)number;
-            blockGoldBolt.offset = (ushort)planet;
+            blockGoldBolt.offset = (ushort)level;
 
             var size = Marshal.SizeOf(blockGoldBolt);
             header.size = (uint)size;

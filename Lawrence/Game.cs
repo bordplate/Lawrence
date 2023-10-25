@@ -69,7 +69,7 @@ namespace Lawrence
                 string canonicalName = folder.Split("/").Last().Split("\\").Last();
 
                 // Users can disable or enable mods from the main settings.toml file. 
-                if (!Settings.Default().Get<bool>($"Mod.{canonicalName}.enabled", true)) {
+                if (!Settings.Default().Get<bool>($"Mod.{canonicalName}.enabled", false)) {
                     continue;
                 }
 
