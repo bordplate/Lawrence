@@ -84,6 +84,14 @@ namespace Lawrence
             }
         }
 
+        public void SetPrimary(bool primary) {
+            _primary = primary;
+            
+            if (primary) {
+                Game.Shared().NotificationCenter().Post<PrimaryUniverseChangedNotification>(new PrimaryUniverseChangedNotification(this));
+            }
+        }
+
         private void OnPrimaryUniverseChanged(PrimaryUniverseChangedNotification notification) {
             if (notification.Universe != this) {
                 _primary = false;
