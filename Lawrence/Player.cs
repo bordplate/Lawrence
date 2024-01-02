@@ -160,9 +160,6 @@ namespace Lawrence
             SendPacket(Packet.MakeUnlockLevelPacket(level));
         }
 
-        public void WriteAddressValue(uint address, uint value) {
-            SendPacket(Packet.MakeSetAddressValuePacket(address, value));
-        }
     }
     #endregion
 
