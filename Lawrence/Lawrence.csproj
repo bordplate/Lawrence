@@ -31,4 +31,12 @@
     <Folder Include="UI\" />
     <Folder Include="runtime\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="mods\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="runtime\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
