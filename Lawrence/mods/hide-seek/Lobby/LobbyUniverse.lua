@@ -17,8 +17,8 @@ end
 -- When a new player joins this Universe. 
 function LobbyUniverse:OnPlayerJoin(player)
     print("Player is joining Lobby")
-    player:LoadLevel("KaleboIII")
     player = player:Make(LobbyPlayer)
+    player:LoadLevel("KaleboIII")
     
     player.ready = false
 end
@@ -42,6 +42,10 @@ function LobbyUniverse:OnTick()
             allReady = false
             break
         end
+    end
+    
+    if #players < 2 then
+        allReady = false
     end
 
     if allReady then

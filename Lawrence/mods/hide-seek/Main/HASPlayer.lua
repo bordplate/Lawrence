@@ -18,9 +18,11 @@ function HASPlayer:Made()
     
     self.statusLabel = Label:new("Hider", 80, 50, 0xC0FFA888)
     self.timerLabel = Label:new("00:00", 80, 70, 0xC0FFA888)
+    self.foundTimerLabel = Label:new("", 80, 90, 0xC0FFFF88)
     
     self.startTime = Game:Time()
     self.endTime = 0
+    self.foundTime = 0
     
     self.started = false
     
@@ -55,6 +57,11 @@ end
 function HASPlayer:Found()
     print("Player " .. self:Username() .. " has become seeker")
     
+    self.foundTime = Game:Time()
+    
+    self.foundTimerLabel:SetText(millisToTimeSeconds(self.foundTime - self.startTime))
+    self:AddLabel(self.foundTimerLabel)
+    
     self:Damage(8)
     self:MakeSeeker()
 end
@@ -62,6 +69,7 @@ end
 function HASPlayer:Finished()
     self:RemoveLabel(self.statusLabel)
     self:RemoveLabel(self.timerLabel)
+    self:RemoveLabel(self.foundTimerLabel)
 end
 
 function HASPlayer:OnAttack(moby)
@@ -89,7 +97,7 @@ function HASPlayer:Unfreeze()
 end
 
 function HASPlayer:OnTick()
-    if self.started and not self.seeker then
+    if self.started then
         self.timerLabel:SetText(millisToTimeSeconds(Game:Time() - self.startTime))
     end
     

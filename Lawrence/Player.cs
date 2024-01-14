@@ -198,6 +198,10 @@ namespace Lawrence
         public override void OnTick(TickNotification notification) {
             _client.Tick();
 
+            if (Parent() == null) {
+                return;
+            }
+            
             base.OnTick(notification);
         }
 

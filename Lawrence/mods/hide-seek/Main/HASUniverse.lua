@@ -2,10 +2,28 @@ require 'Main.HASPlayer'
 
 HASUniverse = class("HASUniverse", Universe)
 
+LEVEL_POOL = {
+    "Novalis",
+    "Aridia",
+    "Kerwan",
+    "Eudora",
+    "BlargStation",
+    "Rilgar",
+    "Umbris",
+    "Batalia",
+    "Gaspar",
+    "Orxon",
+    "Pokitaru",
+    "Hoven",
+    "GemlikStation",
+    "Quartu",
+    "KaleboIII",
+    "DreksFleet",
+    "Veldin2",
+}
+
 function HASUniverse:initialize()
     Universe.initialize(self)
-    
-    self.blocked_bolts = {}
     
     self.players = {}
     self.playerLabels = {}
@@ -14,12 +32,18 @@ function HASUniverse:initialize()
     
     self.finishedCountdown = 0
     self.finished = false
+
+    self.started = false
+    self.startTime = 0
     
-    self.selectedLevel = "Hoven"
+    -- Pick a random level
+    local level = math.random(1, #LEVEL_POOL)
+    self.selectedLevel = LEVEL_POOL[level]
 end
 
 function HASUniverse:OnPlayerJoin(player)
     player = player:Make(HASPlayer)
+    player.seeker = false
     
     player:LoadLevel(self.selectedLevel)
     
@@ -29,27 +53,21 @@ function HASUniverse:OnPlayerJoin(player)
         if _player:Username() == player:Username() then
             print("Player " .. player:Username() .. " reconnected")
             
-            -- TODO: Restore items and put player back on the level they were on before disconnecting
-            -- However, we can assume that if a player is a on a planet other than Veldin1, they are still in game
-            --   so we should only restore items and level if they are on Veldin1.
-            
-            -- temporarily just put on veldin1
             player:LoadLevel(self.selectedLevel)
+
+            if self.players[i].seeker then
+                player:MakeSeeker()
+            end
             
             self.players[i] = player
         end
-    end
-
-    for i, entry in ipairs(self.blocked_bolts) do
-        print("Blocking " .. entry[1] .. " bolt: " .. entry[2])
-        player:BlockGoldBolt(entry[1], entry[2])
     end
 end
 
 function HASUniverse:StartHAS(lobby)
     self.lobbyUniverse = lobby
     
-    print("Starting Hide & Seek")
+    print("Starting Hide & Seek on " .. self.selectedLevel)
     
     self.finishedCountdown = 0
     self.finished = false
@@ -84,6 +102,8 @@ function HASUniverse:OnFinish()
         self.lobbyUniverse:AddEntity(player)
     end
     
+    self.lobbyUniverse:SetPrimary(true)
+    
     self:Delete()
 end
 
@@ -94,6 +114,7 @@ function HASUniverse:OnTick()
     end
     
     local hiders = 0
+    local seekers = 0
     
     for i, player in ipairs(self.players) do
         if player.seeker and self.countdown > 0 then
@@ -106,19 +127,41 @@ function HASUniverse:OnTick()
             player:LoadLevel(self.selectedLevel)
         end
         
-        if not player.seeker then
+        if not player.seeker and not player:Disconnected() then
             hiders = hiders + 1
         end
+
+        if player.seeker and not player:Disconnected() then
+            seekers = seekers + 1
+        end
+    end
+    
+    -- If there are no more seekers, we make a random player the seeker
+    if seekers <= 0 then
+        local seeker = math.random(1, #self.players)
+        local seekerPlayer = self.players[seeker]
+        seekerPlayer:MakeSeeker()
+        print("There were no more connected seekers. Player " .. seekerPlayer:Username() .. " is now seeker")
+    end
+    
+    if self.started and not self.finished and (Game:Time() - self.startTime) > 30 * 60 * 1000 then  -- 30 minutes
+        print("Game has been running for 30 minutes, ending it")
+        
+        self.finishedCountdown = 15 * 60  -- 15 seconds at 60 FPS
+        self.finished = true
+        
+        self.countdownLabel:SetText("Hiders win!")
+        self:AddLabel(self.countdownLabel)
     end
 
     if self.countdown <= 0 and hiders <= 0 then
         if not self.finished then
             print("No hiders left, game has finished")
             
-            self.finishedCountdown = 15 * 60  -- 3 seconds at 60 FPS
+            self.finishedCountdown = 15 * 60  -- 15 seconds at 60 FPS
             self.finished = true
             
-            self.countdownLabel:SetText("Finished!")
+            self.countdownLabel:SetText("Seekers win!")
             self:AddLabel(self.countdownLabel)
         end
     end
@@ -147,8 +190,11 @@ function HASUniverse:OnTick()
     -- Update countdown only once every second
     if self.countdown > 0 and self.countdown % 60 == 0 then
         self.countdownLabel:SetText("" .. math.floor(self.countdown / 60))
-    elseif self.countdown < 0 and self.countdown > -60 then
+    elseif self.countdown < 0 and not self.started then
         self.countdownLabel:SetText("GO!")
+        
+        self.started = true
+        self.startTime = Game:Time()
         
         -- Unfreeze players
         for i, player in ipairs(self.players) do
