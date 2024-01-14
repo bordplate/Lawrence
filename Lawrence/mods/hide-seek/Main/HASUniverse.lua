@@ -58,27 +58,17 @@ function HASUniverse:StartHAS(lobby)
     self:SetPrimary(true)
     
     self.players = self:FindChildren("Player")
-    
+
     -- Select player number to be seeker
     local seeker = math.random(1, #self.players)
     local seekerPlayer = self.players[seeker]
     seekerPlayer:MakeSeeker()
     print("Player " .. seekerPlayer:Username() .. " is seeker")
-
-    -- Add labels for all players
-    for i, player in ipairs(self.players) do
-        print("Added player " .. player:Username() .. " to Hide & Seek")
-        
-        if i == seeker then
-            --player:MakeSeeker()
-            --print("Player " .. player:Username() .. " is seeker")
-        end
-    end
     
     print("Starting countdown")
     
     -- Make countdown label
-    self.countdown = 100 * 60  -- 60 seconds at 60 FPS
+    self.countdown = 20 * 60  -- 60 seconds at 60 FPS
     self.countdownLabel = Label:new("", 250, 250, 0xC0FFA888)
     self:AddLabel(self.countdownLabel)
 end
@@ -107,7 +97,9 @@ function HASUniverse:OnTick()
     
     for i, player in ipairs(self.players) do
         if player.seeker and self.countdown > 0 then
-            --player.state = 114
+            player.state = 114
+            
+            player.z = 5000
         end
         
         if player:Level():GetName() ~= self.selectedLevel then
@@ -123,7 +115,7 @@ function HASUniverse:OnTick()
         if not self.finished then
             print("No hiders left, game has finished")
             
-            self.finishedCountdown = 3 * 60  -- 3 seconds at 60 FPS
+            self.finishedCountdown = 15 * 60  -- 3 seconds at 60 FPS
             self.finished = true
             
             self.countdownLabel:SetText("Finished!")
@@ -135,20 +127,17 @@ function HASUniverse:OnTick()
         if self.finishedCountdown <= 0 then
             self:OnFinish()
         end
-        
-        self.finishedCountdown = self.finishedCountdown - 1
     end
     
     -- Every second we go through the players to see if someone is stuck on the exact same XYZ coordinates. If they are, 
     --   we distribute them upwards across the Z axis to unstuck them.
     if self:Ticks() % 60 == 0 then
         for i, player in ipairs(self.players) do
-            --player:Unfreeze()
             for j, _player in ipairs(self.players) do
                 if player ~= _player then
                     if player.x == _player.x and player.y == _player.y and player.z == _player.z then
-                        print("Player " .. player:Username() .. " is stuck, moving them up")
-                        player.z = player.z + 1
+                        print("Player " .. player:Username() .. " is stuck, moving them")
+                        player.y = player.y + 0.5
                     end
                 end
             end
@@ -163,15 +152,19 @@ function HASUniverse:OnTick()
         
         -- Unfreeze players
         for i, player in ipairs(self.players) do
-            --if player.state == 114 then
+            player:StartGame()
+            
+            if player.seeker then
+                player.z = -1000
                 player:Unfreeze()
-            --end
+            end
         end
     end
     
-    if self.countdown < -60 then
+    if self.countdown < -60 and self.finishedCountdown <= 0 then
         self:RemoveLabel(self.countdownLabel)
     else
         self.countdown = self.countdown - 1
+        self.finishedCountdown = self.finishedCountdown - 1
     end
 end 

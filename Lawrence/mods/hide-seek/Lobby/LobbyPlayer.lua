@@ -4,6 +4,9 @@ function LobbyPlayer:Made()
     self.ready = false
     
     self.readyMoby = self:Universe():LuaEntity().readyMoby
+    
+    -- Reset player color to their default color
+    self:GeneratePlayerColor()
 end
 
 function LobbyPlayer:OnControllerInputTapped(input)
