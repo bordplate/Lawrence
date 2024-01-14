@@ -391,11 +391,6 @@ namespace Lawrence
         /// <exception cref="NotImplementedException">Clients can not yet send updates about mobys other than their hero moby. </exception>
         public void UpdateMoby(MPPacketMobyUpdate mobyUpdate)
         {
-            // Wait until we have a parent
-            if (Parent() == null) {
-                return;
-            }
-            
             // Update this moby if 0, update child moby if not 0
             if (mobyUpdate.uuid == 0) {
                 this.SetActive((mobyUpdate.mpFlags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
@@ -415,6 +410,11 @@ namespace Lawrence
                 this.alpha = mobyUpdate.alpha / 128.0f;
                 this.animationID = mobyUpdate.animationID;
                 this.animationDuration = mobyUpdate.animationDuration;
+                
+                // Wait until we have a parent
+                if (Parent() == null) {
+                    return;
+                }
 
                 if (mobyUpdate.level != this.Level().GetGameID()) {
                     Level lastLevel = _level;
