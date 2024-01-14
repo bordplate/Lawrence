@@ -706,6 +706,7 @@ namespace Lawrence {
 
             _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Shared().Ticks(), MobyRef = moby };
             SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
+            SendPacket(Packet.MakeMobyUpdateExtended(internalId, new [] { new Packet.UpdateMobyValue(0x38, moby.color.ToUInt()) }));
         }
 
         private ushort GetOrCreateInternalId(Moby moby) {

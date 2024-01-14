@@ -32,6 +32,11 @@ namespace Lawrence
             set { base.rotZ = value; _client.SendPacket(Packet.MakeSetPositionPacket(6, (float)(((Math.PI / 180) * value) - Math.PI))); }
         }
 
+        public override Color color {
+            get { return _color; }
+            set { base.color = value; _client.SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.color.ToUInt()) })); }
+        }
+
         private ushort _state = 0;
         public ushort state {
             get { return _state; }
@@ -56,6 +61,8 @@ namespace Lawrence
         public Player(Client client) {
             _client = client;
             _client.SetHandler(this);
+            
+            GeneratePlayerColor();
 
             InitializeInteralLuaEntity();
             
@@ -72,6 +79,29 @@ namespace Lawrence
             base.Delete();
             
             Game.Shared().NotificationCenter().Unsubscribe<PostTickNotification>(OnPostTick);
+        }
+
+        public void GeneratePlayerColor() {
+            // Generate player color based on username
+            string username = _client.GetUsername();
+            int hash = 0;
+            
+            for (int i = 0; i < username.Length; i++) {
+                hash = username[i] + ((hash << 5) - hash);
+            }
+            
+            int r = (hash >> 16) & 0xFF;
+            int g = (hash >> 8) & 0xFF;
+            int b = hash & 0xFF;
+            
+            color = new Color {
+                r = (byte)r,
+                g = (byte)g,
+                b = (byte)b,
+                a = 255
+            };
+
+            this.color = color;
         }
     }
 
@@ -409,6 +439,8 @@ namespace Lawrence
         /// </summary>
         public void PlayerRespawned() {
             CallLuaFunction("OnRespawned", LuaEntity());
+            
+            SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.color.ToUInt()) }));
         }
 
         /// <summary>
