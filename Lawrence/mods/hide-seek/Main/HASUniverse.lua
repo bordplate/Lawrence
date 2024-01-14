@@ -28,6 +28,8 @@ function HASUniverse:initialize()
     self.players = {}
     self.playerLabels = {}
     
+    self.loaded = false
+    
     self.lobbyUniverse = nil
     
     self.finishedCountdown = 0
@@ -47,6 +49,8 @@ function HASUniverse:OnPlayerJoin(player)
     
     player:LoadLevel(self.selectedLevel)
     
+    print("Player " .. player:Username() .. " joined Hide & Seek")
+    
     -- Find out if we already had the player and if they just disconnected and reconnected
     -- If they reconnected, we update their info and replace the old player
     for i, _player in ipairs(self.players) do
@@ -65,7 +69,8 @@ function HASUniverse:OnPlayerJoin(player)
         end
     end
 
-    if self.started then
+    if self.loaded then
+        print(player:Username() .. " joined after game started")
         self.players[#self.players + 1] = player
         player:StartGame()
     end
@@ -97,6 +102,8 @@ function HASUniverse:StartHAS(lobby)
     self.countdown = 80 * 60
     self.countdownLabel = Label:new("", 250, 250, 0xC0FFA888)
     self:AddLabel(self.countdownLabel)
+    
+    self.loaded = true
 end
 
 function HASUniverse:OnFinish()
@@ -111,6 +118,7 @@ function HASUniverse:OnFinish()
     end
     
     self.lobbyUniverse:SetPrimary(true)
+    self.lobbyUniverse:Reset()
     
     self:Delete()
 end
