@@ -140,7 +140,8 @@ namespace Lawrence
             bool advertise = Settings.Default().Get("Server.advertise", false);
 
             if (!directoryMode && serverName == null || serverName.Trim().Length <= 0) {
-                throw new Exception("You must set a name for the server. Check settings.toml for configuration");
+                Console.WriteLine("Server Name not set, Enter name...");
+                Settings.Default().Set("Server.name", serverName = Console.ReadLine());
             }
 
             IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), serverPort);
