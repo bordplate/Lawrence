@@ -1,5 +1,4 @@
 require 'Lobby.LobbyPlayer'
-require 'Lobby.BarrierMoby'
 require 'Lobby.StartMoby'
 require 'Main.HASUniverse'
 

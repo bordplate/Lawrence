@@ -108,6 +108,10 @@ namespace Lawrence
         }
         
         public Level Level() {
+            if (_level == null) {
+                _level = Universe().GetLevelByGameID(0);
+            }
+            
             return _level;
         }
 

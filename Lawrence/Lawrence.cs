@@ -23,6 +23,8 @@ namespace Lawrence
         static long _tickCount = 0;             // Total number of ticks
         static DateTime _lastAverageUpdateTime = DateTime.UtcNow;
         private static double _ticksPerSecond = 0.0;
+        
+        private static Mutex clientMutex = new Mutex();
 
         static List<Client> clients = new List<Client>();
 
@@ -53,6 +55,8 @@ namespace Lawrence
         static void NewClient(IPEndPoint endpoint, byte[] data = null)
         {
             Logger.Log($"Connection from {endpoint}");
+
+            clientMutex.WaitOne();
             
             int index = clients.Count;
             for (int i = 0; i < clients.Count; i++) 
@@ -79,6 +83,8 @@ namespace Lawrence
             {
                 client.ReceiveData(data);
             }
+            
+            clientMutex.ReleaseMutex();
         }
 
         public static void SendTo(byte[] bytes, EndPoint endpoint)
@@ -254,6 +260,8 @@ namespace Lawrence
 
             Thread runLoop = new Thread(() => {
                 while (true) {
+                    clientMutex.WaitOne();
+                    
                     // Clients that are waiting to connect aren't part of a `Player` tick loop so the Client tick 
                     //   isn't being called. Therefore we call the Tick function here if it's waiting to connect, so
                     //   packets can be processed like they should on the right thread. 
@@ -262,6 +270,8 @@ namespace Lawrence
                             client.Tick();
                         }
                     }
+                    
+                    clientMutex.ReleaseMutex();
 
                     if (!directoryMode) {
                         // We only process normally if we're not in directory mode.
