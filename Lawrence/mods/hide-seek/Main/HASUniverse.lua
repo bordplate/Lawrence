@@ -76,6 +76,30 @@ function HASUniverse:OnPlayerJoin(player)
     end
 end
 
+function HASUniverse:CountHiders()
+    local hiders = 0
+    
+    for i, player in ipairs(self.players) do
+        if not player.seeker then
+            hiders = hiders + 1
+        end
+    end
+    
+    return hiders
+end
+
+function HASUniverse:CountSeekers()
+    local seekers = 0
+    
+    for i, player in ipairs(self.players) do
+        if player.seeker then
+            seekers = seekers + 1
+        end
+    end
+    
+    return seekers
+end
+
 function HASUniverse:StartHAS(lobby)
     self.lobbyUniverse = lobby
     
@@ -103,6 +127,12 @@ function HASUniverse:StartHAS(lobby)
     self.countdownLabel = Label:new("", 250, 250, 0xC0FFA888)
     self:AddLabel(self.countdownLabel)
     
+    self.hiderCountLabel = Label:new("Hiders: " .. self:CountHiders(), 440, 50, 0xC0FFA888)
+    self.seekerCountLabel = Label:new("Seekers: " .. self:CountSeekers(), 440, 70, 0xC0FFA888)
+    
+    self:AddLabel(self.hiderCountLabel)
+    self:AddLabel(self.seekerCountLabel)
+    
     self.loaded = true
 end
 
@@ -110,6 +140,8 @@ function HASUniverse:OnFinish()
     print("Finished Hide & Seek")
     
     self:RemoveLabel(self.countdownLabel)
+    self:RemoveLabel(self.hiderCountLabel)
+    self:RemoveLabel(self.seekerCountLabel)
     
     -- Put players back in lobby
     for i, player in ipairs(self.players) do
@@ -201,6 +233,9 @@ function HASUniverse:OnTick()
                 end
             end
         end
+        
+        self.hiderCountLabel:SetText("Hiders: " .. self:CountHiders())
+        self.seekerCountLabel:SetText("Seekers: " .. self:CountSeekers())
     end
     
     -- Update countdown only once every second
