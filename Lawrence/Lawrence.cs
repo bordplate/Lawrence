@@ -146,7 +146,9 @@ namespace Lawrence
             bool advertise = Settings.Default().Get("Server.advertise", false);
 
             if (!directoryMode && serverName == null || serverName.Trim().Length <= 0) {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Server Name not set, Enter name...");
+                Console.ResetColor();
                 Settings.Default().Set("Server.name", serverName = Console.ReadLine());
             }
 
