@@ -13,3 +13,6 @@ end
 function Universe:OnTick()
     
 end
+
+-- states whether a universe allows a player to unstuck themselves
+Universe.allowUnstuck = true

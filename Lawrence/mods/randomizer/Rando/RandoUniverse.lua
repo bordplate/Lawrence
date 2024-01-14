@@ -3,6 +3,8 @@ require 'item_table_ids'
 
 RandoUniverse = class("RandoUniverse", Universe) -- should probably have subclasses of RandoUniverse that decide more specific behaviors (such as what items can be achieved)
                                                  -- or just change up the universe based on choice
+
+
 function RandoUniverse:initialize()
     Universe.initialize(self)
 
@@ -50,3 +52,5 @@ function shuffle(tbl)
       tbl[i], tbl[j] = tbl[j], tbl[i]
     end
   end
+
+Universe.allowUnstuck = false
