@@ -60,7 +60,13 @@ function HASUniverse:OnPlayerJoin(player)
             end
             
             self.players[i] = player
+            
+            return
         end
+    end
+
+    if self.started then
+        self.players[#self.players + 1] = player
     end
 end
 
