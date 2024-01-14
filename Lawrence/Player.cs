@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using NLua;
 
 namespace Lawrence
@@ -160,6 +162,9 @@ namespace Lawrence
             SendPacket(Packet.MakeUnlockLevelPacket(level));
         }
 
+        public void SetGhostRatchet(uint timeoutInFrames = 150) {
+            SendPacket(Packet.MakeSetAddressValuePacket(0x969EAC, timeoutInFrames));
+        }
     }
     #endregion
 

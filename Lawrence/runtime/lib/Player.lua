@@ -21,3 +21,7 @@ end
 function Player:OnUnlockLevel(level)
     self:UnlockLevel(level)
 end
+
+function Player:OnRespawned()
+    self:SetGhostRatchet(150)
+end
