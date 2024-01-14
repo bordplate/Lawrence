@@ -67,6 +67,7 @@ function HASUniverse:OnPlayerJoin(player)
 
     if self.started then
         self.players[#self.players + 1] = player
+        player:StartGame()
     end
 end
 
@@ -84,6 +85,7 @@ function HASUniverse:StartHAS(lobby)
     self.players = self:FindChildren("Player")
 
     -- Select player number to be seeker
+    math.randomseed(Game:Time())
     local seeker = math.random(1, #self.players)
     local seekerPlayer = self.players[seeker]
     seekerPlayer:MakeSeeker()

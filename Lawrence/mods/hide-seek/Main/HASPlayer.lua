@@ -9,7 +9,7 @@ HASPlayer = class("HASPlayer", Player)
 -- TODO: Store which planet the player is on in case they need to reconnected
 
 DEFAULT_ITEMS = {
-    2, 3, 4, 6,  28, 29, 12, 32, 11, 14, 25
+    2, 3, 4, 6,  28, 29, 12, 32, 11, 25
 }
 
 function HASPlayer:Made()
