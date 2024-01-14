@@ -73,9 +73,7 @@ function LobbyUniverse:OnTick()
 
         local universe = HASUniverse:new()
         
-        -- Add players to mgbUniverse
         for i, player in ipairs(players) do
-            --player:LoadLevel("KaleboIII")
             universe:AddEntity(player)
         end
         

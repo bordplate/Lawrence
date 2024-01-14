@@ -100,6 +100,19 @@ function HASUniverse:CountSeekers()
     return seekers
 end
 
+function HASUniverse:GetIdlePlayers()
+    local idlePlayers = {}
+    
+    for i, player in ipairs(self.players) do
+        if not player.seeker and player.idleTimer > 120 * 60 then
+            idlePlayers[#idlePlayers + 1] = player
+            player:ToastMessage("Idle penalty: Seekers will be notified of your location")
+        end
+    end
+    
+    return idlePlayers
+end
+
 function HASUniverse:StartHAS(lobby)
     self.lobbyUniverse = lobby
     
@@ -123,7 +136,7 @@ function HASUniverse:StartHAS(lobby)
     print("Starting countdown")
     
     -- Make countdown label
-    self.countdown = 80 * 60
+    self.countdown = 20 * 60
     self.countdownLabel = Label:new("", 250, 250, 0xC0FFA888)
     self:AddLabel(self.countdownLabel)
     
@@ -236,6 +249,12 @@ function HASUniverse:OnTick()
         
         self.hiderCountLabel:SetText("Hiders: " .. self:CountHiders())
         self.seekerCountLabel:SetText("Seekers: " .. self:CountSeekers())
+        
+        local idlePlayers = self:GetIdlePlayers()
+        
+        for i, player in ipairs(self.players) do
+            player:SetIdlePlayers(idlePlayers)
+        end
     end
     
     -- Update countdown only once every second

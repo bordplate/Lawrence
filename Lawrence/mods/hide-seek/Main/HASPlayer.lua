@@ -24,6 +24,11 @@ function HASPlayer:Made()
     self.endTime = 0
     self.foundTime = 0
     
+    self.idleTimer = 0
+    self.idleDistance = 0
+    
+    self.lastPosition = {x=0, y=0, z=0}
+    
     self.started = false
     
     self:AddLabel(self.statusLabel)
@@ -37,11 +42,45 @@ function HASPlayer:Made()
     self.respawned = 0
     
     self:SetColor(0, 255, 0)
+    
+    self.idlePlayers = {}
+    self.idlePlayerLabels = {}
 end
 
 function HASPlayer:StartGame()
     self.started = true
     self.startTime = Game:Time()
+end
+
+function HASPlayer:SetIdlePlayers(idlePlayers)
+    self.idlePlayers = idlePlayers
+    
+    -- If we have labels that don't correspond to any players, remove them
+    for username, label in pairs(self.idlePlayerLabels) do
+        local found = false
+        
+        for i, player in ipairs(self.idlePlayers) do
+            if player:Username() == username then
+                found = true
+                break
+            end
+        end
+        
+        if not found then
+            self:RemoveLabel(label)
+            self.idlePlayerLabels[username] = nil
+        end
+    end
+
+    -- Update or set labels
+    for i, player in ipairs(self.idlePlayers) do
+        if self.idlePlayerLabels[player:Username()] == nil then
+            self.idlePlayerLabels[player:Username()] = Label:new("", 440, 90 + (i * 20), 0xC0FFA888)
+            self:AddLabel(self.idlePlayerLabels[player:Username()])
+        else
+            self.idlePlayerLabels[player:Username()]:SetPosition(440, 90 + (i * 20))
+        end
+    end
 end
 
 function HASPlayer:MakeSeeker()
@@ -97,11 +136,35 @@ function HASPlayer:Unfreeze()
 end
 
 function HASPlayer:OnTick()
+    local position = {x=self.x, y=self.y, z=self.z}
+    
     if self.started then
         self.timerLabel:SetText(millisToTimeSeconds(Game:Time() - self.startTime))
+
+        if not self.seeker then
+            self.idleTimer = self.idleTimer + 1
+            self.idleDistance = self.idleDistance + distance_between_3d_points(position, self.lastPosition)
+
+            if self.idleDistance > 150 then
+                self.idleTimer = 0
+                self.idleDistance = 0
+            end
+        end
+
+        if self.seeker then
+            -- Update labels in idlePlayerlabels with distance to players in the idlePlayers
+            for i, player in ipairs(self.idlePlayers) do
+                local distance = self:DistanceTo(player)
+
+                self.idlePlayerLabels[player:Username()]:SetText(player:Username() .. ": " .. math.floor(distance) .. "m")
+            end
+        end
+        
     end
-    
+
     if (self.damageCooldown > 0) then
         self.damageCooldown = self.damageCooldown - 1
     end
+    
+    self.lastPosition = position
 end

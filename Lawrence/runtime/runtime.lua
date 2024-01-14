@@ -45,3 +45,7 @@ function pickUniqueItems(tbl, num_items)
 
     return picked
 end
+
+function distance_between_3d_points(a, b)
+    return math.sqrt((a.x - b.x)^2 + (a.y - b.y)^2 + (a.z - b.z)^2)
+end
