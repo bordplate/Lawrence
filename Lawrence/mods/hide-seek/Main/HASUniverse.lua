@@ -136,7 +136,7 @@ function HASUniverse:StartHAS(lobby)
     print("Starting countdown")
     
     -- Make countdown label
-    self.countdown = 20 * 60
+    self.countdown = 80 * 60
     self.countdownLabel = Label:new("", 250, 250, 0xC0FFA888)
     self:AddLabel(self.countdownLabel)
     
