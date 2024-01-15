@@ -24,9 +24,6 @@ public class Label : Entity {
         _color = color;
         _state = state;
 
-        Logger.Log("new label made!" + text);
-        Logger.Log(Convert.ToString(state));
-
         HasChanged = true;
 
         Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);

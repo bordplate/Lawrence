@@ -309,8 +309,6 @@ namespace Lawrence
             hudText.y = y;
             hudText.color = color;
             hudText.flags = (ushort)(TextElementFlag | GameStateFlag);
-            Logger.Log(Convert.ToString(state));
-            Logger.Log(Convert.ToString((uint)hudText.flags));
             hudText.id = id;
 
             header.size = (uint)Marshal.SizeOf(hudText) + 50;
