@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Text;
 using Force.Crc32;
 using NLua;
@@ -11,14 +12,20 @@ public class Label : Entity {
     private ushort _y = 0;
 
     private uint _color = 0;
+
+    private uint _state = 0;
     public bool HasChanged { get; private set; }
 
-    public Label(LuaTable luaTable, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888) :
+    public Label(LuaTable luaTable, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888, uint state = 0) :
         base(luaTable) {
         _text = text;
         _x = x;
         _y = y;
         _color = color;
+        _state = state;
+
+        Logger.Log("new label made!" + text);
+        Logger.Log(Convert.ToString(state));
 
         HasChanged = true;
 
@@ -51,6 +58,10 @@ public class Label : Entity {
 
     public uint Color() {
         return _color;
+    }
+
+    public uint State() {
+        return _state;
     }
 
     public void SetPosition(ushort x, ushort y) {

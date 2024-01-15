@@ -289,7 +289,7 @@ namespace Lawrence
             return (header, bytes.ToArray());
         }
 
-        public static (MPPacketHeader, byte[]) MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color)
+        public static (MPPacketHeader, byte[]) MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color, uint state)
         {
             if (text.Length >= 50)
             {
@@ -301,11 +301,16 @@ namespace Lawrence
             header.requiresAck = 255;
             header.ackCycle = 255;
 
+            uint TextElementFlag = 1; // Drop shadow
+            uint GameStateFlag = state << 2; // shifted by 2 to not interfere with the TextElementFlag
+
             MPPacketSetHUDText hudText = new MPPacketSetHUDText();
             hudText.x = x;
             hudText.y = y;
             hudText.color = color;
-            hudText.flags = 1;  // Drop shadow
+            hudText.flags = (ushort)(TextElementFlag | GameStateFlag);
+            Logger.Log(Convert.ToString(state));
+            Logger.Log(Convert.ToString((uint)hudText.flags));
             hudText.id = id;
 
             header.size = (uint)Marshal.SizeOf(hudText) + 50;
@@ -318,7 +323,9 @@ namespace Lawrence
             
             return (header, buffer);
         }
-
+        // TODO: change flag settings to reserve 2 bits for the current drop_shadow/delete options (since they are 1 and 2).
+        // TODO: change flag settings to then reserve 3 bits for game state.
+        // TODO: add game state argument for make to say on which gamestate it should be shown/should be moved to. maybe default it to something
         public static (MPPacketHeader, byte[]) MakeDeleteHUDTextPacket(ushort id)
         {
             MPPacketHeader header = new MPPacketHeader();
