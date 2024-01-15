@@ -22,7 +22,7 @@ LEVEL_POOL = {
     "Veldin2",
 }
 
-HAS_COUNTDOWN_TIME = 20 * 60
+HAS_COUNTDOWN_TIME = 80 * 60
 
 function HASUniverse:initialize()
     Universe.initialize(self)
