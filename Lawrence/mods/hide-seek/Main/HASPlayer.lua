@@ -23,6 +23,7 @@ function HASPlayer:Made()
     self.startTime = Game:Time()
     self.endTime = 0
     self.foundTime = 0
+    self.survivalTime = 0
     
     self.idleTimer = 0
     self.idleDistance = 0
@@ -83,7 +84,9 @@ function HASPlayer:SetIdlePlayers(idlePlayers)
     end
 end
 
-function HASPlayer:MakeSeeker()
+function HASPlayer:MakeSeeker(reason)
+    print("Player " .. self:Username() .. " has become seeker: " .. reason)
+    
     self.endTime = Game:Time()
     
     self.seeker = true
@@ -98,17 +101,22 @@ function HASPlayer:Found()
     
     self.foundTime = Game:Time()
     
-    self.foundTimerLabel:SetText(millisToTimeSeconds(self.foundTime - self.startTime))
+    self.foundTimerLabel:SetText(millisToTimeSeconds(self.survivalTime))
     self:AddLabel(self.foundTimerLabel)
     
     self:Damage(8)
-    self:MakeSeeker()
+    self:MakeSeeker("found")
 end
 
 function HASPlayer:Finished()
     self:RemoveLabel(self.statusLabel)
     self:RemoveLabel(self.timerLabel)
     self:RemoveLabel(self.foundTimerLabel)
+
+    -- Remove the idle player labels
+    for username, label in pairs(self.idlePlayerLabels) do
+        self:RemoveLabel(label)
+    end
 end
 
 function HASPlayer:OnAttack(moby)
@@ -125,7 +133,7 @@ end
 
 function HASPlayer:OnRespawned()
     if self.respawned > 1 then
-        self:MakeSeeker()
+        self:MakeSeeker("death")
     end
     
     self.respawned = self.respawned + 1
@@ -139,9 +147,12 @@ function HASPlayer:OnTick()
     local position = {x=self.x, y=self.y, z=self.z}
     
     if self.started then
-        self.timerLabel:SetText(millisToTimeSeconds(Game:Time() - self.startTime))
-
-        if not self.seeker then
+        if self.seeker then
+            self.timerLabel:SetText(millisToTimeSeconds(Game:Time() - self.startTime))
+        elseif not self.seeker then
+            self.survivalTime = self.survivalTime + Game:DeltaTime()
+            self.timerLabel:SetText(millisToTimeSeconds(self.survivalTime))
+            
             self.idleTimer = self.idleTimer + 1
             self.idleDistance = self.idleDistance + distance_between_3d_points(position, self.lastPosition)
 
@@ -159,7 +170,6 @@ function HASPlayer:OnTick()
                 self.idlePlayerLabels[player:Username()]:SetText(player:Username() .. ": " .. math.floor(distance) .. "m")
             end
         end
-        
     end
 
     if (self.damageCooldown > 0) then

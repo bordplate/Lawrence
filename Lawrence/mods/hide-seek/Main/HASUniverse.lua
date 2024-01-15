@@ -22,6 +22,8 @@ LEVEL_POOL = {
     "Veldin2",
 }
 
+HAS_COUNTDOWN_TIME = 20 * 60
+
 function HASUniverse:initialize()
     Universe.initialize(self)
     
@@ -37,6 +39,8 @@ function HASUniverse:initialize()
 
     self.started = false
     self.startTime = 0
+    
+    self.initialSeeker = nil
     
     -- Pick a random level
     local level = math.random(1, #LEVEL_POOL)
@@ -60,8 +64,13 @@ function HASUniverse:OnPlayerJoin(player)
             player:LoadLevel(self.selectedLevel)
 
             if self.players[i].seeker then
-                player:MakeSeeker()
+                player:MakeSeeker("restored state")
             end
+            
+            player.startTime = self.players[i].startTime
+            player.survivalTime = self.players[i].survivalTime
+            
+            player.started = true
             
             self.players[i] = player
             
@@ -130,14 +139,17 @@ function HASUniverse:StartHAS(lobby)
     math.randomseed(Game:Time())
     local seeker = math.random(1, #self.players)
     local seekerPlayer = self.players[seeker]
-    seekerPlayer:MakeSeeker()
+    
+    self.initialSeeker = seekerPlayer
+    
+    seekerPlayer:MakeSeeker("randomly selected")
     print("Player " .. seekerPlayer:Username() .. " is seeker")
     
     print("Starting countdown")
     
     -- Make countdown label
-    self.countdown = 80 * 60
-    self.countdownLabel = Label:new("", 250, 250, 0xC0FFA888)
+    self.countdown = HAS_COUNTDOWN_TIME
+    self.countdownLabel = Label:new("", 250, 330, 0xC0FFA888)
     self:AddLabel(self.countdownLabel)
     
     self.hiderCountLabel = Label:new("Hiders: " .. self:CountHiders(), 440, 50, 0xC0FFA888)
@@ -149,6 +161,54 @@ function HASUniverse:StartHAS(lobby)
     self.loaded = true
 end
 
+function HASUniverse:ShowLeaderboard()
+    -- Show a leaderboard in the middle of the screen ranking the survival times of players, with the longest time at the 
+    --   top. The initial seeker's name is at the top of the screen. 
+    
+    -- Show seeker at the top
+    self.initialSeekerLabel = Label:new("Initial seeker: " .. self.initialSeeker:Username(), 250, 70, 0xC0FFA888)
+    self:AddLabel(self.initialSeekerLabel)
+    
+    -- Sort players by longest survivalTime
+    table.sort(self.players, function(a, b)
+        return a.survivalTime > b.survivalTime
+    end)
+    
+    self.leaderboardLabels = {}
+    
+    for i, player in ipairs(self.players) do
+        if player:Username() ~= self.initialSeeker:Username() then
+            local label = Label:new(i .. ". " .. player:Username() .. ": " .. millisToTimeSeconds(player.survivalTime), 250, 110 + (i * 20), 0xC0FFA888)
+            self.leaderboardLabels[#self.leaderboardLabels + 1] = label
+
+            self:AddLabel(label)
+        end
+    end
+end
+
+function HASUniverse:HideLeaderboard()
+    self:RemoveLabel(self.initialSeekerLabel)
+    
+    for i, label in ipairs(self.leaderboardLabels) do
+        self:RemoveLabel(label)
+    end
+end
+
+function HASUniverse:StartFinish(prompt)
+    self.finishedCountdown = 15 * 60  -- 15 seconds at 60 FPS
+    self.finished = true
+
+    self.countdownLabel:SetText(prompt)
+    self:AddLabel(self.countdownLabel)
+    
+    self:ShowLeaderboard()
+    
+    -- Stop players
+    for i, player in ipairs(self.players) do
+        player.started = false
+    end
+end
+
 function HASUniverse:OnFinish()
     print("Finished Hide & Seek")
     
@@ -156,8 +216,11 @@ function HASUniverse:OnFinish()
     self:RemoveLabel(self.hiderCountLabel)
     self:RemoveLabel(self.seekerCountLabel)
     
+    self:HideLeaderboard()
+    
     -- Put players back in lobby
-    for i, player in ipairs(self.players) do
+    local players = self:FindChildren("Player")
+    for i, player in ipairs(players) do
         player:Finished()
         self.lobbyUniverse:AddEntity(player)
     end
@@ -201,29 +264,21 @@ function HASUniverse:OnTick()
     if seekers <= 0 then
         local seeker = math.random(1, #self.players)
         local seekerPlayer = self.players[seeker]
-        seekerPlayer:MakeSeeker()
+        seekerPlayer:MakeSeeker("fallback")
         print("There were no more connected seekers. Player " .. seekerPlayer:Username() .. " is now seeker")
     end
     
     if self.started and not self.finished and (Game:Time() - self.startTime) > 30 * 60 * 1000 then  -- 30 minutes
         print("Game has been running for 30 minutes, ending it")
         
-        self.finishedCountdown = 15 * 60  -- 15 seconds at 60 FPS
-        self.finished = true
-        
-        self.countdownLabel:SetText("Hiders win!")
-        self:AddLabel(self.countdownLabel)
+        self:StartFinish("Hiders win!")
     end
 
     if self.countdown <= 0 and hiders <= 0 then
         if not self.finished then
             print("No hiders left, game has finished")
             
-            self.finishedCountdown = 15 * 60  -- 15 seconds at 60 FPS
-            self.finished = true
-            
-            self.countdownLabel:SetText("Seekers win!")
-            self:AddLabel(self.countdownLabel)
+            self:StartFinish("Seekers win!")
         end
     end
 
