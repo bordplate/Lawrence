@@ -522,7 +522,7 @@ namespace Lawrence
                     continue;
                 }
 
-                SendPacket(Packet.MakeSetHUDTextPacket((ushort)i, label.Text(), label.X(), label.Y(), label.Color(), label.State()));
+                SendPacket(Packet.MakeSetHUDTextPacket((ushort)i, label.Text(), label.X(), label.Y(), label.Color(), label.States()));
             }
         }
         

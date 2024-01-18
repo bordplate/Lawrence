@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Runtime.InteropServices;
 using System.Text;
 using Force.Crc32;
@@ -13,16 +15,15 @@ public class Label : Entity {
 
     private uint _color = 0;
 
-    private uint _state = 0;
+    private uint _states = 0;
     public bool HasChanged { get; private set; }
 
-    public Label(LuaTable luaTable, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888, uint state = 0) :
+    public Label(LuaTable luaTable, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888) :
         base(luaTable) {
         _text = text;
         _x = x;
         _y = y;
         _color = color;
-        _state = state;
 
         HasChanged = true;
 
@@ -57,8 +58,11 @@ public class Label : Entity {
         return _color;
     }
 
-    public uint State() {
-        return _state;
+    public void SetFlag(int state) {
+        _states |= (uint)1 << state;
+    }
+    public uint States() {
+        return _states;
     }
 
     public void SetPosition(ushort x, ushort y) {

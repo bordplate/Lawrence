@@ -289,7 +289,7 @@ namespace Lawrence
             return (header, bytes.ToArray());
         }
 
-        public static (MPPacketHeader, byte[]) MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color, uint state)
+        public static (MPPacketHeader, byte[]) MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color, uint states)
         {
             if (text.Length >= 50)
             {
@@ -302,13 +302,13 @@ namespace Lawrence
             header.ackCycle = 255;
 
             uint TextElementFlag = 1; // Drop shadow
-            uint GameStateFlag = state << 2; // shifted by 2 to not interfere with the TextElementFlag
+            uint GameStateFlags = states << 2; // shifted by 2 to not interfere with the TextElementFlag
 
             MPPacketSetHUDText hudText = new MPPacketSetHUDText();
             hudText.x = x;
             hudText.y = y;
             hudText.color = color;
-            hudText.flags = (ushort)(TextElementFlag | GameStateFlag);
+            hudText.flags = (ushort)(TextElementFlag | GameStateFlags);
             hudText.id = id;
 
             header.size = (uint)Marshal.SizeOf(hudText) + 50;
