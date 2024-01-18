@@ -31,6 +31,13 @@ jobs:
           dotnet publish -c Release -f net7.0 -r linux-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/linux-x64 &&
           cd bin/publish/linux-x64 &&
           zip Lawrence-linux-x64.zip -r .
+
+      - name: Publish for Windows x64
+        working-directory: ./Lawrence
+        run: >
+          dotnet publish -c Release -f net7.0 -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/win-x64 &&
+          cd bin/publish/win-x64 &&
+          zip Lawrence-windows-x64.zip -r .
         
       - name: Create release
         id: create_release
@@ -43,8 +50,8 @@ jobs:
           draft: false
           make_latest: true
           
-      - name: Upload assets
-        id: upload-release-asset
+      - name: Upload Linux assets
+        id: upload-linux-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,4 +59,15 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./Lawrence/bin/publish/linux-x64/Lawrence-linux-x64.zip
           asset_name: Lawrence-linux-x64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Windows assets
+        id: upload-windows-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Lawrence/bin/publish/win-x64/Lawrence-windows-x64.zip
+          asset_name: Lawrence-windows-x64.zip
           asset_content_type: application/zip
