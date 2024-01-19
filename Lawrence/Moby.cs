@@ -4,6 +4,31 @@ using NLua;
 
 namespace Lawrence
 {
+    public struct Color {
+        public byte r;
+        public byte g;
+        public byte b;
+        public byte a;
+
+        public Color(uint color) {
+            r = (byte)(((color & 0x000000ff) >> 0) * 2);
+            g = (byte)(((color & 0x0000ff00) >> 8) * 2);
+            b = (byte)(((color & 0x00ff0000) >> 16) * 2);
+            a = (byte)(((color & 0xff000000) >> 24) * 2);
+        }
+
+        public Color(byte r, byte g, byte b, byte a = 0xff) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
+
+        public uint ToUInt() {
+            return (uint)((a/2 << 24) | (b/2 << 16) | (g/2 << 8) | r/2);
+        }
+    }
+    
 	public class Moby : Entity
 	{
         /// <summary>
@@ -49,6 +74,15 @@ namespace Lawrence
         
         private ushort _modeBits = 0x10 | 0x20 | 0x400 | 0x1000 | 0x4000;
         public ushort modeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
+        
+        protected Color _color = new Color {
+            r = 255/2,
+            g = 255/2,
+            b = 255/2,
+            a = 255
+        };
+        
+        public virtual Color color { get => _color; set { if (_color.ToUInt() != value.ToUInt()) { _color = value; HasChanged = true; } } }
 
         public bool HasChanged { get; protected set; } = false;
 
@@ -74,6 +108,10 @@ namespace Lawrence
         }
         
         public Level Level() {
+            if (_level == null) {
+                _level = Universe().GetLevelByGameID(0);
+            }
+            
             return _level;
         }
 
@@ -89,6 +127,15 @@ namespace Lawrence
             _level = level;
             
             _level.Add(this);
+        }
+
+        public void SetColor(int r, int g, int b) {
+            color = new Color {
+                r = (byte)r,
+                g = (byte)g,
+                b = (byte)b,
+                a = color.a
+            };
         }
 
         public void SetOClass(int oClass) {

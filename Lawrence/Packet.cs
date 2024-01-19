@@ -15,6 +15,7 @@ namespace Lawrence
         MP_PACKET_SYN = 2,
         MP_PACKET_ACK = 3,
         MP_PACKET_MOBY_UPDATE = 4,
+        MP_PACKET_MOBY_EXTENDED = 18,
         MP_PACKET_IDKU = 5,
         MP_PACKET_MOBY_CREATE = 6,
         MP_PACKET_DISCONNECTED = 7,
@@ -135,6 +136,18 @@ namespace Lawrence
         [FieldOffset(0x32)] public ushort state;
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct MPPacketMobyExtended {
+        public UInt16 uuid;
+        public UInt16 numValues;
+    }
+    
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct MPPacketMobyExtendedPayload {
+        public UInt16 offset;
+        public UInt32 value;
+    }
+    
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct MPPacketMobyCreate
     {
@@ -420,6 +433,37 @@ namespace Lawrence
             MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
 
             return (moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Endianness.BigEndian));
+        }
+
+        public struct UpdateMobyValue {
+            public UInt16 offset;
+            public uint value;
+            
+            public UpdateMobyValue(UInt16 offset, uint value) { this.offset = offset; this.value = value; }
+        }
+
+        public static (MPPacketHeader, byte[]) MakeMobyUpdateExtended(ushort uuid, UpdateMobyValue[] values) {
+            MPPacketMobyExtended moby_extended = new MPPacketMobyExtended();
+            
+            moby_extended.uuid = uuid;
+            moby_extended.numValues = (ushort)values.Length;
+            
+            MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_EXTENDED, size = (uint)Marshal.SizeOf<MPPacketMobyExtended>() + (uint)(Marshal.SizeOf<MPPacketMobyExtendedPayload>() * values.Length) };
+            
+            byte[] buffer = new byte[moby_header.size];
+            StructToBytes<MPPacketMobyExtended>(moby_extended, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+            
+            int offset = Marshal.SizeOf<MPPacketMobyExtended>();
+            foreach (UpdateMobyValue value in values) {
+                MPPacketMobyExtendedPayload payload = new MPPacketMobyExtendedPayload();
+                payload.offset = value.offset;
+                payload.value = value.value;
+                
+                StructToBytes<MPPacketMobyExtendedPayload>(payload, Endianness.BigEndian).ToList().CopyTo(buffer, offset);
+                offset += Marshal.SizeOf<MPPacketMobyExtendedPayload>();
+            }
+            
+            return (moby_header, buffer);
         }
 
         public static (MPPacketHeader, byte[]) MakeGoToLevelPacket(int level)
