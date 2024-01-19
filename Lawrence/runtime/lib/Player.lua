@@ -22,10 +22,6 @@ function Player:OnUnlockLevel(level)
     self:UnlockLevel(level)
 end
 
-function Player:OnRespawned()
-    self:Unstuck()
-end
-
 function Player:Unstuck()
     if self:Universe():LuaEntity().allowUnstuck then
         self:SetGhostRatchet(150)

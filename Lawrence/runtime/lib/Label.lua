@@ -1,7 +1,7 @@
 ﻿Label = class('Label', Entity)
 
 function Label:initialize(text, x, y, color, states)
-    states = states or {} -- empty list
+    states = states or {GameState.PlayerControl} -- empty list
     local labelEntity = Game:NewLabel(self, text, x, y, color)
     
     for i, state in ipairs(states) do
