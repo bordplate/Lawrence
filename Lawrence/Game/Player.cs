@@ -2,9 +2,13 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Lawrence.Game;
 using NLua;
 
-namespace Lawrence
+using Lawrence.Core;
+using Lawrence.Game.UI;
+
+namespace Lawrence.Game
 {
     /// <summary>
     /// Networked Player entity. Communicates with Client to send and receive updates in the Player's game. 

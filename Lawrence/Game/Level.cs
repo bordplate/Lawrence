@@ -1,6 +1,7 @@
 using System;
+using Lawrence.Game;
 
-namespace Lawrence;
+namespace Lawrence.Game;
 
 using NLua;
 

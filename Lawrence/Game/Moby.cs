@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using Lawrence.Game;
 using NLua;
 
-namespace Lawrence
+using Lawrence.Core;
+
+namespace Lawrence.Game
 {
     public struct Color {
         public byte r;

@@ -1,9 +1,13 @@
 using System;
 using System.Text;
 using Force.Crc32;
+using Lawrence.Game;
 using NLua;
 
-namespace Lawrence;
+using Lawrence.Core;
+using Lawrence.Game;
+
+namespace Lawrence.Game.UI;
 
 public class Label : Entity {
     private string _text;

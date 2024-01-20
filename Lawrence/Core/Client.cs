@@ -8,7 +8,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Force.Crc32;
 
-namespace Lawrence {
+using Lawrence.Game;
+
+namespace Lawrence.Core {
     // Metadata structure for packet acknowledgement data
     public struct AckedMetadata {
         public byte ackCycle;
@@ -171,7 +173,7 @@ namespace Lawrence {
         private const int bufferSize = 1024;
 
         public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody) {
-            packetHeader.timeSent = (long)Game.Shared().Time();
+            packetHeader.timeSent = (long)Game.Game.Shared().Time();
     
             var bodyLen = 0;
             if (packetBody != null) {
@@ -364,7 +366,7 @@ namespace Lawrence {
                         
                         SendPacket(responseHeader, Packet.StructToBytes(responseBody, Packet.Endianness.BigEndian));
                         
-                        Game.Shared().OnPlayerConnect(this);
+                        Game.Game.Shared().OnPlayerConnect(this);
 
                         WaitingToConnect = false;
 
@@ -408,7 +410,7 @@ namespace Lawrence {
                     case MPPacketType.MP_PACKET_TIME_SYNC: {
                         MPPacketTimeResponse response = new MPPacketTimeResponse() {
                             clientSendTime = (ulong)packetHeader.timeSent,
-                            serverSendTime = Game.Shared().Time()
+                            serverSendTime = Game.Game.Shared().Time()
                         };
 
                         MPPacketHeader header = new MPPacketHeader {
@@ -568,7 +570,7 @@ namespace Lawrence {
                 return;
             }
 
-            long timeNow = (long)Game.Shared().Time();
+            long timeNow = (long)Game.Game.Shared().Time();
 
             this.lastContact = timeNow / 1000;
 
@@ -704,7 +706,7 @@ namespace Lawrence {
                 return;
             }
 
-            _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Shared().Ticks(), MobyRef = moby };
+            _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
             SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
             SendPacket(Packet.MakeMobyUpdateExtended(internalId, new [] { new Packet.UpdateMobyValue(0x38, moby.color.ToUInt()) }));
         }
@@ -733,7 +735,7 @@ namespace Lawrence {
             }
 
             // Check if Moby is stale.
-            long currentTicks = Game.Shared().Ticks();
+            long currentTicks = Game.Game.Shared().Ticks();
             if (mobyData.LastUpdate < currentTicks - 120) {
                 // Moby is stale, delete it and return null.
                 DeleteMoby(mobyData.MobyRef);
@@ -749,7 +751,7 @@ namespace Lawrence {
         }
 
         public void CleanupStaleMobys() {
-            long currentTicks = Game.Shared().Ticks();
+            long currentTicks = Game.Game.Shared().Ticks();
             foreach (var pair in _mobys) {
                 if (pair.Value.LastUpdate < currentTicks - 10) {
                     SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));

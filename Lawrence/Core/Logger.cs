@@ -2,7 +2,7 @@
 using System.Data.Common;
 using System.IO;
 
-namespace Lawrence {
+namespace Lawrence.Core {
     public class Logger {
         public enum Priority {
             Log = 0,

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using Lawrence.Core;
+
 namespace Lawrence
 {
     public class Mod

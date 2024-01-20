@@ -6,7 +6,10 @@ using System.Runtime.InteropServices;
 
 using NLua;
 
-namespace Lawrence
+using Lawrence.Core;
+using Lawrence.Game.UI;
+
+namespace Lawrence.Game
 {
     public class Game {
         static Game SharedGame;

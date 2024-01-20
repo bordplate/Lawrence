@@ -7,7 +7,9 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Lawrence
+using Lawrence.Game;
+
+namespace Lawrence.Core
 {
     public enum MPPacketType : ushort
     {

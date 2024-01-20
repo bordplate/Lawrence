@@ -8,6 +8,9 @@ using System.Diagnostics;
 
 using Terminal.Gui;
 
+using Lawrence.Game;
+using Lawrence.Core;
+
 namespace Lawrence
 {
     class Lawrence
@@ -49,7 +52,7 @@ namespace Lawrence
 
         public static void Tick()
         {
-            Game.Shared().Tick();
+            Game.Game.Shared().Tick();
         }
         
         static void NewClient(IPEndPoint endpoint, byte[] data = null)
@@ -370,7 +373,7 @@ namespace Lawrence
 
                 if (command != null)
                 {
-                    Console.WriteLine(Game.Shared().Execute(command));
+                    Console.WriteLine(Game.Game.Shared().Execute(command));
                 }
             }
         }

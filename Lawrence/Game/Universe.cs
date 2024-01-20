@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using Lawrence.Game;
 using NLua;
+
+using Lawrence.Core;
+using Lawrence.Game.UI;
 
 namespace Lawrence
 {
@@ -37,13 +41,13 @@ namespace Lawrence
         };
 
         public Universe(LuaTable luaTable) : base(luaTable) {
-            Game.Shared().NotificationCenter().Subscribe<PrimaryUniverseChangedNotification>(OnPrimaryUniverseChanged);
-            Game.Shared().NotificationCenter().Subscribe<PlayerJoinedNotification>(OnPlayerJoined);
+            Game.Game.Shared().NotificationCenter().Subscribe<PrimaryUniverseChangedNotification>(OnPrimaryUniverseChanged);
+            Game.Game.Shared().NotificationCenter().Subscribe<PlayerJoinedNotification>(OnPlayerJoined);
         }
 
         public override void Delete() {
-            Game.Shared().NotificationCenter().Unsubscribe<PrimaryUniverseChangedNotification>(OnPrimaryUniverseChanged);
-            Game.Shared().NotificationCenter().Unsubscribe<PlayerJoinedNotification>(OnPlayerJoined);
+            Game.Game.Shared().NotificationCenter().Unsubscribe<PrimaryUniverseChangedNotification>(OnPrimaryUniverseChanged);
+            Game.Game.Shared().NotificationCenter().Unsubscribe<PlayerJoinedNotification>(OnPlayerJoined);
             
             base.Delete();
         }
@@ -80,7 +84,7 @@ namespace Lawrence
             // If we set this as primary universe, we notify the other ones to tell them they should not be primary anymore. 
             if (primary) {
                 _primary = true;
-                Game.Shared().NotificationCenter().Post<PrimaryUniverseChangedNotification>(new PrimaryUniverseChangedNotification(this));
+                Game.Game.Shared().NotificationCenter().Post<PrimaryUniverseChangedNotification>(new PrimaryUniverseChangedNotification(this));
             }
         }
 
@@ -88,7 +92,7 @@ namespace Lawrence
             _primary = primary;
             
             if (primary) {
-                Game.Shared().NotificationCenter().Post<PrimaryUniverseChangedNotification>(new PrimaryUniverseChangedNotification(this));
+                Game.Game.Shared().NotificationCenter().Post<PrimaryUniverseChangedNotification>(new PrimaryUniverseChangedNotification(this));
             }
         }
 

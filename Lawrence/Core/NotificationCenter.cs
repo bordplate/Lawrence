@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
+using Lawrence.Game;
 
-namespace Lawrence {
+namespace Lawrence.Core {
     // Abstract base class for notifications
     public abstract class Notification {
         // Property to store the notification name

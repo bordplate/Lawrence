@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace Lawrence
+namespace Lawrence.Core
 {
 	public struct Server
 	{

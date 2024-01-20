@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Nett;
 
-namespace Lawrence {
+namespace Lawrence.Core {
     /// <summary>
     /// A class for handling application settings using the TOML format.
     /// </summary>
