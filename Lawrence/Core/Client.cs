@@ -683,7 +683,7 @@ partial class Client {
         }
 
         // Find next available ID
-        for (ushort i = 1; i <= _mobysTable.Count; i++) {
+        for (ushort i = 1; i <= 4096; i++) {
             if (!_mobys.ContainsKey(i) && _lastDeletedId != i) {
                 _mobysTable[moby.GUID()] = i;
                 return i;
