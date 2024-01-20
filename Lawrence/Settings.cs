@@ -57,15 +57,15 @@ namespace Lawrence {
 
             try {
                 for (int i = 0; i < keys.Length - 1; i++) {
-                current = current.Get<TomlTable>(keys[i]);
-                if (current == null) {
-                    if (fallback != null) {
-                        Set(key, fallback);
-                    }
+                    current = current.Get<TomlTable>(keys[i]);
+                    if (current == null) {
+                        if (fallback != null) {
+                            Set(key, fallback);
+                        }
 
-                    return fallback;
+                        return fallback;
+                    }
                 }
-            }
 
                 return current.Get<T>(keys[keys.Length - 1]);
             } catch (KeyNotFoundException) {
