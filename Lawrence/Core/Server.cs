@@ -246,6 +246,6 @@ public class Server {
     }
     
     public long TicksPerSecond() {
-        return _ticksPerSecond;
+        return _ticksPerSecond + 1;
     }
 }

@@ -25,19 +25,21 @@ public class LogView: FrameView {
     }
 
     private void AddText(string text) {
-        _textView.Text += text;
-        
-        // Scroll to bottom
-        if (text.Contains("\n")) {
-            _textView.CursorPosition = new Point(0, _textView.Text.Split("\n").Length - 1);
-            _textView.PositionCursor();
-            
-            _textView.SetNeedsDisplay();
-            
-            SetNeedsDisplay();
-            
-            Application.Refresh();
-        }
+        Application.MainLoop.Invoke(() => {
+            _textView.Text += text;
+
+            // Scroll to bottom
+            if (text.Contains("\n")) {
+                _textView.CursorPosition = new Point(0, _textView.Text.Split("\n").Length - 1);
+                _textView.PositionCursor();
+
+                _textView.SetNeedsDisplay();
+
+                SetNeedsDisplay();
+
+                Application.Refresh();
+            }
+        });
     }
 
     private void Setup() {

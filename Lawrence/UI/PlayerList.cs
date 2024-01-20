@@ -30,18 +30,23 @@ public class PlayerList: FrameView  {
     }
 
     public void OnPlayerJoin(PlayerJoinedNotification notification) {
-        if (notification.Entity is Player player) {
-            if (!_players.Contains(player.Username())) {
-                _players.Add(player.Username());
+        // Run on Terminal.Gui main loop main loop
+        Application.MainLoop.Invoke(() => {
+            if (notification.Entity is Player player) {
+                if (!_players.Contains(player.Username())) {
+                    _players.Add(player.Username());
+                }
             }
-        }
+        });
     }
 
     public void OnPlayerDisconnect(PlayerDisconnectedNotification notification) {
-        if (notification.Entity is Player player) {
-            if (_players.Contains(player.Username())) {
-                _players.Remove(player.Username());
+        Application.MainLoop.Invoke(() => {
+            if (notification.Entity is Player player) {
+                if (_players.Contains(player.Username())) {
+                    _players.Remove(player.Username());
+                }
             }
-        }
+        });
     }
 }
