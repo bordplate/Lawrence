@@ -5,258 +5,257 @@ using NLua;
 
 using Lawrence.Core;
 
-namespace Lawrence.Game
+namespace Lawrence.Game;
+
+public struct Color {
+    public byte r;
+    public byte g;
+    public byte b;
+    public byte a;
+
+    public Color(uint color) {
+        r = (byte)(((color & 0x000000ff) >> 0) * 2);
+        g = (byte)(((color & 0x0000ff00) >> 8) * 2);
+        b = (byte)(((color & 0x00ff0000) >> 16) * 2);
+        a = (byte)(((color & 0xff000000) >> 24) * 2);
+    }
+
+    public Color(byte r, byte g, byte b, byte a = 0xff) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+    }
+
+    public uint ToUInt() {
+        return (uint)((a/2 << 24) | (b/2 << 16) | (g/2 << 8) | r/2);
+    }
+}
+
+public class Moby : Entity
 {
-    public struct Color {
-        public byte r;
-        public byte g;
-        public byte b;
-        public byte a;
+    /// <summary>
+    /// The current level this moby is on. Levels are tied to universes such that mobys (incl. users) on the same
+    /// level in different universes won't be able to see or interact with each other. 
+    /// </summary>
+    protected Level _level;
+    
+    static ushort COLLIDE_TICKS = 10;
+    
+    private int _oClass = 0;
+    public int oClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
+    
+    protected float _x = 0.0f;
+    public virtual float x { get => _x; set { if (_x != value) { _x = value; HasChanged = true; } } }
+    
+    protected float _y = 0.0f;
+    public virtual float y { get => _y; set { if (_y != value) { _y = value; HasChanged = true; } } }
+    
+    protected float _z = 0.0f;
+    public virtual float z { get => _z; set { if (_z != value) { _z = value; HasChanged = true; } } }
+    
+    private float _rotX = 0.0f;
+    public float rotX { get => _rotX; set { if (_rotX != value) { _rotX = value; HasChanged = true; } } }
+    
+    private float _rotY = 0.0f;
+    public float rotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
+    
+    protected float _rotZ = 0.0f;
+    public virtual float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
+    
+    private float _scale = 1.0f;
+    public float scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
+    
+    private float _alpha = 1.0f;
+    public float alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
 
-        public Color(uint color) {
-            r = (byte)(((color & 0x000000ff) >> 0) * 2);
-            g = (byte)(((color & 0x0000ff00) >> 8) * 2);
-            b = (byte)(((color & 0x00ff0000) >> 16) * 2);
-            a = (byte)(((color & 0xff000000) >> 24) * 2);
-        }
+    protected int _animationID = 0;
+    public virtual int animationID { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
+    
+    private int _animationDuration = 0;
+    public int animationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }
+    
+    protected ushort _modeBits = 0x10 | 0x400;
+    public ushort modeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
+    
+    protected Color _color = new Color {
+        r = 255/2,
+        g = 255/2,
+        b = 255/2,
+        a = 255
+    };
+    
+    public virtual Color color { get => _color; set { if (_color.ToUInt() != value.ToUInt()) { _color = value; HasChanged = true; } } }
 
-        public Color(byte r, byte g, byte b, byte a = 0xff) {
-            this.r = r;
-            this.g = g;
-            this.b = b;
-            this.a = a;
-        }
+    public bool HasChanged { get; protected set; } = false;
 
-        public uint ToUInt() {
-            return (uint)((a/2 << 24) | (b/2 << 16) | (g/2 << 8) | r/2);
-        }
+    public void ResetChanged()
+    {
+        HasChanged = false;
+    }
+
+
+    public bool mpUpdateFunc = true;
+    public bool collision = true;
+
+    Dictionary<Moby, ushort> colliders = new Dictionary<Moby, ushort>();
+
+    public Moby(LuaTable luaTable = null) : base(luaTable) {
+        Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);
+    }
+
+    public override void Delete() {
+        base.Delete();
+        
+        Game.Shared().NotificationCenter().Unsubscribe<PreTickNotification>(OnPreTick);
     }
     
-	public class Moby : Entity
-	{
-        /// <summary>
-        /// The current level this moby is on. Levels are tied to universes such that mobys (incl. users) on the same
-        /// level in different universes won't be able to see or interact with each other. 
-        /// </summary>
-        protected Level _level;
+    public Level Level() {
+        if (_level == null) {
+            _level = Universe().GetLevelByGameID(0);
+        }
         
-        static ushort COLLIDE_TICKS = 10;
-        
-        private int _oClass = 0;
-        public int oClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
-        
-        protected float _x = 0.0f;
-        public virtual float x { get => _x; set { if (_x != value) { _x = value; HasChanged = true; } } }
-        
-        protected float _y = 0.0f;
-        public virtual float y { get => _y; set { if (_y != value) { _y = value; HasChanged = true; } } }
-        
-        protected float _z = 0.0f;
-        public virtual float z { get => _z; set { if (_z != value) { _z = value; HasChanged = true; } } }
-        
-        private float _rotX = 0.0f;
-        public float rotX { get => _rotX; set { if (_rotX != value) { _rotX = value; HasChanged = true; } } }
-        
-        private float _rotY = 0.0f;
-        public float rotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
-        
-        protected float _rotZ = 0.0f;
-        public virtual float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
-        
-        private float _scale = 1.0f;
-        public float scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
-        
-        private float _alpha = 1.0f;
-        public float alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
+        return _level;
+    }
 
-        protected int _animationID = 0;
-        public virtual int animationID { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
+    public void SetLevel(Level level) {
+        if (this is Player) {
+            throw new Exception("Do NOT use SetLevel() to set a Player's level. Instead use LoadLevel()");
+        }
         
-        private int _animationDuration = 0;
-        public int animationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }
+        if (_level != null) {
+            _level.Remove(this);
+        }
         
-        protected ushort _modeBits = 0x10 | 0x400;
-        public ushort modeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
+        _level = level;
         
-        protected Color _color = new Color {
-            r = 255/2,
-            g = 255/2,
-            b = 255/2,
-            a = 255
+        _level.Add(this);
+    }
+
+    public void SetColor(int r, int g, int b) {
+        color = new Color {
+            r = (byte)r,
+            g = (byte)g,
+            b = (byte)b,
+            a = color.a
         };
+    }
+
+    public void SetOClass(int oClass) {
+        this.oClass = oClass;
+    }
+
+    public void SetPosition(float x, float y, float z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+    
+    public Universe Universe() {
+        Entity parent = Parent();
         
-        public virtual Color color { get => _color; set { if (_color.ToUInt() != value.ToUInt()) { _color = value; HasChanged = true; } } }
+        while (!(parent is Universe)) {
+            if (parent == null) {
+                return null;
+            }
+            
+            parent = parent.Parent();
+        }
 
-        public bool HasChanged { get; protected set; } = false;
+        if (parent is Universe universe) {
+            return universe;
+        }
+        
+        return null;
+    }
 
-        public void ResetChanged()
+    public void AddCollider(Moby moby, uint collisionFlags = 0)
+    {
+        if (!colliders.ContainsKey(moby))
         {
-            HasChanged = false;
-        }
+            colliders.Add(moby, Moby.COLLIDE_TICKS);
 
-
-        public bool mpUpdateFunc = true;
-        public bool collision = true;
-
-        Dictionary<Moby, ushort> colliders = new Dictionary<Moby, ushort>();
-
-        public Moby(LuaTable luaTable = null) : base(luaTable) {
-            Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);
-        }
-
-        public override void Delete() {
-            base.Delete();
-            
-            Game.Shared().NotificationCenter().Unsubscribe<PreTickNotification>(OnPreTick);
-        }
-        
-        public Level Level() {
-            if (_level == null) {
-                _level = Universe().GetLevelByGameID(0);
-            }
-            
-            return _level;
-        }
-
-        public void SetLevel(Level level) {
-            if (this is Player) {
-                throw new Exception("Do NOT use SetLevel() to set a Player's level. Instead use LoadLevel()");
-            }
-            
-            if (_level != null) {
-                _level.Remove(this);
-            }
-            
-            _level = level;
-            
-            _level.Add(this);
-        }
-
-        public void SetColor(int r, int g, int b) {
-            color = new Color {
-                r = (byte)r,
-                g = (byte)g,
-                b = (byte)b,
-                a = color.a
-            };
-        }
-
-        public void SetOClass(int oClass) {
-            this.oClass = oClass;
-        }
-
-        public void SetPosition(float x, float y, float z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-        
-        public Universe Universe() {
-            Entity parent = Parent();
-            
-            while (!(parent is Universe)) {
-                if (parent == null) {
-                    return null;
-                }
-                
-                parent = parent.Parent();
-            }
-
-            if (parent is Universe universe) {
-                return universe;
-            }
-            
-            return null;
-        }
-
-        public void AddCollider(Moby moby, uint collisionFlags = 0)
+            OnCollision(moby);
+        } else
         {
-            if (!colliders.ContainsKey(moby))
-            {
-                colliders.Add(moby, Moby.COLLIDE_TICKS);
+            colliders[moby] = Moby.COLLIDE_TICKS;
+        }
+    }
 
-                OnCollision(moby);
-            } else
-            {
-                colliders[moby] = Moby.COLLIDE_TICKS;
+    public override void OnTick(TickNotification notification) {
+        base.OnTick(notification);
+        
+        // Collision debouncing
+        Moby[] keys = new Moby[colliders.Keys.Count];
+        colliders.Keys.CopyTo(keys, 0);
+
+        foreach(var key in keys) {
+            colliders[key] -= 1;
+
+            if (colliders[key] <= 0) {
+                colliders.Remove(key);
+            } else {
+                OnCollision(key);
             }
         }
+    }
 
-        public override void OnTick(TickNotification notification) {
-            base.OnTick(notification);
-            
-            // Collision debouncing
-            Moby[] keys = new Moby[colliders.Keys.Count];
-            colliders.Keys.CopyTo(keys, 0);
 
-            foreach(var key in keys) {
-                colliders[key] -= 1;
-
-                if (colliders[key] <= 0) {
-                    colliders.Remove(key);
-                } else {
-                    OnCollision(key);
-                }
-            }
+    public void OnPreTick(PreTickNotification notification) {
+        if (Game.Shared().Ticks() % 60 == 0) {
+            // Force sending updates every 60 ticks
+            HasChanged = true;
         }
-
-
-        public void OnPreTick(PreTickNotification notification) {
-            if (Game.Shared().Ticks() % 60 == 0) {
-                // Force sending updates every 60 ticks
-                HasChanged = true;
-            }
-            else {
-                ResetChanged();
-            }
+        else {
+            ResetChanged();
         }
+    }
 
-        public float DistanceTo(object mobyObject) {
-            Moby moby;
-            
-            if (mobyObject is LuaTable) {
-                moby = (Moby)(((LuaTable)mobyObject)["_internalEntity"]);
-            }
-            else if (mobyObject is Moby) {
-                moby = (Moby)mobyObject;
-            }
-            else {
-                throw new Exception("Invalid object type for mobyObject in DistanceTo");
-            }
-            
-            float xDiff = this.x - moby.x;
-            float yDiff = this.y - moby.y;
-            float zDiff = this.z - moby.z;
-
-            return (float)Math.Sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
+    public float DistanceTo(object mobyObject) {
+        Moby moby;
+        
+        if (mobyObject is LuaTable) {
+            moby = (Moby)(((LuaTable)mobyObject)["_internalEntity"]);
+        }
+        else if (mobyObject is Moby) {
+            moby = (Moby)mobyObject;
+        }
+        else {
+            throw new Exception("Invalid object type for mobyObject in DistanceTo");
         }
         
-        public bool IsWithinCube(float x1, float y1, float z1, float x2, float y2, float z2)
-        {
-            // Ensure x1, y1, z1 is the min point and x2, y2, z2 is the max point
-            float minX = Math.Min(x1, x2);
-            float minY = Math.Min(y1, y2);
-            float minZ = Math.Min(z1, z2);
-            float maxX = Math.Max(x1, x2);
-            float maxY = Math.Max(y1, y2);
-            float maxZ = Math.Max(z1, z2);
+        float xDiff = this.x - moby.x;
+        float yDiff = this.y - moby.y;
+        float zDiff = this.z - moby.z;
 
-            // Check if this Moby's position is within the cube defined by the two points
-            return minX <= x && x <= maxX &&
-                   minY <= y && y <= maxY &&
-                   minZ <= z && z <= maxZ;
-        }
+        return (float)Math.Sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
+    }
+    
+    public bool IsWithinCube(float x1, float y1, float z1, float x2, float y2, float z2)
+    {
+        // Ensure x1, y1, z1 is the min point and x2, y2, z2 is the max point
+        float minX = Math.Min(x1, x2);
+        float minY = Math.Min(y1, y2);
+        float minZ = Math.Min(z1, z2);
+        float maxX = Math.Max(x1, x2);
+        float maxY = Math.Max(y1, y2);
+        float maxZ = Math.Max(z1, z2);
 
-        public virtual void OnCollision(Moby collidee) {
-            CallLuaFunction("OnCollision", new object[] { LuaEntity(), collidee.LuaEntity() });
-        }
+        // Check if this Moby's position is within the cube defined by the two points
+        return minX <= x && x <= maxX &&
+               minY <= y && y <= maxY &&
+               minZ <= z && z <= maxZ;
+    }
 
-        public virtual void OnHit(Moby attacker) {
-            CallLuaFunction("OnHit", new object[] { LuaEntity(), attacker.LuaEntity() });
-        }
+    public virtual void OnCollision(Moby collidee) {
+        CallLuaFunction("OnCollision", new object[] { LuaEntity(), collidee.LuaEntity() });
+    }
 
-        public virtual void OnAttack(Moby attacked) {
-            CallLuaFunction("OnAttack", new object[] { LuaEntity(), attacked.LuaEntity() });
-        }
-	}
+    public virtual void OnHit(Moby attacker) {
+        CallLuaFunction("OnHit", new object[] { LuaEntity(), attacker.LuaEntity() });
+    }
+
+    public virtual void OnAttack(Moby attacked) {
+        CallLuaFunction("OnAttack", new object[] { LuaEntity(), attacked.LuaEntity() });
+    }
 }

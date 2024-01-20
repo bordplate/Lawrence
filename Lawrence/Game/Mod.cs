@@ -4,32 +4,30 @@ using System.Linq;
 
 using Lawrence.Core;
 
-namespace Lawrence
+namespace Lawrence.Game;
+
+public class Mod
 {
-    public class Mod
+    private Settings _modSettings;
+
+    private string _modPath;
+
+    public Mod(string configuration)
     {
-        private Settings _modSettings;
+        _modSettings = new Settings(configuration, false);
 
-        private string _modPath;
-
-        public Mod(string configuration)
-        {
-            _modSettings = new Settings(configuration, false);
-
-            if (_modSettings == null) {
-                throw new Exception($"Couldn't load configuration file {configuration} for mod.");
-            }
-
-            _modPath = System.IO.Path.GetDirectoryName(configuration);
+        if (_modSettings == null) {
+            throw new Exception($"Couldn't load configuration file {configuration} for mod.");
         }
 
-        public Settings Settings() {
-            return _modSettings;
-        }
+        _modPath = System.IO.Path.GetDirectoryName(configuration);
+    }
 
-        public string Path() {
-            return _modPath;
-        }
+    public Settings Settings() {
+        return _modSettings;
+    }
+
+    public string Path() {
+        return _modPath;
     }
 }
-

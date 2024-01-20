@@ -2,13 +2,12 @@
 
 using Terminal.Gui;
 
-namespace Lawrence.UI
+namespace Lawrence.UI;
+
+public class MainWindow : Window
 {
-	public class MainWindow : Window
+	public MainWindow()
 	{
-		public MainWindow()
-		{
-			Title = "Lawrence Multiplayer Server";
-		}
+		Title = "Lawrence Multiplayer Server";
 	}
 }
