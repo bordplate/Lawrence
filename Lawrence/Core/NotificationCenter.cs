@@ -29,6 +29,17 @@ public class PlayerJoinedNotification : Notification {
     }
 }
 
+public class PlayerDisconnectedNotification : Notification {
+    // Property to store the player entity
+    public Entity Entity { get; }
+
+    // Constructor for the PlayerConnectedNotification class
+    public PlayerDisconnectedNotification(int id, string username, Entity entity)
+        : base("PlayerDisconnected") {
+        Entity = entity;
+    }
+}
+
 public class PrimaryUniverseChangedNotification : Notification {
     public readonly Universe Universe;
 

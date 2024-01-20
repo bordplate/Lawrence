@@ -479,6 +479,11 @@ partial class Player : IClientHandler
     public void OnUnlockLevel(int level) {
         CallLuaFunction("OnUnlockLevel", LuaEntity(), level);
     }
+
+    public void OnDisconnect() {
+        Logger.Log($"{Username()} disconnected.");
+        Game.Shared().NotificationCenter().Post(new PlayerDisconnectedNotification(0, Username(), this));
+    }
 }
 #endregion
 

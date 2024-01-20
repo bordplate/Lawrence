@@ -35,6 +35,8 @@ public interface IClientHandler {
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
     void OnUnlockLevel(int level);
+
+    void OnDisconnect();
 }
 
 public partial class Client {
@@ -619,10 +621,6 @@ public partial class Client {
             if (_unacked.ResendTimer > 0) {
                 _unacked.ResendTimer--;
             } else {
-                if (timeNow - unacked.Timestamp > 10) {
-                    Logger.Trace($"Player {ID} has stale packet they never ack, waited: {timeNow - unacked.Timestamp}: ({unacked.AckIndex}/{unacked.AckCycle})");
-                }
-                
                 _server.SendTo(_unacked.Packet, this.GetEndpoint());
 
                 _unacked.ResendTimer = 60;
@@ -641,6 +639,8 @@ public partial class Client {
         }
 
         if (_clientHandler != null) {
+            _clientHandler.OnDisconnect();
+            
             _clientHandler.Delete();
             _clientHandler = null;
         }

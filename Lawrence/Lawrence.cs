@@ -2,6 +2,7 @@
 using System.Threading;
 
 using Lawrence.Core;
+using Terminal.Gui;
 
 namespace Lawrence;
 
@@ -32,9 +33,15 @@ class Lawrence {
     public static Server Server() {
         return _server ??= _directoryServer.Server();
     }
-    
-    static void Main(string[] args)
-    {
+
+    private static void Start(string[] args) {
+                // If we're non-interactive, we should not hook console
+        var interactive = Settings.Default().Get("Server.interactive", true, true);
+
+        if (interactive) {
+            Logger.HookConsole();
+        }
+        
         // Make space above last entry in log so there's a nice split between last run of the program
         Logger.Raw("\n");
         string serverName = Settings.Default().Get("Server.name", "");
@@ -56,45 +63,45 @@ class Lawrence {
             Settings.Default().Set("Server.name", serverName = Console.ReadLine());
         }
 
-        Console.WriteLine("                                       -=*####***++++++=-                  ");
-        Console.WriteLine("                                     +##%###****++====--                   ");
-        Console.WriteLine("                                   .+#%%%%%##*****+==-:                    ");
-        Console.WriteLine("                                 =#%%%%%%%%%##****+=-                      ");
-        Console.WriteLine("                                +%%%@@@%%%%%%##***=.                       ");
-        Console.WriteLine("                             .-%@@%%@@@@@%%%%%#*+:                         ");
-        Console.WriteLine("                            *%@@@@@@@@@@@@%%%#+:                           ");
-        Console.WriteLine("                           -%@@@@@@@@@@@@@%%%- ..                          ");
-        Console.WriteLine("                           .#@@@@@@@@@@@@%%%@*-=--:                      - ");
-        Console.WriteLine("                            .#%@@@@@@@@@%*:-*+===---:.                 =*- ");
-        Console.WriteLine("                             .*%@@@@@@@#:  +*++++=-+:::.             =*=-: ");
-        Console.WriteLine("                               *%@@@@%-    =***+#+-=: .=-.         -*+===-.");
-        Console.WriteLine("                                *%@%=       :***%*+*+:-===-:     -***++++=.");
-        Console.WriteLine("                                 :-         =****##%%*+=====-  :*###*####=.");
-        Console.WriteLine("                                            =******+++++++==  +##########=.");
-        Console.WriteLine("                                      .++:..  -+++==++**++%@#######%%%%#=: ");
-        Console.WriteLine("                                     -@@@%#:         .:. .*#######%%%%%+:. ");
-        Console.WriteLine("                                   -=#@@%%%%#:          =#%%%%%%%%%%%%*-.  ");
-        Console.WriteLine("                                 -###*#@@@%%%*        -#%%%%%%%%%##%#+:.   ");
-        Console.WriteLine("                               :*###*+++*%#--       -##%%%%%######%#=:.    ");
-        Console.WriteLine("             ..:::---=---:::::*###*+++****:       .#%%%%%%%%%%%%%#+-:      ");
-        Console.WriteLine("           =%@@@@@@@@@@@@@%%%%%###+++***-         .*#%%%%%%%%%@#+-:.       ");
-        Console.WriteLine("         .#@@#=------=*#%@@@@%=:=*#***=             :+#%%%%%%#+-:.         ");
-        Console.WriteLine("        -@@%=           .+%@@@+=+#%#+.                .=**+=-:.            ");
-        Console.WriteLine("       +@%*.          .:###*#%@@@%*.                                       ");
-        Console.WriteLine("     .#@%:          .:+##*+++***+.                                         ");
-        Console.WriteLine("    :%%%:          =**+++++***+.                                           ");
-        Console.WriteLine("   -@%%-         .*+=--=++**+.                                             ");
-        Console.WriteLine("  :@%%#.       .##**++++***:                                               ");
-        Console.WriteLine("  -@%%#.     .%%##*++++**=                                                 ");
-        Console.WriteLine("  +@%%*:   .#%%#**+++**+.                                                  ");
-        Console.WriteLine("  *@%%#+. .###*++++**+:                                                    ");
-        Console.WriteLine("  =@@%%**##*+++++***:                                                      ");
-        Console.WriteLine("   %@%%%#*+++++**+:                                                        ");
-        Console.WriteLine("   -@@%##%#++**+:                                                          ");
-        Console.WriteLine(" :+#@@%-:+#%**:                                                            ");
-        Console.WriteLine("-#*+*@@#*#%%-                                                              ");
-        Console.WriteLine(":#*=-=*#%#=                                                                ");
-        Console.WriteLine(" .+#*+=++                                                                \n");
+        Logger.Raw("                                       -=*####***++++++=-                  ", false);
+        Logger.Raw("                                     +##%###****++====--                   ", false);
+        Logger.Raw("                                   .+#%%%%%##*****+==-:                    ", false);
+        Logger.Raw("                                 =#%%%%%%%%%##****+=-                      ", false);
+        Logger.Raw("                                +%%%@@@%%%%%%##***=.                       ", false);
+        Logger.Raw("                             .-%@@%%@@@@@%%%%%#*+:                         ", false);
+        Logger.Raw("                            *%@@@@@@@@@@@@%%%#+:                           ", false);
+        Logger.Raw("                           -%@@@@@@@@@@@@@%%%- ..                          ", false);
+        Logger.Raw("                           .#@@@@@@@@@@@@%%%@*-=--:                      - ", false);
+        Logger.Raw("                            .#%@@@@@@@@@%*:-*+===---:.                 =*- ", false);
+        Logger.Raw("                             .*%@@@@@@@#:  +*++++=-+:::.             =*=-: ", false);
+        Logger.Raw("                               *%@@@@%-    =***+#+-=: .=-.         -*+===-.", false);
+        Logger.Raw("                                *%@%=       :***%*+*+:-===-:     -***++++=.", false);
+        Logger.Raw("                                 :-         =****##%%*+=====-  :*###*####=.", false);
+        Logger.Raw("                                            =******+++++++==  +##########=.", false);
+        Logger.Raw("                                      .++:..  -+++==++**++%@#######%%%%#=: ", false);
+        Logger.Raw("                                     -@@@%#:         .:. .*#######%%%%%+:. ", false);
+        Logger.Raw("                                   -=#@@%%%%#:          =#%%%%%%%%%%%%*-.  ", false);
+        Logger.Raw("                                 -###*#@@@%%%*        -#%%%%%%%%%##%#+:.   ", false);
+        Logger.Raw("                               :*###*+++*%#--       -##%%%%%######%#=:.    ", false);
+        Logger.Raw("             ..:::---=---:::::*###*+++****:       .#%%%%%%%%%%%%%#+-:      ", false);
+        Logger.Raw("           =%@@@@@@@@@@@@@%%%%%###+++***-         .*#%%%%%%%%%@#+-:.       ", false);
+        Logger.Raw("         .#@@#=------=*#%@@@@%=:=*#***=             :+#%%%%%%#+-:.         ", false);
+        Logger.Raw("        -@@%=           .+%@@@+=+#%#+.                .=**+=-:.            ", false);
+        Logger.Raw("       +@%*.          .:###*#%@@@%*.                                       ", false);
+        Logger.Raw("     .#@%:          .:+##*+++***+.                                         ", false);
+        Logger.Raw("    :%%%:          =**+++++***+.                                           ", false);
+        Logger.Raw("   -@%%-         .*+=--=++**+.                                             ", false);
+        Logger.Raw("  :@%%#.       .##**++++***:                                               ", false);
+        Logger.Raw("  -@%%#.     .%%##*++++**=                                                 ", false);
+        Logger.Raw("  +@%%*:   .#%%#**+++**+.                                                  ", false);
+        Logger.Raw("  *@%%#+. .###*++++**+:                                                    ", false);
+        Logger.Raw("  =@@%%**##*+++++***:                                                      ", false);
+        Logger.Raw("   %@%%%#*+++++**+:                                                        ", false);
+        Logger.Raw("   -@@%##%#++**+:                                                          ", false);
+        Logger.Raw(" :+#@@%-:+#%**:                                                            ", false);
+        Logger.Raw("-#*+*@@#*#%%-                                                              ", false);
+        Logger.Raw(":#*=-=*#%#=                                                                ", false);
+        Logger.Raw(" .+#*+=++                                                                \n", false);
 
         if (!_directoryMode) {
             _server = new Server(listenAddress, serverPort, serverName, maxPlayers);
@@ -116,19 +123,24 @@ class Lawrence {
             Logger.Log($"Started Lawrence Directory on {_directoryServer.ListenAddress()}");
         }
 
-        while (true) {
-            Thread.Sleep(16);
-
-            if (!Environment.UserInteractive) {
-                continue;
+        if (interactive) {
+            Application.Run<UI.MainWindow>();
+            Application.Shutdown();
+        } else {
+            while (true) {
+                Thread.Sleep(16);
             }
-            
-            Console.Write("\r> ");
-            string command = Console.ReadLine();
-
-            if (command != null) {
-                Console.WriteLine(Game.Game.Shared().Execute(command));
-            }
+        }
+    }
+    
+    static void Main(string[] args) {
+        try {
+            Start(args);
+        } // Catch ctrl-c
+        catch (OperationCanceledException) {
+            Logger.Log("Caught ctrl-c, shutting down...");
+        } catch (Exception exception) {
+            Logger.Error("Caught exception in main thread", exception);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace Lawrence.Core;
 
@@ -11,9 +12,12 @@ public class Logger {
     }
 
     private static Logger _shared;
-    private readonly object _syncLock = new object();
+    private readonly object _syncLock = new();
 
-    private string _logFile = Settings.Default().Get<string>("Logger.path", "lawrence.log");
+    private string _logFile = Settings.Default().Get("Logger.path", "lawrence.log");
+
+    public static ConsoleOutputCapturer ConsoleOutputCapture;
+    public static ConsoleOutputCapturer ConsoleErrorCapture;
 
     private Logger() {
     }
@@ -43,16 +47,15 @@ public class Logger {
             }
 
             // Write to console
-            TextWriter consoleWriter = priority == Priority.Error ? Console.Error : Console.Out;
-            consoleWriter.WriteLine($"\r{logEntry}");
+            // TextWriter consoleWriter = priority == Priority.Error ? Console.Error : Console.Out;
+            TextWriter consoleWriter = priority == Priority.Error ? ConsoleErrorCapture : ConsoleOutputCapture;
+            consoleWriter.WriteLine($"{logEntry}");
 
             if (exception != null) {
                 consoleWriter.WriteLine($"Exception: {exception.GetType().FullName}");
                 consoleWriter.WriteLine($"Message: {exception.Message}");
                 consoleWriter.WriteLine($"StackTrace: {exception.StackTrace}");
             }
-
-            consoleWriter.Write("> ");
         }
     }
 
@@ -98,11 +101,64 @@ public class Logger {
     /// Logs a message to the console and to the log file without any formatting.
     /// </summary>
     /// <param name="value"></param>
-    public static void Raw(string value) {
-        using (var streamWriter = new StreamWriter(Shared()._logFile, true)) {
-            streamWriter.WriteLine(value);
+    public static void Raw(string value, bool logToFile = true) {
+        if (logToFile) {
+            using (var streamWriter = new StreamWriter(Shared()._logFile, true)) {
+                streamWriter.WriteLine(value);
+            }
         }
 
-        Console.WriteLine(value);
+        ConsoleOutputCapture.WriteLine(value);
+    }
+    
+    /// <summary>
+    /// Hooks the regular console such that we pick up all output from Console.WriteLine and Console.Error.WriteLine
+    /// </summary>
+    public static void HookConsole() {
+        using (ConsoleOutputCapture = new ConsoleOutputCapturer()) {
+            //Console.SetOut(ConsoleOutputCapture);
+        }
+        
+        using (ConsoleErrorCapture = new ConsoleOutputCapturer()) {
+            //Console.SetError(ConsoleErrorCapture);
+        }
+    }
+}
+
+public class ConsoleOutputCapturer : TextWriter {
+    private StringBuilder _stringBuilder = new StringBuilder();
+
+    // Callbacks to be notified when a line is written
+    public delegate void LineWritten(string line);
+
+    public delegate void CharWritten(char character);
+    
+    public event LineWritten OnLineWritten;
+    public event CharWritten OnCharWritten;
+    
+    public override Encoding Encoding => Encoding.UTF8;
+
+    public override void Write(char value) {
+        // Capture the character output
+        _stringBuilder.Append(value);
+        
+        // Notify any listeners
+        OnCharWritten?.Invoke(value);
+    }
+
+    public override void WriteLine(string value) {
+        // Capture the line output
+        _stringBuilder.AppendLine(value);
+        
+        // Notify any listeners
+        OnLineWritten?.Invoke(value);
+    }
+
+    public string GetCapturedOutput() {
+        return _stringBuilder.ToString();
+    }
+
+    public void Clear() {
+        _stringBuilder.Clear();
     }
 }
