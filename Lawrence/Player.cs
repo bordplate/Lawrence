@@ -68,6 +68,9 @@ namespace Lawrence
 
             InitializeInteralLuaEntity();
             
+            // Set Player mobys as auto damageable and targetable by default
+            this.modeBits = (ushort)(this._modeBits | 0x1000 | 0x4000);
+            
             Game.Shared().NotificationCenter().Subscribe<PostTickNotification>(OnPostTick);
         }
 
