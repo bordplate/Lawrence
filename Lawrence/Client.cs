@@ -78,7 +78,7 @@ namespace Lawrence {
         };
         
         // Which API version we're currently on and which is the minimum version we support. 
-        uint API_VERSION = 2;
+        uint API_VERSION = 3;
         uint API_VERSION_MIN = 2;
         
         /// <summary>

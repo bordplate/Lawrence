@@ -314,14 +314,16 @@ namespace Lawrence
             header.requiresAck = 255;
             header.ackCycle = 255;
 
-            uint TextElementFlag = 1; // Drop shadow
-            uint GameStateFlags = states << 2; // shifted by 2 to not interfere with the TextElementFlag
+            // hudText.flags field contains multiple separate pieces of information. Each next one is shifted left until they don't interfere with the previous one
+            uint TextElementFlag = 1; // <2 bits> Drop shadow
+            uint FlagsSetFlag = 1 << 2; // <1 bit>
+            uint GameStateFlags = states << 3; // <8 bits>
 
             MPPacketSetHUDText hudText = new MPPacketSetHUDText();
             hudText.x = x;
             hudText.y = y;
             hudText.color = color;
-            hudText.flags = (ushort)(TextElementFlag | GameStateFlags);
+            hudText.flags = (ushort)(TextElementFlag | GameStateFlags | FlagsSetFlag);
             hudText.id = id;
 
             header.size = (uint)Marshal.SizeOf(hudText) + 50;
