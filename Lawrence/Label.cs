@@ -11,6 +11,8 @@ public class Label : Entity {
     private ushort _y = 0;
 
     private uint _color = 0;
+
+    private uint _states = 0;
     public bool HasChanged { get; private set; }
 
     public Label(LuaTable luaTable, string text = "", ushort x = 0, ushort y = 0, uint color = 0xC0FFA888) :
@@ -51,6 +53,13 @@ public class Label : Entity {
 
     public uint Color() {
         return _color;
+    }
+
+    public void SetFlag(int state) {
+        _states |= (uint)1 << state;
+    }
+    public uint States() {
+        return _states;
     }
 
     public void SetPosition(ushort x, ushort y) {

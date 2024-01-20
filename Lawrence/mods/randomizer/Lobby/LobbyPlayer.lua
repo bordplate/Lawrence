@@ -8,7 +8,15 @@ function LobbyPlayer:Made()
 
     
     self.waitingLabel = Label:new("Waiting for current race to end...", 250, 200, 0xC0FFA888)
+
+    self.testLabel1 = Label:new("test 1", 0, 160, 0xC0FFA888, {GameState.PlayerControl, GameState.Menu});
+    self.testLabel2 = Label:new("test 2", 0, 150, 0xC0FFA888, {GameState.Menu});
+    self.testLabel3 = Label:new("test 3", 0, 140, 0xC0FFA888);
     
+    self:AddLabel(self.testLabel1)
+    self:AddLabel(self.testLabel2)
+    self:AddLabel(self.testLabel3)
+
     self.joinRando = nil
 end
 
