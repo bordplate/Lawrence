@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Runtime.InteropServices;
 using System.Text;
 using Force.Crc32;
 using NLua;
