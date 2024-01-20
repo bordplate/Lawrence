@@ -1,5 +1,4 @@
 using System;
-using Lawrence.Game;
 
 namespace Lawrence.Game;
 
@@ -20,7 +19,7 @@ public class Level : Entity {
     /// Friendly name for level.
     /// </summary>
     /// <returns></returns>
-    public string GetName() {
+    public string Name() {
         return _name;
     }
 
@@ -28,7 +27,7 @@ public class Level : Entity {
     /// The ID the level has in the game. 
     /// </summary>
     /// <returns></returns>
-    public int GetGameID() {
+    public int GameID() {
         return _gameId;
     }
 
@@ -37,7 +36,7 @@ public class Level : Entity {
         moby.SetLevel(this);
         
         if (param is int oClass) {
-            moby.oClass = oClass;
+            moby.OClass = oClass;
         }
         
         object mobyTable = Game.Shared().State()["Moby"];
@@ -56,7 +55,7 @@ public class Level : Entity {
 
         LuaFunction initializeFunction = ((LuaFunction)((LuaTable)mobyTable)["new"]);
 
-        object[] entity = initializeFunction.Call(new[] { mobyTable, moby });
+        object[] entity = initializeFunction.Call(mobyTable, moby);
 
         if (entity.Length <= 0 || !(entity[0] is LuaTable)) {
             throw new Exception("Failed to initialize `Moby` Lua entity. `Moby` is not a Lua table");
@@ -75,7 +74,7 @@ public class Level : Entity {
     /// </summary>
     /// <param name="entity"></param>
     public void Add(Entity entity) {
-        this.Add(entity, false);
+        Add(entity, false);
     }
 
     public void Remove(Entity entity, bool unparent = true) {

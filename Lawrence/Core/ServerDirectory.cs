@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Lawrence.Core;
 
-public struct Server
+public struct ServerItem
 {
 	public string IP;
 	public int Port;
@@ -16,34 +16,29 @@ public struct Server
 
 public class ServerDirectory
 {
-	List<Server> servers = new List<Server>();
-	DateTime lastClearStale = DateTime.MinValue;
+	private readonly List<ServerItem> _servers = new();
+	private DateTime _lastClearStale = DateTime.MinValue;
 
-	public ServerDirectory()
-	{
-		
-	}
-
-	public List<Server> Servers()
+	public List<ServerItem> Servers()
 	{
 		ClearStale();
 
-		return servers;
+		return _servers;
 	}
 
 	public void RegisterServer(string ip, int port, string name, int maxPlayers, int playerCount)
 	{
 		ClearStale();
-		int index = servers.FindIndex(s => s.IP == ip && s.Port == port);
+		int index = _servers.FindIndex(s => s.IP == ip && s.Port == port);
 
 		if(index != -1)
 		{
-			servers[index] = new Server { IP = ip, Port = port, Name = name, MaxPlayers = maxPlayers, PlayerCount = playerCount, LastPing = DateTime.Now };
+			_servers[index] = new ServerItem { IP = ip, Port = port, Name = name, MaxPlayers = maxPlayers, PlayerCount = playerCount, LastPing = DateTime.Now };
 		}
 		else
 		{
-			Server server = new Server { IP = ip, Port = port, Name = name, MaxPlayers = maxPlayers, PlayerCount = playerCount, LastPing = DateTime.Now };
-			servers.Add(server);
+			ServerItem serverItem = new ServerItem { IP = ip, Port = port, Name = name, MaxPlayers = maxPlayers, PlayerCount = playerCount, LastPing = DateTime.Now };
+			_servers.Add(serverItem);
 
 			Logger.Log($"New server '{name}' @ {ip}:{port}");
 		}
@@ -53,28 +48,28 @@ public class ServerDirectory
 
 	public void ClearStale()
 	{
-		if((DateTime.Now - lastClearStale).TotalSeconds < 30)
+		if((DateTime.Now - _lastClearStale).TotalSeconds < 30)
 		{
 			return;
 		}
 
-		for (int i = servers.Count - 1; i >= 0; i--)
+		for (int i = _servers.Count - 1; i >= 0; i--)
 		{
-			if ((DateTime.Now - servers[i].LastPing).TotalMinutes > 3)
+			if ((DateTime.Now - _servers[i].LastPing).TotalMinutes > 3)
 			{
-				Logger.Log($"Removing stale server '{servers[i].Name}' @ {servers[i].IP}:{servers[i].Port}");
-				servers.RemoveAt(i);
+				Logger.Log($"Removing stale server '{_servers[i].Name}' @ {_servers[i].IP}:{_servers[i].Port}");
+				_servers.RemoveAt(i);
 			}
 		}
 
-		lastClearStale = DateTime.Now;
+		_lastClearStale = DateTime.Now;
 	}
 	
 	private void WriteServersToFile()
 	{
 		using (StreamWriter file = new StreamWriter("servers.log", false))
 		{
-			foreach (var server in servers)
+			foreach (var server in _servers)
 			{
 				file.WriteLine($"({server.PlayerCount}/{server.MaxPlayers}) {server.Name}");
 			}

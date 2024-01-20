@@ -30,7 +30,7 @@ public class PlayerJoinedNotification : Notification {
 }
 
 public class PrimaryUniverseChangedNotification : Notification {
-    public Universe Universe;
+    public readonly Universe Universe;
 
     public PrimaryUniverseChangedNotification(Universe universe) : base("PrimaryUniverseChanged") {
         Universe = universe;
@@ -38,7 +38,7 @@ public class PrimaryUniverseChangedNotification : Notification {
 }
 
 public class DeleteEntityNotification : Notification {
-    public Entity Entity;
+    public readonly Entity Entity;
 
     public DeleteEntityNotification(Entity entity) : base("DeleteEntity") {
         Entity = entity;
@@ -62,9 +62,9 @@ public class PostTickNotification : Notification {
 /// </summary>
 public class NotificationCenter {
     // Dictionary to store subscribers for each notification type
-    private ConcurrentDictionary<string, List<Delegate>> _subscribers;
+    private readonly ConcurrentDictionary<string, List<Delegate>> _subscribers;
 
-    private Mutex _lock = new Mutex();
+    private readonly Mutex _lock = new Mutex();
 
     /// <summary>
     /// Constructor for the NotificationCenter class

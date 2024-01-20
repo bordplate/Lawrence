@@ -1,24 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using Lawrence.Game;
+﻿using System.Collections.Generic;
 using NLua;
 
 using Lawrence.Core;
-using Lawrence.Game.UI;
 
 namespace Lawrence.Game;
 
 /// <summary>
-/// 
+/// A Universe is a collection of levels that objects and players can be on. Players on the same level, but in different
+///     universes, cannot see each other.
 /// </summary>
 public class Universe : Entity
 {
     /// <summary>
     /// Primary universes are universes that handle notifications about when players join. There should only be 1 primary universe at the time.
     /// </summary>
-    private bool _primary = false;
+    private bool _primary;
 
-    private List<Level> _levels = new List<Level> {
+    private readonly List<Level> _levels = new() {
         new Level(0, "Veldin1"),
         new Level(1, "Novalis"),
         new Level(2, "Aridia"),
@@ -56,13 +54,13 @@ public class Universe : Entity
         base.Add(entity, reparent);
 
         if (entity is Player || entity.GetType().IsSubclassOf(typeof(Player))) {
-            CallLuaFunction("OnPlayerJoin", new object[] { LuaEntity(), entity.LuaEntity() });
+            CallLuaFunction("OnPlayerJoin", LuaEntity(), entity.LuaEntity());
         }
     }
 
     public Level GetLevelByName(string levelName) {
         foreach (Level level in _levels) {
-            if (levelName == level.GetName()) {
+            if (levelName == level.Name()) {
                 return level;
             }
         }
@@ -72,7 +70,7 @@ public class Universe : Entity
 
     public Level GetLevelByGameID(ushort levelID) {
         foreach (Level level in _levels) {
-            if (levelID == level.GetGameID()) {
+            if (levelID == level.GameID()) {
                 return level;
             }
         }
@@ -84,7 +82,7 @@ public class Universe : Entity
         // If we set this as primary universe, we notify the other ones to tell them they should not be primary anymore. 
         if (primary) {
             _primary = true;
-            Game.Shared().NotificationCenter().Post<PrimaryUniverseChangedNotification>(new PrimaryUniverseChangedNotification(this));
+            Game.Shared().NotificationCenter().Post(new PrimaryUniverseChangedNotification(this));
         }
     }
 
@@ -92,7 +90,7 @@ public class Universe : Entity
         _primary = primary;
         
         if (primary) {
-            Game.Shared().NotificationCenter().Post<PrimaryUniverseChangedNotification>(new PrimaryUniverseChangedNotification(this));
+            Game.Shared().NotificationCenter().Post(new PrimaryUniverseChangedNotification(this));
         }
     }
 
@@ -108,7 +106,7 @@ public class Universe : Entity
             return;
         }
 
-        this.Add(notification.Entity);
+        Add(notification.Entity);
     }
 
     public override void OnTick(TickNotification notification)

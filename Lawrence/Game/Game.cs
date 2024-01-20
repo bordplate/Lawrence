@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 using NLua;
 
@@ -11,29 +10,65 @@ using Lawrence.Game.UI;
 
 namespace Lawrence.Game;
 
+
+public enum ControllerInput {
+    L2 = 1,
+    R2 = 2,
+    L1 = 4,
+    R1 = 8,
+    Triangle = 16,
+    Circle = 32,
+    Cross = 64,
+    Square = 128,
+    Select = 256,
+    L3 = 512,
+    R3 = 1024,
+    Start = 2048,
+    Up = 4096,
+    Right = 8192,
+    Down = 16384,
+    Left = 32768
+}
+
+public enum GameState {
+    PlayerControl = 0x0,
+    Movie = 0x1,
+    CutScene = 0x2,
+    Menu = 0x3,
+    Prompt = 0x4,
+    Vendor = 0x5,
+    Loading = 0x6,
+    Cinematic = 0x7,
+    UnkFF = 0xff,
+}
+
 public class Game {
-    static Game SharedGame;
+    private static Game _sharedGame;
 
-    private NotificationCenter _notificationCenter = new NotificationCenter();
+    private NotificationCenter _notificationCenter = new();
 
-    Lua state;
+    private Lua _state;
 
-    string[] modsFolders;
-    string[] runtimeScripts;
+    private readonly string[] _modsFolders;
+    private readonly string[] _runtimeScripts;
 
-    private List<Mod> mods = new List<Mod>();
+    private readonly List<Mod> _mods = new();
+
+    private readonly Server _server;
 
     private long _ticks = 0;
     
     /// <summary>
     /// Time in milliseconds
     /// </summary>
-    private ulong _time = 0;
-    private ulong _deltaTime = 0;
+    private ulong _time;
+    private ulong _deltaTime;
 
-    public Game() {
-        modsFolders = Directory.GetDirectories("mods/");
-        runtimeScripts = Directory.GetFiles("runtime/");
+    public Game(Server server) {
+        _server = server;
+        
+        _modsFolders = Directory.GetDirectories("mods/");
+        _runtimeScripts = Directory.GetFiles("runtime/");
     }
 
     /// <summary>
@@ -41,7 +76,7 @@ public class Game {
     /// </summary>
     void Initialize() {
         // Start off by loading some runtime Lua that initializes all the important Lua objects and similar.
-        foreach (var scriptFilename in runtimeScripts) {
+        foreach (var scriptFilename in _runtimeScripts) {
             if (!scriptFilename.EndsWith(".lua")) continue;
 
             Logger.Trace($"Loading runtime script: {scriptFilename}");
@@ -68,11 +103,11 @@ public class Game {
         }
 
         // Load the user-installed mods
-        foreach (var folder in modsFolders) {
+        foreach (var folder in _modsFolders) {
             string canonicalName = folder.Split("/").Last().Split("\\").Last();
 
             // Users can disable or enable mods from the main settings.toml file. 
-            if (!Settings.Default().Get<bool>($"Mod.{canonicalName}.enabled", false)) {
+            if (!Settings.Default().Get($"Mod.{canonicalName}.enabled", false)) {
                 continue;
             }
 
@@ -91,17 +126,18 @@ public class Game {
                         }
 
                         string entryFile = File.ReadAllText($"{mod.Path()}/{entry}");
+                        
                         if (entryFile == null) {
                             Logger.Error($"Could not load entry file at {entryFile}.");
                             continue;
                         }
                         
                         // Add the mod path to Lua package path
-                        state.DoString($"package.path = package.path .. \";{folder.Replace("\\", "\\\\")}/?.lua\"", "set package path chunk");
+                        _state.DoString($"package.path = package.path .. \";{folder.Replace("\\", "\\\\")}/?.lua\"", "set package path chunk");
 
                         State().DoString(entryFile, entry);
 
-                        mods.Add(mod);
+                        _mods.Add(mod);
                     }
                     catch (Exception exception) {
                         Logger.Error($"Failed to load mod at {folder}", exception);
@@ -129,18 +165,18 @@ public class Game {
 
     public Lua State()
     {
-        if (state == null) {
-            state = new Lua();
+        if (_state == null) {
+            _state = new Lua();
 
-            state.LoadCLRPackage();
-            state["Game"] = this;
+            _state.LoadCLRPackage();
+            _state["Game"] = this;
 
-            state["print"] = (string text) => {
+            _state["print"] = (string text) => {
                 Logger.Log(text);
             };
         }
 
-        return state;
+        return _state;
     }
 
     /// <summary>
@@ -158,7 +194,7 @@ public class Game {
 
             foreach (object obj in result)
             {
-                output += $"\n{obj.ToString()}";
+                output += $"\n{obj}";
             }
         } catch (Exception e)
         {
@@ -171,13 +207,13 @@ public class Game {
 	// Get shared environment singleton
 	public static Game Shared()
 	{
-		if (Game.SharedGame == null)
+		if (_sharedGame == null)
 		{
-			Game.SharedGame = new Game();
-            Game.SharedGame.Initialize();
+			_sharedGame = new Game(Lawrence.Server());
+            _sharedGame.Initialize();
 		}
 
-		return Game.SharedGame;
+		return _sharedGame;
 	}
 
     /// <summary>
@@ -247,7 +283,7 @@ public class Game {
     {
         int players = 0;
 
-        foreach (Client client in Lawrence.GetClients())
+        foreach (Client client in  _server.Clients())
         {
             if (client.IsActive())
             {

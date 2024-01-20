@@ -56,6 +56,7 @@ public enum MPPacketFlags : ushort
     MP_PACKET_FLAG_RPC = 0x1
 }
 
+[Flags]
 public enum MPMobyFlags : ushort
 {
     MP_MOBY_FLAG_ACTIVE = 0x1,
@@ -250,14 +251,11 @@ public struct MPPacketToastMessage {
 
 public class Packet
 {
-    public Packet()
-    {
-    }
-
     public static (MPPacketHeader, byte[]) MakeAckPacket()
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_ACK;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_ACK
+        };
 
         return (header, null);
     }
@@ -267,39 +265,43 @@ public class Packet
         MPPacketHeader header = new MPPacketHeader();
         header.ptype = MPPacketType.MP_PACKET_IDKU;
 
-        return headerToBytes(header);
+        return HeaderToBytes(header);
     }
 
     public static (MPPacketHeader, byte[]) MakeDisconnectPacket()
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_DISCONNECTED;
-        header.size = 0;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_DISCONNECTED,
+            size = 0
+        };
 
         return (header, null);
     }
 
     public static (MPPacketHeader, byte[]) MakeDamagePacket(uint damage)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetState bonkState = new MPPacketSetState();
-        bonkState.stateType = MPStateType.MP_STATE_TYPE_PLAYER;
-        bonkState.value = 0x16;
+        MPPacketSetState bonkState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_PLAYER,
+            value = 0x16
+        };
 
-        // MPPacketSetState damageState = new MPPacketSetState();
-        // damageState.stateType = MPStateType.MP_STATE_TYPE_DAMAGE;
-        // damageState.value = damage;  // Damage player by 1 health
+        MPPacketSetState damageState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_DAMAGE,
+            value = damage
+        };
 
-        var size = Marshal.SizeOf(bonkState);// + Marshal.SizeOf(damageState);
+        var size = Marshal.SizeOf(bonkState) + Marshal.SizeOf(damageState);
         header.size = (uint)size;
         List<byte> bytes = new List<byte>();
         
-        bytes.AddRange(StructToBytes<MPPacketSetState>(bonkState, Endianness.BigEndian));
-        // bytes.AddRange(StructToBytes<MPPacketSetState>(damageState, Endianness.BigEndian));
+        bytes.AddRange(StructToBytes(bonkState, Endianness.BigEndian));
+        bytes.AddRange(StructToBytes(damageState, Endianness.BigEndian));
 
         return (header, bytes.ToArray());
     }
@@ -311,29 +313,30 @@ public class Packet
             return (new MPPacketHeader(), null);
         }
 
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_HUD_TEXT;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_HUD_TEXT,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
         // hudText.flags field contains multiple separate pieces of information. Each next one is shifted left until they don't interfere with the previous one
-        uint TextElementFlag = 1; // <2 bits> Drop shadow
-        uint FlagsSetFlag = 1 << 2; // <1 bit>
-        uint GameStateFlags = states << 3; // <8 bits>
+        uint textElementFlag = 1; // <2 bits> Drop shadow
+        uint flagsSetFlag = 1 << 2; // <1 bit>
+        uint gameStateFlags = states << 3; // <8 bits>
 
-        MPPacketSetHUDText hudText = new MPPacketSetHUDText();
-        hudText.x = x;
-        hudText.y = y;
-        hudText.color = color;
-        hudText.flags = (ushort)(TextElementFlag | GameStateFlags | FlagsSetFlag);
-        hudText.id = id;
+        MPPacketSetHUDText hudText = new MPPacketSetHUDText {
+            x = x,
+            y = y,
+            color = color,
+            flags = (ushort)(textElementFlag | gameStateFlags | flagsSetFlag),
+            id = id
+        };
 
         header.size = (uint)Marshal.SizeOf(hudText) + 50;
 
-        //List<byte> buffer = new List<byte>((int)header.size);
         byte[] buffer = new byte[(int)header.size];
-        StructToBytes<MPPacketSetHUDText>(hudText, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
-        //text.ToList().CopyTo(buffer, Marshal.SizeOf(hudText));
+        StructToBytes(hudText, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+        
         Encoding.ASCII.GetBytes(text).CopyTo(buffer, Marshal.SizeOf(hudText));
         
         return (header, buffer);
@@ -343,19 +346,21 @@ public class Packet
     // TODO: add game state argument for make to say on which gamestate it should be shown/should be moved to. maybe default it to something
     public static (MPPacketHeader, byte[]) MakeDeleteHUDTextPacket(ushort id)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_HUD_TEXT;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_HUD_TEXT,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetHUDText hudText = new MPPacketSetHUDText();
-        hudText.id = id;
-        hudText.flags = 2;  // Delete
+        MPPacketSetHUDText hudText = new MPPacketSetHUDText {
+            id = id,
+            flags = 2 // Delete
+        };
 
         header.size = (uint)Marshal.SizeOf(hudText) + 50;
 
         byte[] buffer = new byte[(int)header.size];
-        StructToBytes<MPPacketSetHUDText>(hudText, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+        StructToBytes(hudText, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
 
 
         return (header, buffer);
@@ -363,153 +368,165 @@ public class Packet
 
     public static (MPPacketHeader, byte[]) MakeDeleteMobyPacket(ushort mobyUUID)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_MOBY_DELETE;
-        header.requiresAck = 255;  // 255 represents unfilled fields that the client will fill before sending
-        header.ackCycle = 255; 
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_MOBY_DELETE,
+            requiresAck = 255, // 255 represents unfilled fields that the client will fill before sending
+            ackCycle = 255
+        };
 
-        MPPacketMobyCreate body = new MPPacketMobyCreate();
-        body.uuid = mobyUUID;
-        body.flags = 1;
+        MPPacketMobyCreate body = new MPPacketMobyCreate {
+            uuid = mobyUUID,
+            flags = 1
+        };
 
         header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
 
-        return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
+        return (header, StructToBytes(body, Endianness.BigEndian));
     }
     
     public static (MPPacketHeader, byte[]) MakeDeleteAllMobysPacket(ushort oClass)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_MOBY_DELETE;
-        header.requiresAck = 255;  // 255 represents unfilled fields that the client will fill before sending
-        header.ackCycle = 255; 
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_MOBY_DELETE,
+            requiresAck = 255, // 255 represents unfilled fields that the client will fill before sending
+            ackCycle = 255
+        };
 
-        MPPacketMobyCreate body = new MPPacketMobyCreate();
-        body.uuid = oClass;
-        body.flags = 2;
+        MPPacketMobyCreate body = new MPPacketMobyCreate {
+            uuid = oClass,
+            flags = 2
+        };
 
         header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
 
-        return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
+        return (header, StructToBytes(body, Endianness.BigEndian));
     }
     
     public static (MPPacketHeader, byte[]) MakeDeleteAllMobysUIDPacket(ushort uid)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_MOBY_DELETE;
-        header.requiresAck = 255;  // 255 represents unfilled fields that the client will fill before sending
-        header.ackCycle = 255; 
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_MOBY_DELETE,
+            requiresAck = 255, // 255 represents unfilled fields that the client will fill before sending
+            ackCycle = 255
+        };
 
-        MPPacketMobyCreate body = new MPPacketMobyCreate();
-        body.uuid = uid;
-        body.flags = 8;
+        MPPacketMobyCreate body = new MPPacketMobyCreate {
+            uuid = uid,
+            flags = 8
+        };
 
         header.size = (uint)Marshal.SizeOf<MPPacketMobyCreate>();
 
-        return (header, StructToBytes<MPPacketMobyCreate>(body, Endianness.BigEndian));
+        return (header, StructToBytes(body, Endianness.BigEndian));
     }
 
     public static (MPPacketHeader, byte[]) MakeMobyUpdatePacket(ushort id, Moby moby)
     {
-        MPPacketMobyUpdate moby_update = new MPPacketMobyUpdate();
+        MPPacketMobyUpdate mobyUpdate = new MPPacketMobyUpdate {
+            uuid = id
+        };
 
-        moby_update.uuid = id;
-
-        moby_update.mpFlags |= moby.IsActive() ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
-        moby_update.mpFlags |= moby.collision ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
-        moby_update.mpFlags |= moby.mpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
+        mobyUpdate.mpFlags |= moby.IsActive() ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
+        mobyUpdate.mpFlags |= moby.CollisionEnabled ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
+        mobyUpdate.mpFlags |= moby.MpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
         
-        moby_update.parent = (ushort)0; // Parent isn't really used
-        moby_update.oClass = (ushort)moby.oClass;
-        moby_update.level = moby.Level() != null ? (ushort)moby.Level().GetGameID() : (ushort)0;
-        moby_update.x = moby.x;
-        moby_update.y = moby.y;
-        moby_update.z = moby.z;
-        moby_update.rotX = (float)(Math.PI / 180) * moby.rotX;
-        moby_update.rotY = (float)(Math.PI / 180) * moby.rotY;
-        moby_update.rotZ = (float)(Math.PI / 180) * moby.rotZ;
-        moby_update.animationID = moby.animationID;
-        moby_update.scale = moby.scale;
-        moby_update.alpha = Math.Min((byte)(moby.alpha * 128), (byte)128);
+        mobyUpdate.parent = (ushort)0; // Parent isn't really used
+        mobyUpdate.oClass = (ushort)moby.OClass;
+        mobyUpdate.level = moby.Level() != null ? (ushort)moby.Level().GameID() : (ushort)0;
+        mobyUpdate.x = moby.X;
+        mobyUpdate.y = moby.Y;
+        mobyUpdate.z = moby.Z;
+        mobyUpdate.rotX = (float)(Math.PI / 180) * moby.RotX;
+        mobyUpdate.rotY = (float)(Math.PI / 180) * moby.RotY;
+        mobyUpdate.rotZ = (float)(Math.PI / 180) * moby.RotZ;
+        mobyUpdate.animationID = moby.AnimationId;
+        mobyUpdate.scale = moby.Scale;
+        mobyUpdate.alpha = Math.Min((byte)(moby.Alpha * 128), (byte)128);
         
-        moby_update.modeBits = moby.modeBits;
+        mobyUpdate.modeBits = moby.ModeBits;
 
-        MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
+        MPPacketHeader mobyHeader = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
 
-        return (moby_header, Packet.StructToBytes<MPPacketMobyUpdate>(moby_update, Endianness.BigEndian));
+        return (mobyHeader, StructToBytes(mobyUpdate, Endianness.BigEndian));
     }
 
     public struct UpdateMobyValue {
-        public UInt16 offset;
-        public uint value;
+        public readonly UInt16 Offset;
+        public readonly uint Value;
         
-        public UpdateMobyValue(UInt16 offset, uint value) { this.offset = offset; this.value = value; }
+        public UpdateMobyValue(UInt16 offset, uint value) { Offset = offset; Value = value; }
     }
 
     public static (MPPacketHeader, byte[]) MakeMobyUpdateExtended(ushort uuid, UpdateMobyValue[] values) {
-        MPPacketMobyExtended moby_extended = new MPPacketMobyExtended();
+        MPPacketMobyExtended mobyExtended = new MPPacketMobyExtended {
+            uuid = uuid,
+            numValues = (ushort)values.Length
+        };
+
+        MPPacketHeader mobyHeader = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_MOBY_EXTENDED, 
+            size = (uint)Marshal.SizeOf<MPPacketMobyExtended>() + (uint)(Marshal.SizeOf<MPPacketMobyExtendedPayload>() * values.Length)
+        };
         
-        moby_extended.uuid = uuid;
-        moby_extended.numValues = (ushort)values.Length;
-        
-        MPPacketHeader moby_header = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_EXTENDED, size = (uint)Marshal.SizeOf<MPPacketMobyExtended>() + (uint)(Marshal.SizeOf<MPPacketMobyExtendedPayload>() * values.Length) };
-        
-        byte[] buffer = new byte[moby_header.size];
-        StructToBytes<MPPacketMobyExtended>(moby_extended, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+        byte[] buffer = new byte[mobyHeader.size];
+        StructToBytes(mobyExtended, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
         
         int offset = Marshal.SizeOf<MPPacketMobyExtended>();
         foreach (UpdateMobyValue value in values) {
             MPPacketMobyExtendedPayload payload = new MPPacketMobyExtendedPayload();
-            payload.offset = value.offset;
-            payload.value = value.value;
+            payload.offset = value.Offset;
+            payload.value = value.Value;
             
-            StructToBytes<MPPacketMobyExtendedPayload>(payload, Endianness.BigEndian).ToList().CopyTo(buffer, offset);
+            StructToBytes(payload, Endianness.BigEndian).ToList().CopyTo(buffer, offset);
             offset += Marshal.SizeOf<MPPacketMobyExtendedPayload>();
         }
         
-        return (moby_header, buffer);
+        return (mobyHeader, buffer);
     }
 
     public static (MPPacketHeader, byte[]) MakeGoToLevelPacket(int level)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetState destinationLevelState = new MPPacketSetState();
-        destinationLevelState.stateType = MPStateType.MP_STATE_TYPE_PLANET;
-        destinationLevelState.value = (uint)level;
+        MPPacketSetState destinationLevelState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_PLANET,
+            value = (uint)level
+        };
 
         var size = Marshal.SizeOf(destinationLevelState);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetState>(destinationLevelState, Endianness.BigEndian));
+        return (header, StructToBytes(destinationLevelState, Endianness.BigEndian));
     }
 
-    public static (MPPacketHeader, byte[]) MakeQueryServerResponsePacket(List<Server> servers, byte ackId, byte ackCycle)
+    public static (MPPacketHeader, byte[]) MakeQueryServerResponsePacket(List<ServerItem> servers, byte ackId, byte ackCycle)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_ACK;
-        header.requiresAck = ackId;
-        header.ackCycle = ackCycle;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_ACK,
+            requiresAck = ackId,
+            ackCycle = ackCycle
+        };
 
-        List<byte> bytes = new List<byte>();
+        List<byte> bytes = new();
 
-        foreach (Server server in servers)
+        foreach (ServerItem server in servers)
         {
-            IPAddress ipAddress;
-            if (IPAddress.TryParse(server.IP, out ipAddress))
+            if (IPAddress.TryParse(server.IP, out var ipAddress))
             {
                 // If the parsing is successful, get the 32-bit integer representation of the IP address
                 uint addr = SwapEndianness((uint)ipAddress.Address);
 
-                MPPacketQueryResponseServer packet = new MPPacketQueryResponseServer();
-                packet.ip = addr;
-                packet.port = (ushort)server.Port;
-                packet.maxPlayers = (ushort)server.MaxPlayers;
-                packet.playerCount = (ushort)server.PlayerCount;
-                packet.nameLength = (ushort)Encoding.UTF8.GetBytes(server.Name).Length;
+                MPPacketQueryResponseServer packet = new MPPacketQueryResponseServer {
+                    ip = addr,
+                    port = (ushort)server.Port,
+                    maxPlayers = (ushort)server.MaxPlayers,
+                    playerCount = (ushort)server.PlayerCount,
+                    nameLength = (ushort)Encoding.UTF8.GetBytes(server.Name).Length
+                };
 
                 bytes.AddRange(Packet.StructToBytes(packet, Endianness.BigEndian));
                 bytes.AddRange(Encoding.UTF8.GetBytes(server.Name));
@@ -523,23 +540,24 @@ public class Packet
 
     public static (MPPacketHeader, byte[]) MakeRegisterServerPacket(string ip, ushort port, ushort maxPlayers,
         ushort playerCount, string name) {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_REGISTER_SERVER;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_REGISTER_SERVER
+        };
 
         List<byte> bytes = new List<byte>();
 
-        IPAddress address;
-        if (!IPAddress.TryParse(ip, out address)) {
+        if (!IPAddress.TryParse(ip, out var address)) {
             throw new Exception($"Invalid IP address {ip}");
         }
 
-        MPPacketRegisterServer packet = new MPPacketRegisterServer();
-        packet.ip = (uint)address.MapToIPv4().Address;
-        packet.port = port;
-        packet.maxPlayers = maxPlayers;
-        packet.playerCount = playerCount;
-        packet.nameLength = (ushort)name.Length;
-        
+        MPPacketRegisterServer packet = new MPPacketRegisterServer {
+            ip = (uint)address.MapToIPv4().Address,
+            port = port,
+            maxPlayers = maxPlayers,
+            playerCount = playerCount,
+            nameLength = (ushort)name.Length
+        };
+
         bytes.AddRange(Packet.StructToBytes(packet, Endianness.BigEndian));
         bytes.AddRange(Encoding.UTF8.GetBytes(name));
 
@@ -550,48 +568,53 @@ public class Packet
 
     public static (MPPacketHeader, byte[]) MakeSetItemPacket(ushort item, bool equip)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
         uint flags = 0;
         flags |= 1;  // FLAG_ITEM_GIVE
         flags |= equip ? (uint)2 : (uint)0;  // FLAG_ITEM_EQUIP
 
-        MPPacketSetState setItemState = new MPPacketSetState();
-        setItemState.stateType = MPStateType.MP_STATE_TYPE_ITEM;
-        setItemState.value = (flags << 16) | (uint)item;
+        MPPacketSetState setItemState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_ITEM,
+            value = (flags << 16) | (uint)item
+        };
 
         var size = Marshal.SizeOf(setItemState);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetState>(setItemState, Endianness.BigEndian));
+        return (header, StructToBytes(setItemState, Endianness.BigEndian));
     }
 
     public static (MPPacketHeader, byte[]) MakeUnlockLevelPacket(int level)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetState setItemState = new MPPacketSetState();
-        setItemState.stateType = MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL;
-        setItemState.value = (uint)level;
+        MPPacketSetState setItemState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL,
+            value = (uint)level
+        };
 
         var size = Marshal.SizeOf(setItemState);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetState>(setItemState, Endianness.BigEndian));
+        return (header, StructToBytes(setItemState, Endianness.BigEndian));
     }
     
     public static (MPPacketHeader, byte[]) MakeSetPlayerStatePacket(ushort state)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
         MPPacketSetState setPlayerState = new MPPacketSetState();
         setPlayerState.stateType = MPStateType.MP_STATE_TYPE_PLAYER;
@@ -600,90 +623,99 @@ public class Packet
         var size = Marshal.SizeOf(setPlayerState);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetState>(setPlayerState, Endianness.BigEndian));
+        return (header, StructToBytes(setPlayerState, Endianness.BigEndian));
     }
     
     public static (MPPacketHeader, byte[]) MakeSetPlayerInputStatePacket(uint state)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetState setPlayerState = new MPPacketSetState();
-        setPlayerState.stateType = MPStateType.MP_STATE_TYPE_PLAYER_INPUT;
-        setPlayerState.value = state;
+        MPPacketSetState setPlayerState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_PLAYER_INPUT,
+            value = state
+        };
 
         var size = Marshal.SizeOf(setPlayerState);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetState>(setPlayerState, Endianness.BigEndian));
+        return (header, StructToBytes(setPlayerState, Endianness.BigEndian));
     }
     
     public static (MPPacketHeader, byte[]) MakeSetAddressValuePacket(uint address, uint value)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetState setPlayerState = new MPPacketSetState();
-        setPlayerState.stateType = MPStateType.MP_STATE_TYPE_ARBITRARY;
-        setPlayerState.offset = address;
-        setPlayerState.value = value;
+        MPPacketSetState setPlayerState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
+            offset = address,
+            value = value
+        };
 
         var size = Marshal.SizeOf(setPlayerState);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetState>(setPlayerState, Endianness.BigEndian));
+        return (header, StructToBytes(setPlayerState, Endianness.BigEndian));
     }
     
     public static (MPPacketHeader, byte[]) MakeSetAddressFloatPacket(uint address, float value)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetStateFloat setPlayerState = new MPPacketSetStateFloat();
-        setPlayerState.stateType = MPStateType.MP_STATE_TYPE_ARBITRARY;
-        setPlayerState.offset = address;
-        setPlayerState.value = value;
+        MPPacketSetStateFloat setPlayerState = new MPPacketSetStateFloat {
+            stateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
+            offset = address,
+            value = value
+        };
 
         var size = Marshal.SizeOf(setPlayerState);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetStateFloat>(setPlayerState, Endianness.BigEndian));
+        return (header, StructToBytes(setPlayerState, Endianness.BigEndian));
     }
 
     public static (MPPacketHeader, byte[]) MakeGiveBoltsPacket(uint bolts)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketBolts giveBolts = new MPPacketBolts();
-        giveBolts.stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS;
-        giveBolts.value = bolts;
+        MPPacketBolts giveBolts = new MPPacketBolts {
+            stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS,
+            value = bolts
+        };
 
         var size = Marshal.SizeOf(giveBolts);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketBolts>(giveBolts, Endianness.BigEndian));
+        return (header, StructToBytes(giveBolts, Endianness.BigEndian));
     }
 
     public static (MPPacketHeader, byte[]) MakeSetPositionPacket(ushort property, float position) {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetStateFloat setPositionState = new MPPacketSetStateFloat();
-        setPositionState.stateType = MPStateType.MP_STATE_TYPE_POSITION;
-
-        setPositionState.offset = property;
-        setPositionState.value = position;
+        MPPacketSetStateFloat setPositionState = new MPPacketSetStateFloat {
+            stateType = MPStateType.MP_STATE_TYPE_POSITION,
+            offset = property,
+            value = position
+        };
 
         header.size = (uint)Marshal.SizeOf(setPositionState);
 
@@ -691,32 +723,37 @@ public class Packet
     }
 
     public static (MPPacketHeader, byte[]) MakeSetRespawnPacket(float x, float y, float z, float rotationZ) {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetStateFloat setRespawnX = new MPPacketSetStateFloat();
-        setRespawnX.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
-        setRespawnX.offset = 0;
-        setRespawnX.value = x;
-        
-        MPPacketSetStateFloat setRespawnY = new MPPacketSetStateFloat();
-        setRespawnY.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
-        setRespawnY.offset = 1;
-        setRespawnY.value = y;
+        MPPacketSetStateFloat setRespawnX = new MPPacketSetStateFloat {
+            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            offset = 0,
+            value = x
+        };
 
-        MPPacketSetStateFloat setRespawnZ = new MPPacketSetStateFloat();
-        setRespawnZ.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
-        setRespawnZ.offset = 2;
-        setRespawnZ.value = z;
-        
-        MPPacketSetStateFloat setRespawnRotZ = new MPPacketSetStateFloat();
-        setRespawnRotZ.stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN;
-        setRespawnRotZ.offset = 5;
-        setRespawnRotZ.value = rotationZ;
-        
-        List<byte> bytes = new List<byte>();
+        MPPacketSetStateFloat setRespawnY = new MPPacketSetStateFloat {
+            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            offset = 1,
+            value = y
+        };
+
+        MPPacketSetStateFloat setRespawnZ = new MPPacketSetStateFloat {
+            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            offset = 2,
+            value = z
+        };
+
+        MPPacketSetStateFloat setRespawnRotZ = new MPPacketSetStateFloat {
+            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            offset = 5,
+            value = rotationZ
+        };
+
+        List<byte> bytes = new();
         
         bytes.AddRange(StructToBytes(setRespawnX, Endianness.BigEndian));
         bytes.AddRange(StructToBytes(setRespawnY, Endianness.BigEndian));
@@ -729,19 +766,21 @@ public class Packet
     }
 
     public static (MPPacketHeader, byte[]) MakeToastMessagePacket(string message, uint duration = 20) {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_TOAST_MESSAGE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_TOAST_MESSAGE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketToastMessage messagePacket = new MPPacketToastMessage();
-        messagePacket.messageType = 0;
-        messagePacket.duration = duration;
+        MPPacketToastMessage messagePacket = new MPPacketToastMessage {
+            messageType = 0,
+            duration = duration
+        };
 
         header.size = (uint)Marshal.SizeOf(messagePacket) + 0x50;
 
         byte[] buffer = new byte[(int)header.size];
-        StructToBytes<MPPacketToastMessage>(messagePacket, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+        StructToBytes(messagePacket, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
         Encoding.ASCII.GetBytes(message).CopyTo(buffer, 8);
 
         return (header, buffer);
@@ -749,31 +788,33 @@ public class Packet
     
     public static (MPPacketHeader, byte[]) MakeBlockGoldBoltPacket(int level, int number)
     {
-        MPPacketHeader header = new MPPacketHeader();
-        header.ptype = MPPacketType.MP_PACKET_SET_STATE;
-        header.requiresAck = 255;
-        header.ackCycle = 255;
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_SET_STATE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
 
-        MPPacketSetState blockGoldBolt = new MPPacketSetState();
-        blockGoldBolt.stateType = MPStateType.MP_STATE_TYPE_BLOCK_GOLD_BOLT;
-        blockGoldBolt.value = (ushort)number;
-        blockGoldBolt.offset = (ushort)level;
+        MPPacketSetState blockGoldBolt = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_BLOCK_GOLD_BOLT,
+            value = (ushort)number,
+            offset = (ushort)level
+        };
 
         var size = Marshal.SizeOf(blockGoldBolt);
         header.size = (uint)size;
 
-        return (header, StructToBytes<MPPacketSetState>(blockGoldBolt, Endianness.BigEndian));
+        return (header, StructToBytes(blockGoldBolt, Endianness.BigEndian));
     }
 
 
-    public static byte[] headerToBytes(MPPacketHeader header)
+    public static byte[] HeaderToBytes(MPPacketHeader header)
     {
-        return Packet.StructToBytes<MPPacketHeader>(header, Endianness.BigEndian);
+        return StructToBytes(header, Endianness.BigEndian);
     }
 
-    public static MPPacketHeader makeHeader(byte[] bytes)
+    public static MPPacketHeader MakeHeader(byte[] bytes)
     {
-        return Packet.BytesToStruct<MPPacketHeader>(bytes, Endianness.BigEndian);
+        return BytesToStruct<MPPacketHeader>(bytes, Endianness.BigEndian);
     }
 
     public enum Endianness

@@ -18,29 +18,29 @@ public partial class Player : Moby {
 
     public GameState GameState = 0;
 
-    public override float x {
+    public override float X {
         get { return _x; }
-        set { base.x = value; _client.SendPacket(Packet.MakeSetPositionPacket(0, value)); }
+        set { base.X = value; _client.SendPacket(Packet.MakeSetPositionPacket(0, value)); }
     }
 
-    public override float y {
+    public override float Y {
         get { return _y; }
-        set { base.y = value; _client.SendPacket(Packet.MakeSetPositionPacket(1, value)); }
+        set { base.Y = value; _client.SendPacket(Packet.MakeSetPositionPacket(1, value)); }
     }
 
-    public override float z {
+    public override float Z {
         get { return _z; }
-        set { base.z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
+        set { base.Z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
     }
     
-    public override float rotZ {
+    public override float RotZ {
         get { return _rotZ; }
-        set { base.rotZ = value; _client.SendPacket(Packet.MakeSetPositionPacket(6, (float)(((Math.PI / 180) * value) - Math.PI))); }
+        set { base.RotZ = value; _client.SendPacket(Packet.MakeSetPositionPacket(6, (float)(((Math.PI / 180) * value) - Math.PI))); }
     }
 
-    public override Color color {
+    public override Color Color {
         get { return _color; }
-        set { base.color = value; _client.SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.color.ToUInt()) })); }
+        set { base.Color = value; _client.SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.Color.ToUInt()) })); }
     }
 
     private ushort _state = 0;
@@ -50,11 +50,11 @@ public partial class Player : Moby {
     }
 
     // Some animations can cause crashes in other games, we filter those for the time being. 
-    private List<int> _filteredAnimationIDs = new List<int> {
+    private List<int> _filteredAnimationIDs = new() {
         130  // Gold bolt collect animation
     };
 
-    public override int animationID {
+    public override int AnimationId {
         get => _animationID;
         set {
             if (_animationID != value && !_filteredAnimationIDs.Contains(value)) {
@@ -70,19 +70,17 @@ public partial class Player : Moby {
         
         GeneratePlayerColor();
 
-        InitializeInteralLuaEntity();
+        InitializeInternalLuaEntity();
         
         // Set Player mobys as auto damageable and targetable by default
-        this.modeBits = (ushort)(this._modeBits | 0x1000 | 0x4000);
+        ModeBits = (ushort)(_modeBits | 0x1000 | 0x4000);
         
         Game.Shared().NotificationCenter().Subscribe<PostTickNotification>(OnPostTick);
     }
 
     public override void Delete() {
-        foreach (Label label in _labels) {
-            if (label != null) {
-                label.Delete();
-            }
+        foreach (var label in _labels) {
+            label?.Delete();
         }
 
         base.Delete();
@@ -103,14 +101,12 @@ public partial class Player : Moby {
         int g = (hash >> 8) & 0xFF;
         int b = hash & 0xFF;
         
-        color = new Color {
-            r = (byte)r,
-            g = (byte)g,
-            b = (byte)b,
-            a = 255
+        Color = new Color {
+            R = (byte)r,
+            G = (byte)g,
+            B = (byte)b,
+            A = 255
         };
-
-        this.color = color;
     }
 }
 
@@ -120,26 +116,24 @@ partial class Player {
     /// Initializes the Lua Player entity for t
     /// </summary>
     /// <exception cref="Exception"></exception>
-    private void InitializeInteralLuaEntity() {
+    private void InitializeInternalLuaEntity() {
         object player = Game.Shared().State()["Player"];
 
-        if (!(player is LuaTable)) {
+        if (!(player is LuaTable table)) {
             throw new Exception("Unable to create Player entity in Lua. `Player` is nil or not a LuaTable.");
         }
 
-        if (!(((LuaTable)player)["new"] is LuaFunction)) {
+        if (table["new"] is not LuaFunction initializeFunction) {
             throw new Exception("Could not initialize new `Player` entity as initialize isn't a function on `Player` table");
         }
 
-        LuaFunction initializeFunction = ((LuaFunction)((LuaTable)player)["new"]);
+        object[] entity = initializeFunction.Call(table, this);
 
-        object[] entity = initializeFunction.Call( new[] { player, this });
-
-        if (entity.Length <= 0 || !(entity[0] is LuaTable)) {
+        if (entity.Length <= 0 || entity[0] is not LuaTable entityTable) {
             throw new Exception("Failed to initialize `Player` Lua entity. `Player` is not a Lua table");
         }
 
-        SetLuaEntity((LuaTable)entity[0]);
+        SetLuaEntity(entityTable);
     }
 }
 #endregion
@@ -150,7 +144,7 @@ partial class Player {
         _level = Universe().GetLevelByName(level);
         _level.Add(this);
 
-        SendPacket(Packet.MakeGoToLevelPacket(_level.GetGameID()));
+        SendPacket(Packet.MakeGoToLevelPacket(_level.GameID()));
     }
 
     public void GiveItem(ushort item, bool equip = false) {
@@ -409,37 +403,37 @@ partial class Player : IClientHandler
     {
         // Update this moby if 0, update child moby if not 0
         if (mobyUpdate.uuid == 0) {
-            this.SetActive((mobyUpdate.mpFlags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
+            SetActive((mobyUpdate.mpFlags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
 
             if (mobyUpdate.x != _x || mobyUpdate.y != _y || mobyUpdate.z != _z) {
                 HasChanged = true;
             }
             
-            this._x = mobyUpdate.x;
-            this._y = mobyUpdate.y;
-            this._z = mobyUpdate.z;
-            this._state = mobyUpdate.state;
-            this.rotX = (float)((180 / Math.PI) * (mobyUpdate.rotX + Math.PI));
-            this.rotY = (float)((180 / Math.PI) * (mobyUpdate.rotY + Math.PI));
-            this._rotZ = (float)((180 / Math.PI) * (mobyUpdate.rotZ + Math.PI));
-            this.scale = mobyUpdate.scale;
-            this.alpha = mobyUpdate.alpha / 128.0f;
-            this.animationID = mobyUpdate.animationID;
-            this.animationDuration = mobyUpdate.animationDuration;
+            _x = mobyUpdate.x;
+            _y = mobyUpdate.y;
+            _z = mobyUpdate.z;
+            _state = mobyUpdate.state;
+            RotX = (float)((180 / Math.PI) * (mobyUpdate.rotX + Math.PI));
+            RotY = (float)((180 / Math.PI) * (mobyUpdate.rotY + Math.PI));
+            _rotZ = (float)((180 / Math.PI) * (mobyUpdate.rotZ + Math.PI));
+            Scale = mobyUpdate.scale;
+            Alpha = mobyUpdate.alpha / 128.0f;
+            AnimationId = mobyUpdate.animationID;
+            AnimationDuration = mobyUpdate.animationDuration;
             
             // Wait until we have a parent
             if (Parent() == null) {
                 return;
             }
 
-            if (mobyUpdate.level != this.Level().GetGameID()) {
+            if (mobyUpdate.level != Level().GameID()) {
                 Level lastLevel = _level;
                 
                 _level.Remove(this, false);
                 
                 _level = Universe().GetLevelByGameID(mobyUpdate.level);
                 _level.Add(this);
-                Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
+                Logger.Log($"Player moved from {lastLevel.Name()} to {_level.Name()}");
             }
         } else {
             // Update child moby 
@@ -461,7 +455,7 @@ partial class Player : IClientHandler
     public void PlayerRespawned() {
         CallLuaFunction("OnRespawned", LuaEntity());
         
-        SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.color.ToUInt()) }));
+        SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.Color.ToUInt()) }));
     }
 
     /// <summary>

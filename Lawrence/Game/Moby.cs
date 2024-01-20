@@ -8,27 +8,27 @@ using Lawrence.Core;
 namespace Lawrence.Game;
 
 public struct Color {
-    public byte r;
-    public byte g;
-    public byte b;
-    public byte a;
+    public byte R;
+    public byte G;
+    public byte B;
+    public byte A;
 
     public Color(uint color) {
-        r = (byte)(((color & 0x000000ff) >> 0) * 2);
-        g = (byte)(((color & 0x0000ff00) >> 8) * 2);
-        b = (byte)(((color & 0x00ff0000) >> 16) * 2);
-        a = (byte)(((color & 0xff000000) >> 24) * 2);
+        R = (byte)(((color & 0x000000ff) >> 0) * 2);
+        G = (byte)(((color & 0x0000ff00) >> 8) * 2);
+        B = (byte)(((color & 0x00ff0000) >> 16) * 2);
+        A = (byte)(((color & 0xff000000) >> 24) * 2);
     }
 
     public Color(byte r, byte g, byte b, byte a = 0xff) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
+        R = r;
+        G = g;
+        B = b;
+        A = a;
     }
 
     public uint ToUInt() {
-        return (uint)((a/2 << 24) | (b/2 << 16) | (g/2 << 8) | r/2);
+        return (uint)((A/2 << 24) | (B/2 << 16) | (G/2 << 8) | R/2);
     }
 }
 
@@ -43,51 +43,51 @@ public class Moby : Entity
     static ushort COLLIDE_TICKS = 10;
     
     private int _oClass = 0;
-    public int oClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
+    public int OClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
     
     protected float _x = 0.0f;
-    public virtual float x { get => _x; set { if (_x != value) { _x = value; HasChanged = true; } } }
+    public virtual float X { get => _x; set { if (_x != value) { _x = value; HasChanged = true; } } }
     
     protected float _y = 0.0f;
-    public virtual float y { get => _y; set { if (_y != value) { _y = value; HasChanged = true; } } }
+    public virtual float Y { get => _y; set { if (_y != value) { _y = value; HasChanged = true; } } }
     
     protected float _z = 0.0f;
-    public virtual float z { get => _z; set { if (_z != value) { _z = value; HasChanged = true; } } }
+    public virtual float Z { get => _z; set { if (_z != value) { _z = value; HasChanged = true; } } }
     
     private float _rotX = 0.0f;
-    public float rotX { get => _rotX; set { if (_rotX != value) { _rotX = value; HasChanged = true; } } }
+    public float RotX { get => _rotX; set { if (_rotX != value) { _rotX = value; HasChanged = true; } } }
     
     private float _rotY = 0.0f;
-    public float rotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
+    public float RotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
     
     protected float _rotZ = 0.0f;
-    public virtual float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
+    public virtual float RotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
     
     private float _scale = 1.0f;
-    public float scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
+    public float Scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
     
     private float _alpha = 1.0f;
-    public float alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
+    public float Alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
 
     protected int _animationID = 0;
-    public virtual int animationID { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
+    public virtual int AnimationId { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
     
     private int _animationDuration = 0;
-    public int animationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }
+    public int AnimationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }
     
     protected ushort _modeBits = 0x10 | 0x400;
-    public ushort modeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
+    public ushort ModeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
     
-    protected Color _color = new Color {
-        r = 255/2,
-        g = 255/2,
-        b = 255/2,
-        a = 255
+    protected Color _color = new() {
+        R = 255/2,
+        G = 255/2,
+        B = 255/2,
+        A = 255
     };
     
-    public virtual Color color { get => _color; set { if (_color.ToUInt() != value.ToUInt()) { _color = value; HasChanged = true; } } }
+    public virtual Color Color { get => _color; set { if (_color.ToUInt() != value.ToUInt()) { _color = value; HasChanged = true; } } }
 
-    public bool HasChanged { get; protected set; } = false;
+    public bool HasChanged { get; protected set; }
 
     public void ResetChanged()
     {
@@ -95,10 +95,10 @@ public class Moby : Entity
     }
 
 
-    public bool mpUpdateFunc = true;
-    public bool collision = true;
+    public readonly bool MpUpdateFunc = true;
+    public readonly bool CollisionEnabled = true;
 
-    Dictionary<Moby, ushort> colliders = new Dictionary<Moby, ushort>();
+    private Dictionary<Moby, ushort> _colliders = new();
 
     public Moby(LuaTable luaTable = null) : base(luaTable) {
         Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);
@@ -133,22 +133,22 @@ public class Moby : Entity
     }
 
     public void SetColor(int r, int g, int b) {
-        color = new Color {
-            r = (byte)r,
-            g = (byte)g,
-            b = (byte)b,
-            a = color.a
+        Color = new Color {
+            R = (byte)r,
+            G = (byte)g,
+            B = (byte)b,
+            A = Color.A
         };
     }
 
     public void SetOClass(int oClass) {
-        this.oClass = oClass;
+        OClass = oClass;
     }
 
     public void SetPosition(float x, float y, float z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        X = x;
+        Y = y;
+        Z = z;
     }
     
     public Universe Universe() {
@@ -171,14 +171,14 @@ public class Moby : Entity
 
     public void AddCollider(Moby moby, uint collisionFlags = 0)
     {
-        if (!colliders.ContainsKey(moby))
+        if (!_colliders.ContainsKey(moby))
         {
-            colliders.Add(moby, Moby.COLLIDE_TICKS);
+            _colliders.Add(moby, COLLIDE_TICKS);
 
             OnCollision(moby);
         } else
         {
-            colliders[moby] = Moby.COLLIDE_TICKS;
+            _colliders[moby] = COLLIDE_TICKS;
         }
     }
 
@@ -186,14 +186,14 @@ public class Moby : Entity
         base.OnTick(notification);
         
         // Collision debouncing
-        Moby[] keys = new Moby[colliders.Keys.Count];
-        colliders.Keys.CopyTo(keys, 0);
+        Moby[] keys = new Moby[_colliders.Keys.Count];
+        _colliders.Keys.CopyTo(keys, 0);
 
         foreach(var key in keys) {
-            colliders[key] -= 1;
+            _colliders[key] -= 1;
 
-            if (colliders[key] <= 0) {
-                colliders.Remove(key);
+            if (_colliders[key] <= 0) {
+                _colliders.Remove(key);
             } else {
                 OnCollision(key);
             }
@@ -224,9 +224,9 @@ public class Moby : Entity
             throw new Exception("Invalid object type for mobyObject in DistanceTo");
         }
         
-        float xDiff = this.x - moby.x;
-        float yDiff = this.y - moby.y;
-        float zDiff = this.z - moby.z;
+        float xDiff = X - moby.X;
+        float yDiff = Y - moby.Y;
+        float zDiff = Z - moby.Z;
 
         return (float)Math.Sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
     }
@@ -242,20 +242,20 @@ public class Moby : Entity
         float maxZ = Math.Max(z1, z2);
 
         // Check if this Moby's position is within the cube defined by the two points
-        return minX <= x && x <= maxX &&
-               minY <= y && y <= maxY &&
-               minZ <= z && z <= maxZ;
+        return minX <= X && X <= maxX &&
+               minY <= Y && Y <= maxY &&
+               minZ <= Z && Z <= maxZ;
     }
 
     public virtual void OnCollision(Moby collidee) {
-        CallLuaFunction("OnCollision", new object[] { LuaEntity(), collidee.LuaEntity() });
+        CallLuaFunction("OnCollision", LuaEntity(), collidee.LuaEntity());
     }
 
     public virtual void OnHit(Moby attacker) {
-        CallLuaFunction("OnHit", new object[] { LuaEntity(), attacker.LuaEntity() });
+        CallLuaFunction("OnHit", LuaEntity(), attacker.LuaEntity());
     }
 
     public virtual void OnAttack(Moby attacked) {
-        CallLuaFunction("OnAttack", new object[] { LuaEntity(), attacked.LuaEntity() });
+        CallLuaFunction("OnAttack", LuaEntity(), attacked.LuaEntity());
     }
 }

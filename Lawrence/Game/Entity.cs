@@ -9,7 +9,7 @@ using Lawrence.Game.UI;
 namespace Lawrence.Game;
 
 partial class Entity {
-    private List<Label> _labels = new List<Label>();
+    private readonly List<Label> _labels = new();
     
     public virtual void AddLabel(Label label) {
         _labels.Add(label);
@@ -210,8 +210,8 @@ partial class Entity {
             return null;
         }
 
-        if (_luaFunctions.ContainsKey(functionName)) {
-            return _luaFunctions[functionName];
+        if (_luaFunctions.TryGetValue(functionName, out var luaFunction)) {
+            return luaFunction;
         }
 
         if (!(_luaEntity["class"] is LuaTable)) {
@@ -261,11 +261,7 @@ partial class Entity {
     protected object CallLuaFunction(string functionName, params object[] args) {
         LuaFunction function = GetLuaFunction(functionName);
 
-        if (function == null) {
-            return null;
-        }
-
-        return function.Call(args);
+        return function?.Call(args);
     }
 
     /// <summary>
@@ -292,7 +288,7 @@ partial class Entity {
             return;
         }
 
-        CallLuaFunction("OnTick", new object[] { this._luaEntity });
+        CallLuaFunction("OnTick", _luaEntity);
     }
 }
 
@@ -310,26 +306,26 @@ public partial class Entity {
     LuaTable _luaEntity;
 
     private Entity _parent;
-    List<Entity> _children = new List<Entity>();
+    List<Entity> _children = new();
 
-    private bool _maskVisibility = false;
+    private bool _maskVisibility;
     private bool _maskCollision = false;
 
     /// <summary>
     /// Instanced Entities are only visible to parents
     /// </summary>
-    private bool _instanced = false;
+    private bool _instanced;
 
-    private long _startTicks = Game.Shared().Ticks();
+    private readonly long _startTicks = Game.Shared().Ticks();
 
-    private Dictionary<string, LuaFunction> _luaFunctions = new Dictionary<string, LuaFunction>();
+    private Dictionary<string, LuaFunction> _luaFunctions = new();
 
     /// <summary>
     /// Active entities are updated and kept track of by the game.
     /// </summary>
     private bool _active = true;
     
-    private bool _deleted = false;
+    private bool _deleted;
 
     public Entity(LuaTable luaEntity = null) {
         this._luaEntity = luaEntity;

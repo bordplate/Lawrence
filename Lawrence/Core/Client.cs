@@ -14,65 +14,34 @@ namespace Lawrence.Core;
 
 // Metadata structure for packet acknowledgement data
 public struct AckedMetadata {
-    public byte ackCycle;
-    public byte ackIndex;
-    public byte[] packet;
-    public int resendTimer;
-    public long timestamp;
-}
-
-public enum ControllerInput {
-    L2 = 1,
-    R2 = 2,
-    L1 = 4,
-    R1 = 8,
-    Triangle = 16,
-    Circle = 32,
-    Cross = 64,
-    Square = 128,
-    Select = 256,
-    L3 = 512,
-    R3 = 1024,
-    Start = 2048,
-    Up = 4096,
-    Right = 8192,
-    Down = 16384,
-    Left = 32768
-}
-
-public enum GameState {
-    PlayerControl = 0x0,
-    Movie = 0x1,
-    CutScene = 0x2,
-    Menu = 0x3,
-    Prompt = 0x4,
-    Vendor = 0x5,
-    Loading = 0x6,
-    Cinematic = 0x7,
-    UnkFF = 0xff,
+    public byte AckCycle;
+    public byte AckIndex;
+    public byte[] Packet;
+    public int ResendTimer;
+    public long Timestamp;
 }
 
 public interface IClientHandler {
-    abstract uint CreateMoby();
-    abstract void UpdateMoby(MPPacketMobyUpdate updatePacket);
-    abstract void Collision(Moby collider, Moby collidee, bool aggressive = false);
-    abstract void ControllerInputTapped(ControllerInput input);
-    abstract void ControllerInputHeld(ControllerInput input);
-    abstract void ControllerInputReleased(ControllerInput input);
-    abstract void Delete();
-    abstract Moby Moby();
-    abstract void PlayerRespawned();
-    abstract void GameStateChanged(GameState state);
-    abstract void CollectedGoldBolt(int planet, int number);
-    abstract void UnlockItem(int item, bool equip);
-    abstract void OnUnlockLevel(int level);
+    uint CreateMoby();
+    void UpdateMoby(MPPacketMobyUpdate updatePacket);
+    void Collision(Moby collider, Moby collidee, bool aggressive = false);
+    void ControllerInputTapped(ControllerInput input);
+    void ControllerInputHeld(ControllerInput input);
+    void ControllerInputReleased(ControllerInput input);
+    void Delete();
+    Moby Moby();
+    void PlayerRespawned();
+    void GameStateChanged(GameState state);
+    void CollectedGoldBolt(int planet, int number);
+    void UnlockItem(int item, bool equip);
+    void OnUnlockLevel(int level);
 }
 
 public partial class Client {
     /// <summary>
     /// Packet types in this list are allowed to be sent before a handshake
     /// </summary>
-    private static readonly List<MPPacketType> _allowedAnonymous = new List<MPPacketType> {
+    private static readonly List<MPPacketType> AllowedAnonymous = new List<MPPacketType> {
         MPPacketType.MP_PACKET_CONNECT,
         MPPacketType.MP_PACKET_SYN,
         MPPacketType.MP_PACKET_QUERY_GAME_SERVERS, // Only used in directory mode.
@@ -93,31 +62,32 @@ public partial class Client {
 
     private string _username = null;
     private int _userid = 0;
-    
-    IPEndPoint endpoint;
-    bool handshakeCompleted = false;
+
+    readonly IPEndPoint _endpoint;
+    bool _handshakeCompleted = false;
 
     public uint ID = 0;
 
-    long lastContact = 0;
+    long _lastContact = 0;
 
-    bool disconnected = true;
+    bool _disconnected = true;
+    
+    byte _ackCycle = 1;
+    byte _ackIndex = 1;
+    private readonly AckedMetadata[] _acked = new AckedMetadata[256];
+    private readonly List<AckedMetadata> _unacked = new();
 
-    public GameState gameState = (GameState)0;
+    private readonly Server _server;
+    
+    public Client(IPEndPoint endpoint, uint id, Server server) {
+        this.ID = id;
+        _endpoint = endpoint;
+        _server = server;
+        
+        _lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
+        _disconnected = false;
 
-    AckedMetadata[] acked = new AckedMetadata[256];
-
-    byte ackCycle = 1;
-    byte ackIndex = 1;
-    List<AckedMetadata> unacked = new List<AckedMetadata>();
-
-    public Client(IPEndPoint endpoint, uint ID) {
-        this.ID = ID;
-        this.endpoint = endpoint;
-        this.lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
-        this.disconnected = false;
-
-        recvLock = new Mutex();
+        _recvLock = new Mutex();
     }
 
     public void SetHandler(IClientHandler handler) {
@@ -125,7 +95,7 @@ public partial class Client {
     }
 
     public IPEndPoint GetEndpoint() {
-        return endpoint;
+        return _endpoint;
     }
 
     public string GetUsername() {
@@ -138,40 +108,36 @@ public partial class Client {
 
     // Amount of seconds since we last saw activity on this client.
     public long GetInactiveSeconds() {
-        return DateTimeOffset.Now.ToUnixTimeSeconds() - this.lastContact;
+        return DateTimeOffset.Now.ToUnixTimeSeconds() - this._lastContact;
     }
 
     public int UnackedPacketsCount() {
-        return unacked.Count;
+        return _unacked.Count;
     }
 
     public bool IsDisconnected() {
-        return disconnected;
+        return _disconnected;
     }
 
     public bool IsActive() {
-        return !disconnected && handshakeCompleted;
-    }
-
-    public uint GameState() {
-        return (uint)gameState;
+        return !_disconnected && _handshakeCompleted;
     }
 
     (byte, byte) NextAck() {
-        if (ackIndex >= 254) {
-            ackIndex = 0;
-            ackCycle++;
+        if (_ackIndex >= 254) {
+            _ackIndex = 0;
+            _ackCycle++;
         }
 
-        if (ackCycle >= 254) {
-            ackCycle = 0;
+        if (_ackCycle >= 254) {
+            _ackCycle = 0;
         }
 
-        return (++ackIndex, ackCycle);
+        return (++_ackIndex, _ackCycle);
     }
     
-    private List<byte> buffer = new List<byte>();
-    private const int bufferSize = 1024;
+    private readonly List<byte> _buffer = new();
+    private const int BufferSize = 1024;
 
     public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody) {
         packetHeader.timeSent = (long)Game.Game.Shared().Time();
@@ -194,40 +160,40 @@ public partial class Client {
 
         // Cache ack response packets
         if (packetHeader.ptype == MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) {
-            var ack = acked[packetHeader.requiresAck];
-            if (ack.ackCycle != packetHeader.ackCycle) {
-                ack.ackCycle = packetHeader.ackCycle;
-                ack.packet = packet;
-                ack.resendTimer = 120;
+            var ack = _acked[packetHeader.requiresAck];
+            if (ack.AckCycle != packetHeader.ackCycle) {
+                ack.AckCycle = packetHeader.ackCycle;
+                ack.Packet = packet;
+                ack.ResendTimer = 120;
             }
 
-            acked[packetHeader.requiresAck] = ack;
+            _acked[packetHeader.requiresAck] = ack;
         }
 
         // Cache unacked request packets
         if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) {
-            if (unacked.Count >= 256) {
+            if (_unacked.Count >= 256) {
                 //Console.WriteLine($"Player {ID} has more than 256 unacked packets. We should probably boot this client.");
-                unacked.Clear();
+                _unacked.Clear();
             }
 
-            unacked.Add(new AckedMetadata { packet = packet, ackIndex = packetHeader.requiresAck, ackCycle = packetHeader.ackCycle, resendTimer = 30, timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds() });
+            _unacked.Add(new AckedMetadata { Packet = packet, AckIndex = packetHeader.requiresAck, AckCycle = packetHeader.ackCycle, ResendTimer = 30, Timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds() });
         }
 
         // Add packet to buffer
-        buffer.AddRange(packet);
+        _buffer.AddRange(packet);
 
         // Check if buffer size reached
-        if (buffer.Count >= bufferSize) {
+        if (_buffer.Count >= BufferSize) {
             // Send the buffer
             Flush();
         }
     }
     
     public void Flush() {
-        if (buffer.Count > 0) {
-            Lawrence.SendTo(buffer.ToArray(), endpoint);
-            buffer.Clear();
+        if (_buffer.Count > 0) {
+            _server.SendTo(_buffer.ToArray(), _endpoint);
+            _buffer.Clear();
         }
     }
 
@@ -244,7 +210,7 @@ public partial class Client {
         while (index < packet.Length && packet.Length - index >= Marshal.SizeOf<MPPacketHeader>()) {
             // Start out by reading the header
             MPPacketHeader packetHeader =
-                Packet.makeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
+                Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
             index += Marshal.SizeOf<MPPacketHeader>();
 
             if (packetHeader.size > packet.Length - index) {
@@ -262,7 +228,7 @@ public partial class Client {
             //       Ideally the handshake should start a session that the client can
             //          easily use to identify itself. Ideally without much computational
             //          overhead. 
-            if ((!handshakeCompleted || WaitingToConnect) && !_allowedAnonymous.Contains(packetHeader.ptype)) {
+            if ((!_handshakeCompleted || WaitingToConnect) && !AllowedAnonymous.Contains(packetHeader.ptype)) {
                 // Client has sent a packet that is not a handshake packet.
                 // We tell the client we don't know it and it should reset state and
                 // start handshake. 
@@ -282,8 +248,8 @@ public partial class Client {
                 // We don't ack ack messages
                 // If this is an RPC packet and we've already processed and cached it, we use the cached response. 
                 if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 &&
-                    acked[packetHeader.requiresAck].ackCycle == packetHeader.ackCycle) {
-                    Lawrence.SendTo(acked[packetHeader.requiresAck].packet, endpoint);
+                    _acked[packetHeader.requiresAck].AckCycle == packetHeader.ackCycle) {
+                    _server.SendTo(_acked[packetHeader.requiresAck].Packet, _endpoint);
                 }
                 else if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) {
                     // If it's not RPC, we just ack the packet and process the packet
@@ -341,7 +307,7 @@ public partial class Client {
                         return; 
                     }
 
-                    foreach (Client c in Lawrence.GetClients()) {
+                    foreach (Client c in _server.Clients()) {
                         if (c != this && c.GetUsername() == connectPacket.GetUsername(packetBody)) {
                             if (c.GetUserid() == connectPacket.userid && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
                                 c.Disconnect();
@@ -385,8 +351,8 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_SYN: {
-                    if (!handshakeCompleted) {
-                        handshakeCompleted = true;
+                    if (!_handshakeCompleted) {
+                        _handshakeCompleted = true;
 
                         SendPacket(Packet.MakeAckPacket());
                     }
@@ -399,10 +365,10 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_ACK:
-                    foreach (var unacked in this.unacked.ToArray()) {
-                        if (unacked.ackCycle == packetHeader.ackCycle &&
-                            unacked.ackIndex == packetHeader.requiresAck) {
-                            this.unacked.Remove(unacked);
+                    foreach (var unacked in this._unacked.ToArray()) {
+                        if (unacked.AckCycle == packetHeader.ackCycle &&
+                            unacked.AckIndex == packetHeader.requiresAck) {
+                            this._unacked.Remove(unacked);
                             break;
                         }
                     }
@@ -452,7 +418,7 @@ public partial class Client {
                     Logger.Log($"Player({this.ID}) created moby (uuid: {createdUUID})");
 
                     SendPacket(header,
-                        Packet.StructToBytes<MPPacketMobyCreate>(createPacket, Packet.Endianness.BigEndian));
+                        Packet.StructToBytes(createPacket, Packet.Endianness.BigEndian));
 
                     break;
                 }
@@ -476,9 +442,7 @@ public partial class Client {
                         Packet.BytesToStruct<MPPacketSetState>(packetBody, Packet.Endianness.BigEndian);
 
                     if (state.stateType == MPStateType.MP_STATE_TYPE_GAME) {
-                        gameState = (GameState)state.value;
-
-                        _clientHandler.GameStateChanged(gameState);
+                        _clientHandler.GameStateChanged((GameState)state.value);
                     }
 
                     if (state.stateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
@@ -504,7 +468,7 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_QUERY_GAME_SERVERS: {
                     if (Lawrence.DirectoryMode()) {
-                        List<Server> servers = Lawrence.Directory().Servers();
+                        List<ServerItem> servers = Lawrence.Directory().Servers();
 
                         SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.requiresAck,
                             packetHeader.ackCycle));
@@ -523,7 +487,7 @@ public partial class Client {
 
                         string name = serverInfo.GetName(packetBody);
 
-                        uint ip = serverInfo.ip != 0 ? serverInfo.ip : (uint)this.GetEndpoint().Address.Address;
+                        uint ip = serverInfo.ip != 0 ? serverInfo.ip : (uint)GetEndpoint().Address.Address;
 
                         IPAddress address = new IPAddress(ip);
 
@@ -562,30 +526,30 @@ public partial class Client {
         }
     }
 
-    Mutex recvLock;
-    bool resetBuffer = false;
-    List<byte[]> recvBuffer = new List<byte[]>(400);
-    Dictionary<uint, long> lastHashes = new Dictionary<uint, long>(10);
+    private readonly Mutex _recvLock;
+    private readonly bool _resetBuffer = false;
+    private List<byte[]> _recvBuffer = new(400);
+    private readonly Dictionary<uint, long> _lastHashes = new(10);
     public void ReceiveData(byte[] data) {
-        if (disconnected) {
+        if (_disconnected) {
             return;
         }
 
         long timeNow = (long)Game.Game.Shared().Time();
 
-        this.lastContact = timeNow / 1000;
+        this._lastContact = timeNow / 1000;
 
-        recvLock.WaitOne();
+        _recvLock.WaitOne();
 
-        if (resetBuffer) {
-            recvBuffer = new List<byte[]>(100);
+        if (_resetBuffer) {
+            _recvBuffer = new List<byte[]>(100);
         }
 
         uint currentHash = Crc32Algorithm.Compute(data);
 
         // Throw away duplicate packets in the last 200 milliseconds
-        if (lastHashes.ContainsKey(currentHash) && lastHashes[currentHash] > timeNow - 200) {
-            recvLock.ReleaseMutex();
+        if (_lastHashes.ContainsKey(currentHash) && _lastHashes[currentHash] > timeNow - 200) {
+            _recvLock.ReleaseMutex();
             return;
         }
 
@@ -593,24 +557,24 @@ public partial class Client {
         // So we can discard future packets if they are the same sum
         // We send a lot of duplicate packets and we should be able to endure
         // any packet loss. So this should help us not process a bunch of redundant packets.
-        if (lastHashes.Count >= 10) {
-            lastHashes.Remove(0);
+        if (_lastHashes.Count >= 10) {
+            _lastHashes.Remove(0);
         }
 
-        lastHashes[currentHash] = timeNow;
+        _lastHashes[currentHash] = timeNow;
 
-        recvBuffer.Add(data);
+        _recvBuffer.Add(data);
 
-        recvLock.ReleaseMutex();
+        _recvLock.ReleaseMutex();
 
-        if (recvBuffer.Count > 399) {
-            recvBuffer = new List<byte[]>(400);
+        if (_recvBuffer.Count > 399) {
+            _recvBuffer = new List<byte[]>(400);
         }
     }
 
-    List<byte[]> DrainPackets() {
+    private List<byte[]> DrainPackets() {
         // We take at max 50 packets out of the buffer
-        int takePackets = Math.Min(50, recvBuffer.Count);
+        int takePackets = Math.Min(50, _recvBuffer.Count);
 
         if (takePackets <= 0) {
             // No packets in buffer
@@ -618,19 +582,19 @@ public partial class Client {
         }
 
         // Make sure the networking receive thread isn't working with the buffer
-        recvLock.WaitOne();
+        _recvLock.WaitOne();
 
         // Drain packets from buffer
-        List<byte[]> packets = recvBuffer.Take(takePackets).ToList();
-        recvBuffer.RemoveRange(0, takePackets);
+        List<byte[]> packets = _recvBuffer.Take(takePackets).ToList();
+        _recvBuffer.RemoveRange(0, takePackets);
 
-        recvLock.ReleaseMutex();
+        _recvLock.ReleaseMutex();
 
         return packets;
     }
 
     public void Tick() {
-        if (disconnected) {
+        if (_disconnected) {
             return;
         }
 
@@ -650,21 +614,21 @@ public partial class Client {
         // Resend unacked packets
         int index = 0;
         long timeNow = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
-        foreach (var unacked in this.unacked.ToArray()) {
+        foreach (var unacked in this._unacked.ToArray()) {
             var _unacked = unacked;
-            if (_unacked.resendTimer > 0) {
-                _unacked.resendTimer--;
+            if (_unacked.ResendTimer > 0) {
+                _unacked.ResendTimer--;
             } else {
-                if (timeNow - unacked.timestamp > 10) {
-                    Logger.Trace($"Player {ID} has stale packet they never ack, waited: {timeNow - unacked.timestamp}: ({unacked.ackIndex}/{unacked.ackCycle})");
+                if (timeNow - unacked.Timestamp > 10) {
+                    Logger.Trace($"Player {ID} has stale packet they never ack, waited: {timeNow - unacked.Timestamp}: ({unacked.AckIndex}/{unacked.AckCycle})");
                 }
                 
-                Lawrence.SendTo(_unacked.packet, this.GetEndpoint());
+                _server.SendTo(_unacked.Packet, this.GetEndpoint());
 
-                _unacked.resendTimer = 60;
+                _unacked.ResendTimer = 60;
             }
 
-            this.unacked[index] = _unacked;
+            this._unacked[index] = _unacked;
             index++;
         }
         
@@ -672,7 +636,7 @@ public partial class Client {
     }
 
     public void Disconnect() {
-        if (disconnected) {
+        if (_disconnected) {
             return;
         }
 
@@ -683,13 +647,13 @@ public partial class Client {
 
         // Send a disconnect packet. Don't really care if they receive it.
         SendPacket(Packet.MakeDisconnectPacket());
-        disconnected = true;
+        _disconnected = true;
     }
 }
 
 #region Handling Mobys
 partial class Client {
-    private ushort lastDeletedId = 0;
+    private ushort _lastDeletedId = 0;
     
     private struct MobyData {
         public Guid Id;
@@ -697,11 +661,12 @@ partial class Client {
         public Moby MobyRef;
     }
 
-    private ConcurrentDictionary<Guid, ushort> _mobysTable = new ConcurrentDictionary<Guid, ushort>();
-    private ConcurrentDictionary<ushort, MobyData> _mobys = new ConcurrentDictionary<ushort, MobyData>();
+    private readonly ConcurrentDictionary<Guid, ushort> _mobysTable = new ConcurrentDictionary<Guid, ushort>();
+    private readonly ConcurrentDictionary<ushort, MobyData> _mobys = new ConcurrentDictionary<ushort, MobyData>();
 
     public void UpdateMoby(Moby moby) {
-        ushort internalId = GetOrCreateInternalId(moby);
+        var internalId = GetOrCreateInternalId(moby);
+        
         if (internalId == 0) {
             Logger.Error("A player has run out of moby space.");
             return;
@@ -709,18 +674,17 @@ partial class Client {
 
         _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
         SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
-        SendPacket(Packet.MakeMobyUpdateExtended(internalId, new [] { new Packet.UpdateMobyValue(0x38, moby.color.ToUInt()) }));
+        SendPacket(Packet.MakeMobyUpdateExtended(internalId, new [] { new Packet.UpdateMobyValue(0x38, moby.Color.ToUInt()) }));
     }
 
     private ushort GetOrCreateInternalId(Moby moby) {
-        ushort internalId;
-        if (_mobysTable.TryGetValue(moby.GUID(), out internalId)) {
+        if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
             return internalId;
         }
 
         // Find next available ID
-        for (ushort i = 1; i <= ushort.MaxValue; i++) {
-            if (!_mobys.ContainsKey(i) && lastDeletedId != i) {
+        for (ushort i = 1; i <= _mobysTable.Count; i++) {
+            if (!_mobys.ContainsKey(i) && _lastDeletedId != i) {
                 _mobysTable[moby.GUID()] = i;
                 return i;
             }
@@ -730,8 +694,7 @@ partial class Client {
     }
 
     private Moby GetMobyByInternalId(ushort internalId) {
-        MobyData mobyData;
-        if (!_mobys.TryGetValue(internalId, out mobyData)) {
+        if (!_mobys.TryGetValue(internalId, out var mobyData)) {
             return null; // No Moby found with the given internalId.
         }
 
@@ -763,14 +726,13 @@ partial class Client {
     }
 
     public void DeleteMoby(Moby moby) {
-        ushort internalId;
-        if (_mobysTable.TryGetValue(moby.GUID(), out internalId)) {
+        if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
             // If found, delete it from the game
             SendPacket(Packet.MakeDeleteMobyPacket(internalId));
             // And remove it from our dictionaries
             _mobys.TryRemove(internalId, out _);
             _mobysTable.TryRemove(moby.GUID(), out _);
-            lastDeletedId = internalId;
+            _lastDeletedId = internalId;
         } else {
             Logger.Error($"Trying to delete a moby that does not exist: {moby.GUID()}");
         }

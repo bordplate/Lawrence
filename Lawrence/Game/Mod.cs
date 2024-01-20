@@ -8,9 +8,9 @@ namespace Lawrence.Game;
 
 public class Mod
 {
-    private Settings _modSettings;
+    private readonly Settings _modSettings;
 
-    private string _modPath;
+    private readonly string _modPath;
 
     public Mod(string configuration)
     {
