@@ -124,11 +124,17 @@ class Lawrence {
         }
 
         if (interactive) {
-            Application.Run<UI.MainWindow>();
-            Application.Shutdown();
+            Application.Init();
+            
+            UI.MainWindow window = new();
+            
+            Application.Top.Add(window);
+            Application.Top.Add(window.Menu(), window);
+            
+            Application.Run();
         } else {
             while (true) {
-                Thread.Sleep(16);
+                Thread.Sleep(1000);
             }
         }
     }

@@ -9,6 +9,8 @@ public class MainWindow : Window {
 	private PlayerList _playerList;
 	private LogView _logView;
 	private FrameView _serverInfoView;
+
+	private MenuBar _menu;
 	
 	public MainWindow()
 	{
@@ -17,7 +19,7 @@ public class MainWindow : Window {
 		_playerList = new() {
 			X = 0,
 			Y = 0,
-			Height = Dim.Percent(60),
+			Height = Dim.Percent(55),
 			Width = Dim.Percent(30)
 		};
 
@@ -27,7 +29,7 @@ public class MainWindow : Window {
 			Title = "Server info",
 			X = 0,
 			Y = Pos.Bottom(_playerList),
-			Height = Dim.Percent(40),
+			Height = Dim.Percent(45),
 			Width = Dim.Percent(30)
 		};
 		
@@ -43,6 +45,18 @@ public class MainWindow : Window {
 		};
 		
 		Add(_logView);
+		
+		_menu = new MenuBar (new MenuBarItem [] {
+			new MenuBarItem ("_File", new MenuItem [] {
+				new MenuItem ("_Quit", "", () => { 
+					Application.RequestStop();
+				})
+			}),
+		});
+	}
+	
+	public MenuBar Menu() {
+		return _menu;
 	}
 
 	public bool UpdateServerInfo(MainLoop mainLoop) {
