@@ -43,31 +43,31 @@ public class Moby : Entity
     static ushort COLLIDE_TICKS = 10;
     
     private int _oClass = 0;
-    public int OClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
+    public int oClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
     
     protected float _x = 0.0f;
-    public virtual float X { get => _x; set { if (_x != value) { _x = value; HasChanged = true; } } }
+    public virtual float x { get => _x; set { if (_x != value) { _x = value; HasChanged = true; } } }
     
     protected float _y = 0.0f;
-    public virtual float Y { get => _y; set { if (_y != value) { _y = value; HasChanged = true; } } }
+    public virtual float y { get => _y; set { if (_y != value) { _y = value; HasChanged = true; } } }
     
     protected float _z = 0.0f;
-    public virtual float Z { get => _z; set { if (_z != value) { _z = value; HasChanged = true; } } }
+    public virtual float z { get => _z; set { if (_z != value) { _z = value; HasChanged = true; } } }
     
     private float _rotX = 0.0f;
-    public float RotX { get => _rotX; set { if (_rotX != value) { _rotX = value; HasChanged = true; } } }
+    public float rotX { get => _rotX; set { if (_rotX != value) { _rotX = value; HasChanged = true; } } }
     
     private float _rotY = 0.0f;
-    public float RotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
+    public float rotY { get => _rotY; set { if (_rotY != value) { _rotY = value; HasChanged = true; } } }
     
     protected float _rotZ = 0.0f;
-    public virtual float RotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
+    public virtual float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
     
     private float _scale = 1.0f;
-    public float Scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
+    public float scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }
     
     private float _alpha = 1.0f;
-    public float Alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
+    public float alpha { get => _alpha; set { if (_alpha != value) { _alpha = value; HasChanged = true; } } }
 
     protected int _animationID = 0;
     public virtual int AnimationId { get => _animationID; set { if (_animationID != value) { _animationID = value; HasChanged = true; } } }
@@ -76,7 +76,7 @@ public class Moby : Entity
     public int AnimationDuration { get => _animationDuration; set { if (_animationDuration != value) { _animationDuration = value; HasChanged = true; } } }
     
     protected ushort _modeBits = 0x10 | 0x400;
-    public ushort ModeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
+    public ushort modeBits { get => _modeBits; set { if (_modeBits != value) { _modeBits = value; HasChanged = true; } } }
     
     protected Color _color = new() {
         R = 255/2,
@@ -142,13 +142,13 @@ public class Moby : Entity
     }
 
     public void SetOClass(int oClass) {
-        OClass = oClass;
+        this.oClass = oClass;
     }
 
     public void SetPosition(float x, float y, float z) {
-        X = x;
-        Y = y;
-        Z = z;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
     
     public Universe Universe() {
@@ -224,9 +224,9 @@ public class Moby : Entity
             throw new Exception("Invalid object type for mobyObject in DistanceTo");
         }
         
-        float xDiff = X - moby.X;
-        float yDiff = Y - moby.Y;
-        float zDiff = Z - moby.Z;
+        float xDiff = x - moby.x;
+        float yDiff = y - moby.y;
+        float zDiff = z - moby.z;
 
         return (float)Math.Sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
     }
@@ -242,9 +242,9 @@ public class Moby : Entity
         float maxZ = Math.Max(z1, z2);
 
         // Check if this Moby's position is within the cube defined by the two points
-        return minX <= X && X <= maxX &&
-               minY <= Y && Y <= maxY &&
-               minZ <= Z && Z <= maxZ;
+        return minX <= x && x <= maxX &&
+               minY <= y && y <= maxY &&
+               minZ <= z && z <= maxZ;
     }
 
     public virtual void OnCollision(Moby collidee) {

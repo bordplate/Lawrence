@@ -36,7 +36,7 @@ public class Level : Entity {
         moby.SetLevel(this);
         
         if (param is int oClass) {
-            moby.OClass = oClass;
+            moby.oClass = oClass;
         }
         
         object mobyTable = Game.Shared().State()["Moby"];

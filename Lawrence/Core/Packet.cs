@@ -431,19 +431,19 @@ public class Packet
         mobyUpdate.mpFlags |= moby.MpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
         
         mobyUpdate.parent = (ushort)0; // Parent isn't really used
-        mobyUpdate.oClass = (ushort)moby.OClass;
+        mobyUpdate.oClass = (ushort)moby.oClass;
         mobyUpdate.level = moby.Level() != null ? (ushort)moby.Level().GameID() : (ushort)0;
-        mobyUpdate.x = moby.X;
-        mobyUpdate.y = moby.Y;
-        mobyUpdate.z = moby.Z;
-        mobyUpdate.rotX = (float)(Math.PI / 180) * moby.RotX;
-        mobyUpdate.rotY = (float)(Math.PI / 180) * moby.RotY;
-        mobyUpdate.rotZ = (float)(Math.PI / 180) * moby.RotZ;
+        mobyUpdate.x = moby.x;
+        mobyUpdate.y = moby.y;
+        mobyUpdate.z = moby.z;
+        mobyUpdate.rotX = (float)(Math.PI / 180) * moby.rotX;
+        mobyUpdate.rotY = (float)(Math.PI / 180) * moby.rotY;
+        mobyUpdate.rotZ = (float)(Math.PI / 180) * moby.rotZ;
         mobyUpdate.animationID = moby.AnimationId;
-        mobyUpdate.scale = moby.Scale;
-        mobyUpdate.alpha = Math.Min((byte)(moby.Alpha * 128), (byte)128);
+        mobyUpdate.scale = moby.scale;
+        mobyUpdate.alpha = Math.Min((byte)(moby.alpha * 128), (byte)128);
         
-        mobyUpdate.modeBits = moby.ModeBits;
+        mobyUpdate.modeBits = moby.modeBits;
 
         MPPacketHeader mobyHeader = new MPPacketHeader { ptype = MPPacketType.MP_PACKET_MOBY_UPDATE, size = (uint)Marshal.SizeOf<MPPacketMobyUpdate>() };
 

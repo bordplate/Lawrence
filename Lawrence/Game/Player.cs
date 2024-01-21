@@ -18,24 +18,24 @@ public partial class Player : Moby {
 
     public GameState GameState = 0;
 
-    public override float X {
+    public override float x {
         get { return _x; }
-        set { base.X = value; _client.SendPacket(Packet.MakeSetPositionPacket(0, value)); }
+        set { base.x = value; _client.SendPacket(Packet.MakeSetPositionPacket(0, value)); }
     }
 
-    public override float Y {
+    public override float y {
         get { return _y; }
-        set { base.Y = value; _client.SendPacket(Packet.MakeSetPositionPacket(1, value)); }
+        set { base.y = value; _client.SendPacket(Packet.MakeSetPositionPacket(1, value)); }
     }
 
-    public override float Z {
+    public override float z {
         get { return _z; }
-        set { base.Z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
+        set { base.z = value; _client.SendPacket(Packet.MakeSetPositionPacket(2, value)); }
     }
     
-    public override float RotZ {
+    public override float rotZ {
         get { return _rotZ; }
-        set { base.RotZ = value; _client.SendPacket(Packet.MakeSetPositionPacket(6, (float)(((Math.PI / 180) * value) - Math.PI))); }
+        set { base.rotZ = value; _client.SendPacket(Packet.MakeSetPositionPacket(6, (float)(((Math.PI / 180) * value) - Math.PI))); }
     }
 
     public override Color Color {
@@ -73,7 +73,7 @@ public partial class Player : Moby {
         InitializeInternalLuaEntity();
         
         // Set Player mobys as auto damageable and targetable by default
-        ModeBits = (ushort)(_modeBits | 0x1000 | 0x4000);
+        modeBits = (ushort)(_modeBits | 0x1000 | 0x4000);
         
         Game.Shared().NotificationCenter().Subscribe<PostTickNotification>(OnPostTick);
     }
@@ -413,11 +413,11 @@ partial class Player : IClientHandler
             _y = mobyUpdate.y;
             _z = mobyUpdate.z;
             _state = mobyUpdate.state;
-            RotX = (float)((180 / Math.PI) * (mobyUpdate.rotX + Math.PI));
-            RotY = (float)((180 / Math.PI) * (mobyUpdate.rotY + Math.PI));
+            rotX = (float)((180 / Math.PI) * (mobyUpdate.rotX + Math.PI));
+            rotY = (float)((180 / Math.PI) * (mobyUpdate.rotY + Math.PI));
             _rotZ = (float)((180 / Math.PI) * (mobyUpdate.rotZ + Math.PI));
-            Scale = mobyUpdate.scale;
-            Alpha = mobyUpdate.alpha / 128.0f;
+            scale = mobyUpdate.scale;
+            alpha = mobyUpdate.alpha / 128.0f;
             AnimationId = mobyUpdate.animationID;
             AnimationDuration = mobyUpdate.animationDuration;
             
