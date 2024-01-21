@@ -242,7 +242,7 @@ class Lawrence {
         Application.Shutdown ();
     }
 
-private static void Start(string[] args) {
+    private static void Start(string[] args) {
                 // If we're non-interactive, we should not hook console
         var interactive = Settings.Default().Get("Server.interactive", true, true);
 

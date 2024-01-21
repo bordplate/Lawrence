@@ -249,10 +249,37 @@ public class Game {
             
             Logger.Raw($"Set level of {playerName} to {levelName}", false);
         };
+        
+        var showMessageCommand = new Command {
+            Name = "show_message",
+            Description = "Shows a message to the specified player.",
+            Args = new [] {
+                new Command.Arg { Name = "player_name" },
+                new Command.Arg { Name = "message" }
+            }
+        };
+        
+        showMessageCommand.OnCommand += (args) => {
+            var playerName = args[0];
+            
+            var player = FindPlayerByUsername(playerName);
+            
+            if (player == null) {
+                Logger.Raw($"Could not find player with username {playerName}", false);
+                return;
+            }
+            
+            var message = args[1];
+            
+            player.ShowErrorMessage(message);
+            
+            Logger.Raw($"Showed message to {playerName}", false);
+        };
 
         Lawrence.RegisterCommand("Game", infoCommand);
         Lawrence.RegisterCommand("Game", setPositionCommand);
         Lawrence.RegisterCommand("Game", setLevelCommand);
+        Lawrence.RegisterCommand("Game", showMessageCommand);
     }
 
     /// <summary>

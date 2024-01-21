@@ -43,7 +43,35 @@ public class CommandField: TextField {
                 return base.OnKeyUp(keyEvent);
             }
 
-            var args = prompt.Split(" ");
+            // Split args and make everything between 's and "s a single arg
+            var args = new List<string> { };
+
+            var currentArg = "";
+            var inQuotes = false;
+            var inSingleQuotes = false;
+            foreach (var character in prompt) {
+                if (character == ' ' && !inQuotes && !inSingleQuotes) {
+                    args.Add(currentArg);
+                    currentArg = "";
+                    continue;
+                }
+
+                if (character == '"' && !inSingleQuotes) {
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+
+                if (character == '\'' && !inQuotes) {
+                    inSingleQuotes = !inSingleQuotes;
+                    continue;
+                }
+
+                currentArg += character;
+            }
+            
+            if (currentArg.Length > 0) {
+                args.Add(currentArg);
+            }
 
             command.Run(args.Skip(1).ToArray());
         }

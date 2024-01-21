@@ -196,6 +196,10 @@ partial class Player {
     public void SetGhostRatchet(uint timeoutInFrames = 150) {
         SendPacket(Packet.MakeSetAddressValuePacket(0x969EAC, timeoutInFrames));
     }
+
+    public void ShowErrorMessage(string message) {
+        _client.ShowErrorMessage(message);
+    }
 }
 #endregion
 

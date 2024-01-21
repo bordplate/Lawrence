@@ -31,6 +31,7 @@ public enum MPPacketType : ushort
     MP_PACKET_PLAYER_RESPAWNED = 15,
     MP_PACKET_REGISTER_SERVER = 16,
     MP_PACKET_TOAST_MESSAGE = 17,
+    MP_PACKET_ERROR_MESSAGE = 21
 }
 
 public enum MPStateType : uint
@@ -213,6 +214,11 @@ public struct MPPacketQueryResponseServer
     [FieldOffset(0x6)] public ushort maxPlayers;
     [FieldOffset(0x8)] public ushort playerCount;
     [FieldOffset(0xa)] public ushort nameLength;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketErrorMessage {
+    public UInt16 messageLength;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -806,6 +812,26 @@ public class Packet
         return (header, StructToBytes(blockGoldBolt, Endianness.BigEndian));
     }
 
+    public static (MPPacketHeader, byte[]) MakeErrorMessagePacket(string message) {
+        MPPacketHeader header = new MPPacketHeader {
+            ptype = MPPacketType.MP_PACKET_ERROR_MESSAGE,
+            requiresAck = 255,
+            ackCycle = 255
+        };
+        
+        MPPacketErrorMessage errorMessage = new MPPacketErrorMessage {
+            messageLength = (ushort)message.Length
+        };
+        
+        header.size = (uint)Marshal.SizeOf(errorMessage) + (uint)message.Length;
+        
+        byte[] buffer = new byte[(int)header.size];
+        StructToBytes(errorMessage, Endianness.BigEndian).ToList().CopyTo(buffer, 0);
+
+        Encoding.ASCII.GetBytes(message).CopyTo(buffer, Marshal.SizeOf(errorMessage));
+        
+        return (header, buffer);
+    }
 
     public static byte[] HeaderToBytes(MPPacketHeader header)
     {
