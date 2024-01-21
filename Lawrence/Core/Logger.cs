@@ -14,6 +14,8 @@ public class Logger {
     private static Logger _shared;
     private readonly object _syncLock = new();
 
+    private static bool _hooked;
+
     private string _logFile = Settings.Default().Get("Logger.path", "lawrence.log");
 
     public static ConsoleOutputCapturer ConsoleOutputCapture;
@@ -46,9 +48,12 @@ public class Logger {
                 }
             }
 
+            TextWriter consoleOut = _hooked ? ConsoleOutputCapture : Console.Out;
+            TextWriter consoleError = _hooked ? ConsoleErrorCapture : Console.Error;
+            
             // Write to console
             // TextWriter consoleWriter = priority == Priority.Error ? Console.Error : Console.Out;
-            TextWriter consoleWriter = priority == Priority.Error ? ConsoleErrorCapture : ConsoleOutputCapture;
+            TextWriter consoleWriter = priority == Priority.Error ? consoleError : consoleOut;
             consoleWriter.WriteLine($"{logEntry}");
 
             if (exception != null) {
@@ -122,6 +127,15 @@ public class Logger {
         using (ConsoleErrorCapture = new ConsoleOutputCapturer()) {
             //Console.SetError(ConsoleErrorCapture);
         }
+
+        _hooked = true;
+    }
+    
+    public static void UnhookConsole() {
+        ConsoleOutputCapture?.Dispose();
+        ConsoleErrorCapture?.Dispose();
+
+        _hooked = false;
     }
 }
 

@@ -136,11 +136,19 @@ class Lawrence {
     static void Main(string[] args) {
         try {
             Start(args);
-        } // Catch ctrl-c
-        catch (OperationCanceledException) {
+        } catch (OperationCanceledException) {
             Logger.Log("Caught ctrl-c, shutting down...");
+            Application.RequestStop();
         } catch (Exception exception) {
+            Application.Shutdown();
+            
+            Logger.UnhookConsole();
             Logger.Error("Caught exception in main thread", exception);
+            
+            Environment.Exit(-1); 
         }
+        
+        Application.Shutdown();
+        Environment.Exit(0);
     }
 }
