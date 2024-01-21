@@ -113,7 +113,11 @@ public class Logger {
             }
         }
 
-        ConsoleOutputCapture.WriteLine(value);
+        if (_hooked) {
+            ConsoleOutputCapture?.WriteLine(value);
+        } else {
+            Console.WriteLine(value);
+        }
     }
     
     /// <summary>
