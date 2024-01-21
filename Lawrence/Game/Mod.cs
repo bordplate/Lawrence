@@ -11,9 +11,11 @@ public class Mod
     private readonly Settings _modSettings;
 
     private readonly string _modPath;
+    
+    private string _canonicalName;
 
-    public Mod(string configuration)
-    {
+    public Mod(string configuration, string canonicalName) {
+        _canonicalName = canonicalName;
         _modSettings = new Settings(configuration, false);
 
         if (_modSettings == null) {
@@ -21,6 +23,14 @@ public class Mod
         }
 
         _modPath = System.IO.Path.GetDirectoryName(configuration);
+    }
+
+    public string Name() {
+        return Settings().Get("General.name", "Unnamed mod", true);
+    }
+
+    public string CanonicalName() {
+        return _canonicalName;
     }
 
     public Settings Settings() {

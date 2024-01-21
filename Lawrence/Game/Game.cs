@@ -115,7 +115,7 @@ public class Game {
                 if (file.EndsWith(".toml", StringComparison.OrdinalIgnoreCase)) {
                     try {
                         Logger.Log($"Loading configuration for mod at {file}");
-                        Mod mod = new Mod(file);
+                        Mod mod = new Mod(file, canonicalName);
 
                         // Run the entry Lua file
                         string entry = mod.Settings().Get<string>("General.entry");
@@ -145,6 +145,38 @@ public class Game {
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Returns a list of all mods, enabled and disabled.
+    /// </summary>
+    public static List<Mod> AllMods() {
+        // Load mods from folder
+        List<Mod> mods = new();
+        
+        string[] modsFolders = Directory.GetDirectories(
+            Settings.Default().Get("Server.mods_path", "mods/", true)
+        );
+        
+        foreach (var folder in modsFolders) {
+            string canonicalName = folder.Split("/").Last().Split("\\").Last();
+
+            foreach (var file in Directory.GetFiles(folder)) {
+                if (file.EndsWith(".toml", StringComparison.OrdinalIgnoreCase)) {
+                    try {
+                        Logger.Log($"Loading configuration for mod at {file}");
+                        Mod mod = new Mod(file, canonicalName);
+
+                        mods.Add(mod);
+                    }
+                    catch (Exception exception) {
+                        Logger.Error($"Failed to load mod at {folder}", exception);
+                    }
+                }
+            }
+        }
+
+        return mods;
     }
 
     /// <summary>
