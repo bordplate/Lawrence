@@ -9,6 +9,7 @@ public class MainWindow : Window {
 	private PlayerList _playerList;
 	private LogView _logView;
 	private FrameView _serverInfoView;
+	private CommandField _commandField;
 
 	private MenuBar _menu;
 	
@@ -29,7 +30,7 @@ public class MainWindow : Window {
 			Title = "Server info",
 			X = 0,
 			Y = Pos.Bottom(_playerList),
-			Height = Dim.Percent(45),
+			Height = Dim.Fill(),
 			Width = Dim.Percent(30)
 		};
 		
@@ -40,11 +41,20 @@ public class MainWindow : Window {
 		_logView = new() {
 			X = Pos.Right(_playerList),
 			Y = 0,
-			Height = Dim.Fill(),
+			Height = Dim.Fill(1),
 			Width = Dim.Fill()
 		};
 		
 		Add(_logView);
+		
+		_commandField = new() {
+			X = Pos.Right(_playerList),
+			Y = Pos.Bottom(_logView),
+			Height = Dim.Fill(),
+			Width = Dim.Fill()
+		};
+
+		Add(_commandField);
 		
 		_menu = new MenuBar (new MenuBarItem [] {
 			new MenuBarItem ("_File", new MenuItem [] {

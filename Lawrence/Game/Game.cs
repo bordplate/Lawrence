@@ -58,6 +58,8 @@ public class Game {
 
     private long _ticks = 0;
     
+    private readonly List<Universe> _universes = new();
+    
     /// <summary>
     /// Time in milliseconds
     /// </summary>
@@ -145,6 +147,112 @@ public class Game {
                 }
             }
         }
+        
+        ConfigureCommands();
+    }
+
+    /// <summary>
+    /// Configures CLI commands for the game.
+    /// </summary>
+    private void ConfigureCommands() {
+        // Add commands
+        var setPositionCommand = new Command {
+            Name = "set_position",
+            Args = new [] {
+                new Command.Arg { Name = "player_name" },
+                new Command.Arg { Name = "x", Type = "float" },
+                new Command.Arg { Name = "y", Type = "float" },
+                new Command.Arg { Name = "z", Type = "float" },
+            },
+            Description = ""
+        };
+
+        setPositionCommand.OnCommand += args => {
+            var playerName = args[0];
+            var x = float.Parse(args[1]);
+            var y = float.Parse(args[2]);
+            var z = float.Parse(args[3]);
+
+            var player = FindPlayerByUsername(playerName);
+            
+            if (player == null) {
+                Logger.Raw($"Could not find player with username {playerName}", false);
+                return;
+            }
+
+            player.x = x;
+            player.y = y;
+            player.z = z;
+            
+            Logger.Raw($"Set position of {playerName} to {x}, {y}, {z}", false);
+        };
+        
+        var infoCommand = new Command {
+            Name = "info",
+            Description = "Prints information about the specified player.",
+            Args = new [] {
+                new Command.Arg { Name = "player_name" }
+            }
+        };
+        
+        infoCommand.OnCommand += args => {
+            var playerName = args[0];
+
+            var player = FindPlayerByUsername(playerName);
+            
+            if (player == null) {
+                Logger.Raw($"Could not find player with username {playerName}", false);
+                return;
+            }
+
+            var info = 
+                $"""
+                {playerName}: 
+                    level: {player.Level().Name()}
+                 
+                    x: {player.x}
+                    y: {player.y}
+                    z: {player.z}
+                """;
+
+            Logger.Raw(info, false);
+        };
+        
+        var setLevelCommand = new Command {
+            Name = "set_level",
+            Description = "Sets the level of the specified player.",
+            Args = new [] {
+                new Command.Arg { Name = "player_name" },
+                new Command.Arg { Name = "level_name" }
+            }
+        };
+
+        setLevelCommand.OnCommand += (args) => {
+            var playerName = args[0];
+            
+            var player = FindPlayerByUsername(playerName);
+            
+            if (player == null) {
+                Logger.Raw($"Could not find player with username {playerName}", false);
+                return;
+            }
+            
+            var levelName = args[1];
+            var level = player.Universe().GetLevelByName(levelName);
+            
+            if (level == null) {
+                Logger.Raw($"Could not find level with name {levelName}", false);
+                return;
+            }
+            
+            player.LoadLevel(levelName);
+            
+            Logger.Raw($"Set level of {playerName} to {levelName}", false);
+        };
+
+        Lawrence.RegisterCommand("Game", infoCommand);
+        Lawrence.RegisterCommand("Game", setPositionCommand);
+        Lawrence.RegisterCommand("Game", setLevelCommand);
     }
 
     /// <summary>
@@ -301,6 +409,18 @@ public class Game {
 
         return label;
     }
+    
+    public Player FindPlayerByUsername(string username) {
+        foreach (var universe in _universes) {
+            foreach (var player in universe.Find<Player>()) {
+                if (player.Username() == username) {
+                    return player;
+                }
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Returns a new Universe CLR object.
@@ -308,7 +428,11 @@ public class Game {
     /// <param name="universeTable">Lua entity object</param>
     /// <returns></returns>
     public Universe NewUniverse(LuaTable universeTable) {
-        return new Universe(universeTable);
+        var universe = new Universe(universeTable);
+        
+        _universes.Add(universe);
+        
+        return universe;
     }
 
     public int PlayerCount()

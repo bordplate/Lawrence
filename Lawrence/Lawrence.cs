@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading;
 
 using Lawrence.Core;
 using Terminal.Gui;
+
+using Command = Lawrence.Core.Command;
 
 namespace Lawrence;
 
@@ -16,6 +19,40 @@ class Lawrence {
     private static DirectoryServer _directoryServer;
 
     private static bool _directoryMode;
+    
+    private static Dictionary<string, List<Command>> _commands = new();
+    
+    public static void RegisterCommand(string sectionName, Command command) {
+        if (!_commands.ContainsKey(sectionName)) {
+            _commands[sectionName] = new();
+        }
+        
+        _commands[sectionName].Add(command);
+    }
+    
+    public static void UnregisterCommand(Command command) {
+        foreach (var section in _commands) {
+            if (section.Value.Contains(command)) {
+                section.Value.Remove(command);
+            }
+        }
+    }
+
+    public static Dictionary<string, List<Command>> Commands() {
+        return _commands;
+    }
+
+    public static Command Command(string name) {
+        foreach (var section in _commands) {
+            foreach (var command in section.Value) {
+                if (command.Name == name) {
+                    return command;
+                }
+            }
+        }
+
+        return null;
+    }
 
     public static bool DirectoryMode()
     {
@@ -33,6 +70,50 @@ class Lawrence {
 
     public static Server Server() {
         return _server ??= _directoryServer.Server();
+    }
+
+    public static void ConfigureCommands() {
+        // Help command
+        var helpCommand = new Command {
+            Name = "help",
+            Description = "Shows help for a command. If no command is specified, shows a list of all available commands.",
+            Args = new[] { new Command.Arg { Name = "command", Optional = true } },
+        };
+
+        helpCommand.OnCommand += (args) => {
+            if (args.Length <= 0) {
+                Logger.Raw("Available commands:", false);
+                foreach (var command in Commands()) {
+                    Logger.Raw($"\n{command.Key}:", false);
+                    
+                    foreach (var subCommand in command.Value) {
+                        Logger.Raw($"  {subCommand.Name} {string.Join(" ", subCommand.Args)}", false);
+                    }
+                }
+            }
+            else {
+                var command = Command(args[0]);
+                if (command == null) {
+                    Logger.Raw($"Command `{args[0]}` not found.", false);
+                    return;
+                }
+
+                Logger.Raw($"Usage: {command.Name} {string.Join(" ", command.Args)}\n\n{command.Description}", false);
+            }
+        };
+        
+        var exitCommand = new Command {
+            Name = "exit",
+            Description = "Shuts down and exits the server.",
+            Args = new Command.Arg[] { },
+        };
+        
+        exitCommand.OnCommand += _ => {
+            Application.RequestStop();
+        };
+
+        RegisterCommand("General", helpCommand);
+        RegisterCommand("General", exitCommand);
     }
 
     private static void SetupWizard() {
@@ -254,6 +335,8 @@ private static void Start(string[] args) {
             
             Logger.Log($"Started Lawrence Directory on {_directoryServer.ListenAddress()}");
         }
+
+        ConfigureCommands();
 
         if (interactive) {
             Application.Init();
