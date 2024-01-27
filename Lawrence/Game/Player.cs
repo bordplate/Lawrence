@@ -306,7 +306,7 @@ partial class Player {
     /// This override must not call its base function. That could cause an infinite loop. 
     /// </important>
     /// <param name="packet"></param>
-    public override void SendPacket((MPPacketHeader, byte[]) packet)
+    public override void SendPacket(Packet packet)
     {
         _client.SendPacket(packet);
     }

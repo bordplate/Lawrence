@@ -45,6 +45,7 @@ public partial class Client {
     /// </summary>
     private static readonly List<MPPacketType> AllowedAnonymous = new List<MPPacketType> {
         MPPacketType.MP_PACKET_CONNECT,
+        MPPacketType.MP_PACKET_SYN_LE,
         MPPacketType.MP_PACKET_SYN,
         MPPacketType.MP_PACKET_QUERY_GAME_SERVERS, // Only used in directory mode.
         MPPacketType.MP_PACKET_REGISTER_SERVER,
@@ -73,6 +74,9 @@ public partial class Client {
     long _lastContact = 0;
 
     bool _disconnected = true;
+    private bool _processedFirstPacket = false;
+    
+    private Packet.Endianness _endianness = Packet.Endianness.BigEndian;
     
     byte _ackCycle = 1;
     byte _ackIndex = 1;
@@ -155,7 +159,7 @@ public partial class Client {
             (packetHeader.requiresAck, packetHeader.ackCycle) = NextAck();
         }
 
-        Packet.StructToBytes<MPPacketHeader>(packetHeader, Packet.Endianness.BigEndian).CopyTo(packet, 0);
+        Packet.StructToBytes(packetHeader, _endianness).CopyTo(packet, 0);
         if (packetBody != null) {
             packetBody.CopyTo(packet, Marshal.SizeOf<MPPacketHeader>());
         }
@@ -199,9 +203,9 @@ public partial class Client {
         }
     }
 
-    public void SendPacket((MPPacketHeader packetHeader, byte[] packetBody) packet) {
-        (MPPacketHeader header, byte[] body) = packet;
-
+    public void SendPacket(Packet packet) {
+        (MPPacketHeader header, byte[] body) = packet.GetBytes(_endianness);
+        
         SendPacket(header, body);
     }
 
@@ -212,7 +216,7 @@ public partial class Client {
         while (index < packet.Length && packet.Length - index >= Marshal.SizeOf<MPPacketHeader>()) {
             // Start out by reading the header
             MPPacketHeader packetHeader =
-                Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray());
+                Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness);
             index += Marshal.SizeOf<MPPacketHeader>();
 
             if (packetHeader.size > packet.Length - index) {
@@ -269,43 +273,46 @@ public partial class Client {
 
             switch (packetHeader.ptype) {
                 case MPPacketType.MP_PACKET_CONNECT: {
-                    MPPacketHeader responseHeader = new MPPacketHeader {
-                        ptype = MPPacketType.MP_PACKET_ACK,
-                        size = (uint)Marshal.SizeOf<MPPacketConnectResponse>(),
-                        requiresAck = packetHeader.requiresAck,
-                        ackCycle = packetHeader.ackCycle
-                    };
-
+                    var responsePacket = new Packet(MPPacketType.MP_PACKET_ACK, packetHeader.requiresAck,
+                        packetHeader.ackCycle);
+                    
                     if (packetSize < (uint)Marshal.SizeOf<MPPacketConnect>()) {
                         // Legacy client, we tell it to fuck off with an unknown error code, since it doesn't know about
                         //  the "outdated version" return code. 
                         Logger.Log("Legacy client tried to connect.");
                         
-                        MPPacketConnectResponse response = new MPPacketConnectResponse {
+                        MPPacketConnectResponse connectResponse = new MPPacketConnectResponse {
                             status = MPPacketConnectResponseStatus.ERROR_UNKNOWN
                         };
-                                
-                        SendPacket(responseHeader, Packet.StructToBytes(response, Packet.Endianness.BigEndian));
-                        this.Disconnect();
+                        
+                        responsePacket.AddBodyPart(connectResponse);
+                        
+                        SendPacket(responsePacket);
+                        
+                        Disconnect();
                         return; 
                     }
 
                     // Decode the packet
-                    MPPacketConnect connectPacket = Packet.BytesToStruct<MPPacketConnect>(packetBody, Packet.Endianness.BigEndian);
+                    MPPacketConnect connectPacket = Packet.BytesToStruct<MPPacketConnect>(packetBody, _endianness);
                     string username = connectPacket.GetUsername(packetBody);
                     
                     // Check that the API versions are compatible
                     if (connectPacket.version < API_VERSION_MIN) {
                         Logger.Log($"{username} tried to connect with old version {connectPacket.version}. Minimum version: {API_VERSION_MIN}. Latest: {API_VERSION}");
                         // Client is outdated, tell them to update.
-                        MPPacketConnectResponse response = new MPPacketConnectResponse {
+                        MPPacketConnectResponse connectResponse = new MPPacketConnectResponse {
                             status = connectPacket.version == 0 ? 
                                 MPPacketConnectResponseStatus.ERROR_UNKNOWN : // Legacy alpha doesn't support ERROR_OUTDATED
                                 MPPacketConnectResponseStatus.ERROR_OUTDATED
                         };
+                        
+                        responsePacket.AddBodyPart(connectResponse);
 
-                        SendPacket(responseHeader, Packet.StructToBytes(response, Packet.Endianness.BigEndian));
-                        this.Disconnect();
+                        SendPacket(responsePacket);
+                        
+                        Disconnect();
+                        
                         return; 
                     }
 
@@ -314,26 +321,32 @@ public partial class Client {
                             if (c.GetUserid() == connectPacket.userid && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
                                 c.Disconnect();
                                 break;
-                            } else {
-                                MPPacketConnectResponse response = new MPPacketConnectResponse {
-                                    status = MPPacketConnectResponseStatus.ERROR_USER_ALREADY_CONNECTED
-                                };
-                                
-                                SendPacket(responseHeader, Packet.StructToBytes(response, Packet.Endianness.BigEndian));
-                                this.Disconnect();
-                                return; 
                             }
+                        
+                            MPPacketConnectResponse connectResponse = new MPPacketConnectResponse {
+                                status = MPPacketConnectResponseStatus.ERROR_USER_ALREADY_CONNECTED
+                            };
+                            
+                            responsePacket.AddBodyPart(connectResponse);
+                            
+                            SendPacket(responsePacket);
+                            
+                            Disconnect();
+                            
+                            return;
                         }
                     }
 
                     MPPacketConnectResponse responseBody = new MPPacketConnectResponse {
                         status = MPPacketConnectResponseStatus.SUCCESS
                     };
+                    
+                    responsePacket.AddBodyPart(responseBody);
 
                     _username = username;
                     _userid = connectPacket.userid;
                     
-                    SendPacket(responseHeader, Packet.StructToBytes(responseBody, Packet.Endianness.BigEndian));
+                    SendPacket(responsePacket);
                     
                     Game.Game.Shared().OnPlayerConnect(this);
 
@@ -352,25 +365,40 @@ public partial class Client {
 
                     break;
                 }
+                case MPPacketType.MP_PACKET_SYN_LE:
+                    if (!_processedFirstPacket) {
+                        _endianness = Packet.Endianness.LittleEndian;
+
+                        Logger.Log($"Player is little endian.");
+
+                        goto case MPPacketType.MP_PACKET_SYN;
+                    }
+                    
+                    Logger.Log("Player tried to change endianness after handshake.");
+                    
+                    Disconnect();
+
+                    break;
                 case MPPacketType.MP_PACKET_SYN: {
+                    var response = Packet.MakeAckPacket();
+                    
                     if (!_handshakeCompleted) {
                         _handshakeCompleted = true;
-
-                        SendPacket(Packet.MakeAckPacket());
                     }
                     else {
-                        SendPacket(
-                            new MPPacketHeader
-                                { ptype = MPPacketType.MP_PACKET_ACK, ackCycle = 0, requiresAck = 0 }, null);
+                        response.Header.ackCycle = 0;
+                        response.Header.requiresAck = 0;
                     }
+
+                    SendPacket(response);
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_ACK:
-                    foreach (var unacked in this._unacked.ToArray()) {
+                    foreach (var unacked in _unacked.ToArray()) {
                         if (unacked.AckCycle == packetHeader.ackCycle &&
                             unacked.AckIndex == packetHeader.requiresAck) {
-                            this._unacked.Remove(unacked);
+                            _unacked.Remove(unacked);
                             break;
                         }
                     }
@@ -390,13 +418,13 @@ public partial class Client {
                     };
 
                     SendPacket(header,
-                        Packet.StructToBytes<MPPacketTimeResponse>(response, Packet.Endianness.BigEndian));
+                        Packet.StructToBytes(response, _endianness));
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_UPDATE: {
                     MPPacketMobyUpdate update =
-                        Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, Packet.Endianness.BigEndian);
+                        Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, _endianness);
 
                     _clientHandler.UpdateMoby(update);
 
@@ -420,13 +448,13 @@ public partial class Client {
                     Logger.Log($"Player({this.ID}) created moby (uuid: {createdUUID})");
 
                     SendPacket(header,
-                        Packet.StructToBytes(createPacket, Packet.Endianness.BigEndian));
+                        Packet.StructToBytes(createPacket, _endianness));
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_COLLISION: {
                     MPPacketMobyCollision collision =
-                        Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, Packet.Endianness.BigEndian);
+                        Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, _endianness);
 
                     Moby collider = collision.uuid == 0
                         ? _clientHandler.Moby()
@@ -441,7 +469,7 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_SET_STATE: {
                     MPPacketSetState state =
-                        Packet.BytesToStruct<MPPacketSetState>(packetBody, Packet.Endianness.BigEndian);
+                        Packet.BytesToStruct<MPPacketSetState>(packetBody, _endianness);
 
                     if (state.stateType == MPStateType.MP_STATE_TYPE_GAME) {
                         _clientHandler.GameStateChanged((GameState)state.value);
@@ -485,7 +513,7 @@ public partial class Client {
                 case MPPacketType.MP_PACKET_REGISTER_SERVER: {
                     if (Lawrence.DirectoryMode()) {
                         MPPacketRegisterServer serverInfo =
-                            Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, Packet.Endianness.BigEndian);
+                            Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, _endianness);
 
                         string name = serverInfo.GetName(packetBody);
 
@@ -502,7 +530,7 @@ public partial class Client {
                     // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons. 
 
                     MPPacketControllerInput input =
-                        Packet.BytesToStruct<MPPacketControllerInput>(packetBody, Packet.Endianness.BigEndian);
+                        Packet.BytesToStruct<MPPacketControllerInput>(packetBody, _endianness);
                     if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
                         _clientHandler.ControllerInputHeld((ControllerInput)input.input);
                     }
@@ -539,7 +567,7 @@ public partial class Client {
 
         long timeNow = (long)Game.Game.Shared().Time();
 
-        this._lastContact = timeNow / 1000;
+        _lastContact = timeNow / 1000;
 
         _recvLock.WaitOne();
 
@@ -607,6 +635,10 @@ public partial class Client {
             foreach (var packet in packets) {
                 try {
                     ParsePacket(packet);
+
+                    if (!_processedFirstPacket) {
+                        _processedFirstPacket = true;
+                    }
                 } catch (Exception e) {
                     Logger.Error($"Encountered an exception in client", e);
                 }

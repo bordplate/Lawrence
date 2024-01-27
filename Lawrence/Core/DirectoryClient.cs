@@ -46,12 +46,15 @@ public class DirectoryClient {
 
                 string ipString = Settings.Default()
                     .Get<string>("Server.advertise_ip", _server.ListenAddress(), true);
-                (MPPacketHeader, byte[]) packet = Packet.MakeRegisterServerPacket(ipString,
+                Packet packet = Packet.MakeRegisterServerPacket(ipString,
                     (ushort)_server.ListenPort(), (ushort)_server.MaxPlayers(), (ushort)players, _server.ServerName());
 
                 List<byte> packetData = new List<byte>();
-                packetData.AddRange(Packet.StructToBytes(packet.Item1, Packet.Endianness.BigEndian));
-                packetData.AddRange(packet.Item2);
+                
+                (MPPacketHeader header, byte[] data) = packet.GetBytes();
+                
+                packetData.AddRange(Packet.StructToBytes(header, Packet.Endianness.BigEndian));
+                packetData.AddRange(data);
 
                 client.SendAsync(packetData.ToArray());
             }

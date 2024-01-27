@@ -51,7 +51,7 @@ partial class Entity {
 }
 
 partial class Entity {
-    public virtual void SendPacket((MPPacketHeader, byte[]) packet) {
+    public virtual void SendPacket(Packet packet) {
         if (this is Player) {
             throw new InvalidOperationException(
                 "Base Entity:SendPacket() method called on a Player entity. " +
