@@ -19,7 +19,7 @@ public class Level : Entity {
     /// Friendly name for level.
     /// </summary>
     /// <returns></returns>
-    public string Name() {
+    public string GetName() {
         return _name;
     }
 

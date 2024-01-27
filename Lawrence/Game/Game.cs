@@ -208,7 +208,7 @@ public class Game {
             var info = 
                 $"""
                 {playerName}: 
-                    level: {player.Level().Name()}
+                    level: {player.Level().GetName()}
                  
                     x: {player.x}
                     y: {player.y}

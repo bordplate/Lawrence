@@ -437,7 +437,7 @@ partial class Player : IClientHandler
                 
                 _level = Universe().GetLevelByGameID(mobyUpdate.level);
                 _level.Add(this);
-                Logger.Log($"Player moved from {lastLevel.Name()} to {_level.Name()}");
+                Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
             }
         } else {
             // Update child moby 

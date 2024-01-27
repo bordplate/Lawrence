@@ -154,7 +154,7 @@ partial class Entity {
     }
 
     public List<LuaTable> FindChildrenInternal(string entityType) {
-        Type type = Type.GetType($"Lawrence.{entityType}, Lawrence");
+        Type type = Type.GetType($"Lawrence.Game.{entityType}, Lawrence");
         List<Entity> removeEntities = new List<Entity>();
         List<LuaTable> entities = new List<LuaTable>();
 
