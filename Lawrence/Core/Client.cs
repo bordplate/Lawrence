@@ -220,7 +220,22 @@ public partial class Client {
             index += Marshal.SizeOf<MPPacketHeader>();
 
             if (packetHeader.size > packet.Length - index) {
-                throw new Exception("Bad packet");
+                // Try to read in other endianness
+                if (_endianness == Packet.Endianness.BigEndian) {
+                    _endianness = Packet.Endianness.LittleEndian;
+                }
+                else {
+                    _endianness = Packet.Endianness.BigEndian;
+                }
+                
+                // Reset index
+                index -= Marshal.SizeOf<MPPacketHeader>();
+                packetHeader = Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness);
+                
+                if (packetHeader.size > packet.Length - index) {
+                    // Still too big, throw exception
+                    throw new Exception("Bad packet");
+                }
             }
             
             byte[] packetBody = packet.Skip(index).Take((int)packetHeader.size)
