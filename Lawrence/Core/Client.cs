@@ -486,7 +486,7 @@ public partial class Client {
                         bool equip = (state.value >> 16) == 1;
                         
                         Logger.Log($"Player got item #{item}: equip: {equip}");
-                        _clientHandler.UnlockItem((int)state.value, equip);
+                        _clientHandler.UnlockItem((int)item, equip);
                     }
 
                     if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
