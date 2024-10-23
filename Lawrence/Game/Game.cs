@@ -334,6 +334,7 @@ public class Game {
     {
         if (_state == null) {
             _state = new Lua();
+            _state.UseTraceback = true;
 
             _state.LoadCLRPackage();
             _state["Game"] = this;
