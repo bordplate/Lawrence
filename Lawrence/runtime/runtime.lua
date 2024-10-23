@@ -9,6 +9,21 @@ require 'Universe'
 require 'Player'
 require 'Label'
 require 'Moby'
+require 'Item'
+
+require 'HybridMoby'
+
+require 'Level'
+require 'runtime.levels.Novalis'
+require 'runtime.levels.Kerwan'
+require 'runtime.levels.Eudora'
+require 'runtime.levels.BlargStation'
+require 'runtime.levels.Rilgar'
+require 'runtime.levels.Umbris'
+require 'runtime.levels.Gaspar'
+require 'runtime.levels.DreksFleet'
+
+null = {}
 
 math.randomseed(os.time())
 
