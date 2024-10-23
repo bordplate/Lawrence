@@ -145,6 +145,14 @@ partial class Player {
         _level.Add(this);
 
         SendPacket(Packet.MakeGoToLevelPacket(_level.GameID()));
+        
+        RegisterHybridMobys();
+    }
+
+    public void RegisterHybridMobys() {
+        foreach (Moby moby in Level().GetHybridMobys()) {
+            SendPacket(Packet.MakeRegisterHybridMobyPacket(moby));
+        }
     }
 
     public void GiveItem(ushort item, bool equip = false) {
@@ -292,7 +300,9 @@ partial class Player {
             return;
         }
         
-        _client.UpdateMoby(moby);
+        if (!moby.IsHybrid) {
+            _client.UpdateMoby(moby);
+        }
     }
 
     public void NotifyDelete(Moby entity) {
@@ -317,6 +327,18 @@ partial class Player {
 
     public void Disconnect() {
         _client.Disconnect();
+    }
+    
+    public void ChangeMobyAttribute(ushort uid, ushort offset, ushort size, object value, bool isFloat = false) {
+        uint val = !isFloat ? Convert.ToUInt32(value) : BitConverter.ToUInt32(BitConverter.GetBytes(Convert.ToSingle(value)), 0);
+        
+        SendPacket(Packet.MakeChangeMobyValuePacket(uid, MonitoredValueType.Attribute, offset, size, val));
+    }
+    
+    public void ChangeMobyPVar(ushort uid, ushort offset, ushort size, object value, bool isFloat = false) {
+        uint val = !isFloat ? Convert.ToUInt32(value) : BitConverter.ToUInt32(BitConverter.GetBytes(Convert.ToSingle(value)), 0);
+        
+        SendPacket(Packet.MakeChangeMobyValuePacket(uid, MonitoredValueType.PVar, offset, size, val));
     }
 }
 #endregion
@@ -460,6 +482,8 @@ partial class Player : IClientHandler
         CallLuaFunction("OnRespawned", LuaEntity());
         
         SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.Color.ToUInt()) }));
+        
+        RegisterHybridMobys();
     }
 
     /// <summary>
@@ -487,6 +511,14 @@ partial class Player : IClientHandler
     public void OnDisconnect() {
         Logger.Log($"{Username()} disconnected.");
         Game.Shared().NotificationCenter().Post(new PlayerDisconnectedNotification(0, Username(), this));
+    }
+
+    public void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue) {
+        foreach (var moby in Level().GetHybridMobys()) {
+            if (moby.UID == uid) {
+                moby.OnHybridValueChanged(this, type, offset, size, oldValue, newValue);
+            }
+        }
     }
 }
 #endregion

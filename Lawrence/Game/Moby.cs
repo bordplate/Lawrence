@@ -32,6 +32,23 @@ public struct Color {
     }
 }
 
+public enum MonitoredValueType: byte {
+    Attribute = 1,
+    PVar = 2
+}
+
+public enum MonitoredValueDataType {
+    Number,
+    Float
+}
+
+public struct MonitoredValue {
+    public ushort Offset;
+    public ushort Size;
+    public MonitoredValueType Flags;
+    public MonitoredValueDataType DataType;
+}
+
 public class Moby : Entity
 {
     /// <summary>
@@ -43,6 +60,24 @@ public class Moby : Entity
     static ushort COLLIDE_TICKS = 10;
     
     private int _oClass = 0;
+    
+    /// <summary>
+    /// UID is only used for hybrid mobys. 
+    /// </summary>
+    public ushort UID { get; private set; }
+
+    /// <summary>
+    /// Hybrid mobys are mobys that are created in the game, but can be controlled by the server.
+    /// </summary>
+    public bool IsHybrid {
+        get;
+        private set;
+    }
+
+    // TODO: Make these HashSets instead?
+    public List<MonitoredValue> MonitoredAttributes { get; private set; } = new();
+    public List<MonitoredValue> MonitoredPVars { get; private set; } = new();
+    
     public int oClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
     
     protected float _x = 0.0f;
@@ -109,6 +144,11 @@ public class Moby : Entity
         
         Game.Shared().NotificationCenter().Unsubscribe<PreTickNotification>(OnPreTick);
     }
+
+    public void MakeHybrid(ushort uid) {
+        UID = uid;
+        IsHybrid = true;
+    }
     
     public Level Level() {
         if (_level == null) {
@@ -149,6 +189,53 @@ public class Moby : Entity
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    public void MonitorAttribute(ushort offset, ushort size, bool isFloat = false) {
+        MonitoredAttributes.Add(new MonitoredValue {
+            Offset = offset,
+            Size = size,
+            Flags = MonitoredValueType.Attribute,
+            DataType = isFloat ? MonitoredValueDataType.Float : MonitoredValueDataType.Number
+        });
+    }
+    
+    public void MonitorPVar(ushort offset, ushort size, bool isFloat = false) {
+        MonitoredPVars.Add(new MonitoredValue {
+            Offset = offset,
+            Size = size,
+            Flags = MonitoredValueType.PVar,
+            DataType = isFloat ? MonitoredValueDataType.Float : MonitoredValueDataType.Number
+        });
+    }
+
+    public void OnHybridValueChanged(Player player, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue,
+        byte[] newValue) {
+        object oldV = null;
+        object newV = null;
+        
+        // Find data type
+        foreach (MonitoredValue value in type == MonitoredValueType.Attribute ? MonitoredAttributes : MonitoredPVars) {
+            if (value.Offset == offset) {
+                if (value.DataType == MonitoredValueDataType.Number) {
+                    oldV = BitConverter.ToUInt32(oldValue);
+                    newV = BitConverter.ToUInt32(newValue);
+                } else {
+                    oldV = BitConverter.ToSingle(oldValue);
+                    newV = BitConverter.ToSingle(newValue);
+                }
+            }
+        }
+        
+        if (oldV == null || newV == null) {
+            throw new Exception("Failed to find data type for monitored value for offset " + offset);
+        }
+        
+        if (type == MonitoredValueType.Attribute) {
+            CallLuaFunction("OnAttributeChange", LuaEntity(), player, offset, oldV, newV);
+        } else {
+            CallLuaFunction("OnPVarChange", LuaEntity(), player, offset, oldV, newV);
+        }
     }
     
     public Universe Universe() {

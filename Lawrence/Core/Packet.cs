@@ -32,7 +32,10 @@ public enum MPPacketType : ushort
     MP_PACKET_PLAYER_RESPAWNED = 15,
     MP_PACKET_REGISTER_SERVER = 16,
     MP_PACKET_TOAST_MESSAGE = 17,
-    MP_PACKET_ERROR_MESSAGE = 21
+    MP_PACKET_ERROR_MESSAGE = 21,
+    MP_PACKET_REGISTER_HYBRID_MOBY = 22,
+    MP_PACKET_MONITORED_VALUE_CHANGED = 23,
+    MP_PACKET_CHANGE_MOBY_VALUE = 24,
 }
 
 public enum MPStateType : uint
@@ -268,6 +271,50 @@ public struct MPPacketTimeResponse : MPPacket {
 public struct MPPacketToastMessage : MPPacket {
     public UInt32 messageType;
     public UInt32 duration;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketRegisterHybridMoby : MPPacket {
+    public ushort mobyUid;
+    public ushort nMonitoredAttributes;
+    public ushort nMonitoredPVars;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitorValue : MPPacket {
+    public ushort offset;
+    public ushort size;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitoredValueChanged : MPPacket {
+    public ushort uid;
+    public ushort offset;
+    public byte flags;
+    public byte size;
+    public uint oldValue;
+    public uint newValue;
+}
+
+public enum MPPacketChangeMobyValueFlags : ushort {
+    MP_MOBY_FLAG_FIND_BY_UUID = 1 << 0,
+    MP_MOBY_FLAG_FIND_BY_UID = 1 << 1,
+    MP_MOBY_FLAG_CHANGE_ATTR = 1 << 8,
+    MP_MOBY_FLAG_CHANGE_PVAR = 1 << 9
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketChangeMobyValue : MPPacket {
+    public ushort id;
+    public ushort flags;
+    public ushort numValues;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketChangeMobyValuePayload : MPPacket {
+    public ushort offset;
+    public ushort size;
+    public uint value;
 }
 
 public struct MPPacketStringData : MPPacket {
@@ -781,6 +828,60 @@ public partial class Packet
         
         packet.AddBodyPart(errorMessage);
         packet.AddBodyPart(data);
+        
+        return packet;
+    }
+
+    public static Packet MakeRegisterHybridMobyPacket(Moby moby) {
+        if (!moby.IsHybrid) {
+            throw new Exception("Tried to register a hybrid moby that isn't a hybrid moby!");
+        }
+        
+        var packet = new Packet(MPPacketType.MP_PACKET_REGISTER_HYBRID_MOBY);
+        packet.AddBodyPart(new MPPacketRegisterHybridMoby {
+            mobyUid = (ushort)moby.UID,
+            nMonitoredAttributes = (ushort)moby.MonitoredAttributes.Count,
+            nMonitoredPVars = (ushort)moby.MonitoredPVars.Count
+        });
+        
+        foreach (var attribute in moby.MonitoredAttributes) {
+            packet.AddBodyPart(new MPPacketMonitorValue {
+                offset = attribute.Offset,
+                size = attribute.Size
+            });
+        }
+        
+        foreach (var pvar in moby.MonitoredPVars) {
+            packet.AddBodyPart(new MPPacketMonitorValue {
+                offset = pvar.Offset,
+                size = pvar.Size
+            });
+        }
+        
+        return packet;
+    }
+
+    public static Packet MakeChangeMobyValuePacket(ushort uid, MonitoredValueType type, ushort offset, ushort size,
+        uint value) {
+        var packet = new Packet(MPPacketType.MP_PACKET_CHANGE_MOBY_VALUE);
+        
+        ushort flags = type == MonitoredValueType.Attribute ? 
+            (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_CHANGE_ATTR : 
+            (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_CHANGE_PVAR;
+        
+        packet.AddBodyPart(
+            new MPPacketChangeMobyValue {
+                id = uid,
+                flags = (ushort)(flags | (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_FIND_BY_UID),
+                numValues = 1
+            }
+        );
+        
+        packet.AddBodyPart(new MPPacketChangeMobyValuePayload {
+            offset = offset,
+            size = size,
+            value = value
+        });
         
         return packet;
     }

@@ -35,8 +35,8 @@ public interface IClientHandler {
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
     void OnUnlockLevel(int level);
-
     void OnDisconnect();
+    void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue);
 }
 
 public partial class Client {
@@ -560,6 +560,19 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_PLAYER_RESPAWNED: {
                     _clientHandler.PlayerRespawned();
+                    break;
+                }
+                case MPPacketType.MP_PACKET_MONITORED_VALUE_CHANGED: {
+                    var valueChanged = Packet.BytesToStruct<MPPacketMonitoredValueChanged>(packetBody, _endianness);
+                    _clientHandler.OnHybridMobyValueChange(
+                        valueChanged.uid,
+                        valueChanged.flags == 1 ? MonitoredValueType.Attribute : MonitoredValueType.PVar,
+                        valueChanged.offset,
+                        valueChanged.size,
+                        BitConverter.GetBytes(valueChanged.oldValue),
+                        BitConverter.GetBytes(valueChanged.newValue)
+                    );
+                    
                     break;
                 }
                 default: {
