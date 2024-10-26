@@ -122,3 +122,9 @@ function TeamRunPlayer:OnUnlockLevel(level)
         end
     end
 end
+
+function TeamRunPlayer:OnUnlockSkillpoint(skillpoint)
+    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+        player:UnlockSkillpoint(skillpoint)
+    end
+end
