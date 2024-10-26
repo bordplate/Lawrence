@@ -36,6 +36,7 @@ public enum MPPacketType : ushort
     MP_PACKET_REGISTER_HYBRID_MOBY = 22,
     MP_PACKET_MONITORED_VALUE_CHANGED = 23,
     MP_PACKET_CHANGE_MOBY_VALUE = 24,
+    MP_PACKET_LEVEL_FLAG_CHANGED = 25,
 }
 
 public enum MPStateType : uint
@@ -53,7 +54,8 @@ public enum MPStateType : uint
     MP_STATE_TYPE_ARBITRARY = 11,
     MP_STATE_TYPE_UNLOCK_ITEM = 12,
     MP_STATE_TYPE_GIVE_BOLTS = 13,
-    MP_STATE_TYPE_UNLOCK_LEVEL = 14
+    MP_STATE_TYPE_UNLOCK_LEVEL = 14,
+    MP_STATE_TYPE_LEVEL_FLAG = 15,
 }
 
 public enum MPPacketFlags : ushort
@@ -327,6 +329,15 @@ public struct MPPacketStringData : MPPacket {
     public byte[] GetBytes(Packet.Endianness endianness) {
         return Encoding.UTF8.GetBytes(data);
     }
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketLevelFlagChanged : MPPacket {
+    public ushort type;
+    public byte level;
+    public byte size;
+    public ushort index;
+    public uint value;
 }
 
 public struct PacketBodyPart<T> where T : MPPacket {
@@ -780,6 +791,24 @@ public partial class Packet
         packet.AddBodyPart(setRespawnZ);
         packet.AddBodyPart(setRespawnRotZ);
         
+        return packet;
+    }
+
+    public static Packet MakeSetLevelFlagPacket(byte type, byte level, ushort index, uint[] value) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+
+        var i = index;
+        foreach (uint val in value) {
+            MPPacketSetState setLevelFlag = new MPPacketSetState {
+                stateType = MPStateType.MP_STATE_TYPE_LEVEL_FLAG,
+                offset = ((uint)level << 24) | ((uint)type << 16) | i,
+                value = val
+            };
+            i += 1;
+            
+            packet.AddBodyPart(setLevelFlag);
+        }
+
         return packet;
     }
 

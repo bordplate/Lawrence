@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Lawrence.Game;
@@ -204,9 +205,34 @@ partial class Player {
     public void SetGhostRatchet(uint timeoutInFrames = 150) {
         SendPacket(Packet.MakeSetAddressValuePacket(0x969EAC, timeoutInFrames));
     }
+    
+    public void SetLevelFlags(byte type, byte level, ushort index, uint[] value) {
+        for (int i = 0; i <= value.Length; i += 8) {
+            SendPacket(Packet.MakeSetLevelFlagPacket(type, level, index, value.Skip(i).Take(8).ToArray()));
+        }
+    }
 
     public void ShowErrorMessage(string message) {
         _client.ShowErrorMessage(message);
+    }
+
+    /// <summary>
+    /// Sets the level flags for the current level.
+    /// </summary>
+    public void SetCurrentLevelFlags() {
+        List<uint> levelFlags1 = new();
+        List<uint> levelFlags2 = new();
+        
+        foreach (var flag in Level().LevelFlags1) {
+            levelFlags1.Add(flag);
+        }
+        
+        foreach (var flag in Level().LevelFlags2) {
+            levelFlags2.Add(flag);
+        }
+        
+        SetLevelFlags(1, (byte)Level().GameID(), 0, levelFlags1.ToArray());
+        SetLevelFlags(2, (byte)Level().GameID(), 0, levelFlags2.ToArray());
     }
 }
 #endregion
@@ -460,6 +486,8 @@ partial class Player : IClientHandler
                 _level = Universe().GetLevelByGameID(mobyUpdate.level);
                 _level.Add(this);
                 Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
+                
+                SetCurrentLevelFlags();
             }
         } else {
             // Update child moby 
@@ -519,6 +547,17 @@ partial class Player : IClientHandler
                 moby.OnHybridValueChanged(this, type, offset, size, oldValue, newValue);
             }
         }
+    }
+
+    public void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value) {
+        if (Level().GameID() != level) {
+            Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level().GameID()}");
+            return;
+        }
+        
+        Level().OnFlagChanged(this, type, size, index, value);
+        
+        CallLuaFunction("OnLevelFlagChanged", LuaEntity(), type, level, size, index, value);
     }
 }
 #endregion

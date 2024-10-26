@@ -9,7 +9,12 @@ public class Level : Entity {
     private readonly int _gameId;
     private readonly string _name;
     
+    public byte[] LevelFlags1 = new byte[0x10];
+    public byte[] LevelFlags2 = new byte[0x100];
+    
     private List<Moby> _hybridMobys = new();
+
+    public bool ShouldPropagateLevelFlags = true;
 
     public Level(int gameId, string name, LuaTable luaTable = null) : base(luaTable) {
         _gameId = gameId;
@@ -149,5 +154,37 @@ public class Level : Entity {
     
     public List<Moby> GetHybridMobys() {
         return _hybridMobys;
+    }
+
+    public void OnFlagChanged(Player originatingPlayer, ushort type, byte size, ushort index, uint value) {
+        switch(type) {
+            case 1:
+                if (index >= LevelFlags1.Length) {
+                    Console.Error.WriteLine($"Level flag index for type 1 out of bounds: {index}");
+                    return;
+                }
+                
+                LevelFlags1[index] = (byte)value;
+                break;
+            case 2:
+                if (index >= LevelFlags2.Length) {
+                    Console.Error.WriteLine($"Level flag index for type 2 out of bounds: {index}");
+                    return;
+                }
+                LevelFlags2[index] = (byte)value;
+                break;
+            default:
+                Console.Error.WriteLine($"Unknown level flag type: {type}");
+                break;
+        }
+
+        if (ShouldPropagateLevelFlags) {
+            foreach (Player player in Find<Player>()) {
+                if (player == originatingPlayer) {
+                    continue;
+                }
+                player.SetLevelFlags((byte)type, (byte)GameID(), index, [value]);
+            }
+        }
     }
 }

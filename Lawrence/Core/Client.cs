@@ -37,6 +37,7 @@ public interface IClientHandler {
     void OnUnlockLevel(int level);
     void OnDisconnect();
     void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue);
+    void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value);
 }
 
 public partial class Client {
@@ -288,6 +289,11 @@ public partial class Client {
 
             switch (packetHeader.ptype) {
                 case MPPacketType.MP_PACKET_CONNECT: {
+                    if (!WaitingToConnect) {
+                        Console.Error.WriteLine("Player tried to connect twice.");
+                        return;
+                    }
+                    
                     var responsePacket = new Packet(MPPacketType.MP_PACKET_ACK, packetHeader.requiresAck,
                         packetHeader.ackCycle);
                     
@@ -573,6 +579,17 @@ public partial class Client {
                         BitConverter.GetBytes(valueChanged.newValue)
                     );
                     
+                    break;
+                }
+                case MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED: {
+                    var flagChanged = Packet.BytesToStruct<MPPacketLevelFlagChanged>(packetBody, _endianness);
+                    _clientHandler.OnLevelFlagChanged(
+                        flagChanged.type,
+                        flagChanged.level,
+                        flagChanged.size,
+                        flagChanged.index,
+                        flagChanged.value
+                    );
                     break;
                 }
                 default: {
