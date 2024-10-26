@@ -35,6 +35,7 @@ public interface IClientHandler {
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
     void OnUnlockLevel(int level);
+    void OnUnlockSkillpoint(byte skillpoint);
     void OnDisconnect();
     void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue);
     void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value);
@@ -501,7 +502,7 @@ public partial class Client {
                         _clientHandler.CollectedGoldBolt((int)state.offset, (int)state.value);
                     }
 
-                    if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
+                    if (state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
                         // TODO: Clean up this bitwise magic into readable flags
                         uint item = state.value & 0xFFFF;
                         bool equip = (state.value >> 16) == 1;
@@ -510,9 +511,14 @@ public partial class Client {
                         _clientHandler.UnlockItem((int)item, equip);
                     }
 
-                    if(state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
+                    if (state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
                         Logger.Log($"Player unlocked level #{state.value}");
                         _clientHandler.OnUnlockLevel((int)state.value);
+                    }
+
+                    if (state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
+                        Logger.Log($"Player unlocked skillpoint #{state.value}");
+                        _clientHandler.OnUnlockSkillpoint((byte)state.value);
                     }
 
                     break;

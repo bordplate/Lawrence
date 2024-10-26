@@ -56,6 +56,7 @@ public enum MPStateType : uint
     MP_STATE_TYPE_GIVE_BOLTS = 13,
     MP_STATE_TYPE_UNLOCK_LEVEL = 14,
     MP_STATE_TYPE_LEVEL_FLAG = 15,
+    MP_STATE_TYPE_UNLOCK_SKILLPOINT = 16,
 }
 
 public enum MPPacketFlags : ushort
@@ -676,6 +677,19 @@ public partial class Packet
 
         packet.AddBodyPart(setItemState);
         
+        return packet;
+    }
+
+    public static Packet MakeUnlockSkillpointPacket(byte skillpoint) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+        
+        MPPacketSetState setItemState = new MPPacketSetState {
+            stateType = MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT,
+            value = skillpoint
+        };
+        
+        packet.AddBodyPart(setItemState);
+
         return packet;
     }
     

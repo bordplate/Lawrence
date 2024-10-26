@@ -159,6 +159,10 @@ partial class Player {
     public void GiveItem(ushort item, bool equip = false) {
         SendPacket(Packet.MakeSetItemPacket(item, equip));
     }
+    
+    public void UnlockSkillpoint(byte skillpoint) {
+        SendPacket(Packet.MakeUnlockSkillpointPacket(skillpoint));
+    }
 
     public void SetRespawn(float x, float y, float z, float rotationZ) {
         SendPacket(Packet.MakeSetRespawnPacket(x, y, z, (float)(((Math.PI / 180) * rotationZ) - Math.PI)));
@@ -535,6 +539,10 @@ partial class Player : IClientHandler
 
     public void OnUnlockLevel(int level) {
         CallLuaFunction("OnUnlockLevel", LuaEntity(), level);
+    }
+
+    public void OnUnlockSkillpoint(byte skillpoint) {
+        CallLuaFunction("OnUnlockSkillpoint", LuaEntity(), skillpoint);
     }
 
     public void OnDisconnect() {
