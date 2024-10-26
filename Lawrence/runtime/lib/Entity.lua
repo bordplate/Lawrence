@@ -34,7 +34,8 @@ end
 
 function Entity:__newindex(key, value)
     -- If the key exists in the internal C# object, set it
-    if rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
+    -- We ignore OnTick, because of an unknown error that eventually causes a Lua stack overflow
+    if key ~= "OnTick" and rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
         self._internalEntity[key] = value
     else
         -- Otherwise, set it in the Entity object
@@ -53,11 +54,6 @@ function Entity:Make(entityType)
     self:Made()
 
     return self
-end
-
---- Called every tick for entities that are active and registered in the game. 
-function Entity:OnTick()
-    
 end
 
 function Entity:Is(class)

@@ -3,6 +3,8 @@ TeamRunPlayer = class("TeamRunPlayer", Player)
 function TeamRunPlayer:Made()
     self.damageCooldown = 0
     self.goldBoltCount = 0
+    
+    self.gameState = 0
 end
 
 function TeamRunPlayer:OnCollectedGoldBolt(planet, number)
@@ -32,6 +34,30 @@ function TeamRunPlayer:OnTick()
     end
 end
 
+function TeamRunPlayer:OnGameStateChanged(state)
+    self.gameState = state
+end
+
+function TeamRunPlayer:OnControllerInputTapped(input)
+    if self.gameState == 3 and input & 0x20 ~= 0 then
+        self:SetPosition(0, 0, -10000)
+    end
+    
+    if self.gameState == 3 and input & 0x80 ~= 0 then
+        if self:Username() == "bordplate3" then
+            print("Moving players")
+            local z_pos = self.z + 1
+            for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+                if player:GUID() ~= self:GUID() then
+                    print("Moved player " .. player:Username() .. " to " .. self.x .. ", " .. self.y .. ", " .. z_pos)
+                    player:SetPosition(self.x, self.y, z_pos)
+                    z_pos = z_pos + 1
+                end
+            end
+        end
+    end
+end
+
 function TeamRunPlayer:OnUnlockItem(item_id, equip)
     item = Item.GetById(item_id)
     
@@ -47,6 +73,21 @@ function TeamRunPlayer:OnUnlockItem(item_id, equip)
             
             print("Giving " .. item.name .. " to player " .. player:Username())
             player:GiveItem(item.id, false)
+
+            if player:Level() == self:Level() then
+                if item.name == "Swingshot" then
+                    player:DeleteAllChildrenWithOClass(890)  -- Delete Helga
+                end
+                if item.name == "Grindboots" then
+                    player:DeleteAllChildrenWithOClass(1190)  -- Delete Fred
+                end
+                if item.name == "Hydrodisplacer" then
+                    player:DeleteAllChildrenWithOClass(1016)  -- Delete Hydrodisplacer
+                end
+                if item.name == "Metal Detector" then
+                    player:DeleteAllChildrenWithOClass(1283)  -- Delete Plumber
+                end
+            end
         end
     end
 end
@@ -55,5 +96,29 @@ function TeamRunPlayer:OnUnlockLevel(level)
     Player.OnUnlockLevel(self, level)
     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
         player:UnlockLevel(level)
+
+        if player:Level() == self:Level() then
+            if level == 2 then  -- Aridia
+                player:DeleteAllChildrenWithOClass(774)  -- Delete Plumber
+            end
+            if level == 6 then  -- Blarg
+                player:DeleteAllChildrenWithOClass(1190)  -- Delete Lietuenant
+            end
+            if level == 5 then  -- Rilgar
+                player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
+            end
+            if level == 7 then  -- Umbris
+                player:DeleteAllChildrenWithOClass(919)  -- Delete Bouncer
+            end
+            if level == 8 then  -- Batalia
+                player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
+            end
+            if level == 9 then  -- Gaspar
+                player:DeleteAllChildrenWithOClass(1144)  -- Delete Deserter
+            end
+            if level == 10 then  -- Orxon
+                player:DeleteAllChildrenWithOClass(1130)  -- Delete Commando
+            end
+        end
     end
 end

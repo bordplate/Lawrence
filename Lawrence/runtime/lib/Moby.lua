@@ -12,6 +12,7 @@ Moby.offset = {
         z = 0x48
     },
     state = 0x20,
+    updateDistance = 0x30,
     modeBits = 0x34,
     animationID = 0x53,
     animationFrameBlendT = 0x54

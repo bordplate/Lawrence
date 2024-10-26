@@ -10,4 +10,5 @@ function Novalis:initialize(internalEntity)
 end
 
 function Novalis:LoadHybrids()
+    self.shipRear = ShipRear(self, 108)
 end

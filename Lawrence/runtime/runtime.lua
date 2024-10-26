@@ -21,6 +21,8 @@ require 'runtime.levels.BlargStation'
 require 'runtime.levels.Rilgar'
 require 'runtime.levels.Umbris'
 require 'runtime.levels.Gaspar'
+require 'runtime.levels.Orxon'
+require 'runtime.levels.Pokitaru'
 require 'runtime.levels.DreksFleet'
 
 null = {}
