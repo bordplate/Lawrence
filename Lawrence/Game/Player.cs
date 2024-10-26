@@ -464,6 +464,7 @@ partial class Player : IClientHandler
             _x = mobyUpdate.x;
             _y = mobyUpdate.y;
             _z = mobyUpdate.z;
+            oClass = mobyUpdate.oClass;
             _state = mobyUpdate.state;
             rotX = (float)((180 / Math.PI) * (mobyUpdate.rotX + Math.PI));
             rotY = (float)((180 / Math.PI) * (mobyUpdate.rotY + Math.PI));
