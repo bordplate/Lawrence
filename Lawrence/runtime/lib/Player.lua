@@ -2,6 +2,16 @@
 
 Player = class("Player", Entity)
 
+Player.offset = {
+    aridiaShipsKilled = 0x96c9dc,
+    eudoraShipsKilled = 0x96c9e0,
+    gasparShipsKilled = 0x96c9e4,
+    pokitaruShipsKilled = 0x96c9e8,
+    hovenShipsKilled = 0x96c9ec,
+    oltanisShipsKilled = 0x96c9f0,
+    veldin2CommandosKilled = 0x96c9f8,
+}
+
 function Player:initialize(internalEntity)
     Entity.initialize(self, internalEntity)
 end
