@@ -22,7 +22,7 @@ function Player:OnUnlockLevel(level)
     self:UnlockLevel(level)
 end
 
-function Player:OnGiveBolts(bolts)
+function Player:OnGiveBolts(boltDiff, totalBolts)
     -- do nothing, the client merely notified the server that it received bolts
 end
 

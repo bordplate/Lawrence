@@ -194,8 +194,8 @@ partial class Player {
         SendPacket(Packet.MakeSetAddressFloatPacket(0x969e74, speed));
     }
 
-    public void SetBolts(uint bolts) { // deprecated. this method will cause "OnGetBolts" to get triggered
-        SendPacket(Packet.MakeSetAddressValuePacket(0x969CA0, bolts));
+    public void SetBolts(int bolts) {
+        SendPacket(Packet.MakeGiveBoltsPacket(bolts, setBolts: true));
     }
 
     public void GiveBolts(int bolts) {
@@ -569,8 +569,8 @@ partial class Player : IClientHandler
         CallLuaFunction("OnLevelFlagChanged", LuaEntity(), type, level, size, index, value);
     }
     
-    public void OnGiveBolts(int bolts) {
-        CallLuaFunction("OnGiveBolts", LuaEntity(), bolts);
+    public void OnGiveBolts(int boltdiff, uint totalBolts) {
+        CallLuaFunction("OnGiveBolts", LuaEntity(), boltdiff, totalBolts);
     }
 }
 #endregion

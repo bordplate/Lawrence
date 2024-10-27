@@ -747,12 +747,13 @@ public partial class Packet
         return packet;
     }
 
-    public static Packet MakeGiveBoltsPacket(int bolts) {
+    public static Packet MakeGiveBoltsPacket(int bolts, bool setBolts = false) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
         MPPacketBolts giveBolts = new MPPacketBolts {
             stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS,
-            value = (uint)bolts
+            value = (uint)bolts,
+            offset = setBolts ? (uint)1 : (uint)0
         };
 
         packet.AddBodyPart(giveBolts);
