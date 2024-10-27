@@ -39,6 +39,7 @@ public interface IClientHandler {
     void OnDisconnect();
     void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue);
     void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value);
+    void OnGiveBolts(int bolts);
 }
 
 public partial class Client {
@@ -516,6 +517,11 @@ public partial class Client {
                         _clientHandler.OnUnlockLevel((int)state.value);
                     }
 
+                    if (state.stateType == MPStateType.MP_STATE_TYPE_GIVE_BOLTS) {
+                        Logger.Log($"Player got bolts: {state.value}");
+                        _clientHandler.OnGiveBolts((int)state.value);
+                    }
+                        
                     if (state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
                         Logger.Log($"Player unlocked skillpoint #{state.value}");
                         _clientHandler.OnUnlockSkillpoint((byte)state.value);

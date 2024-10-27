@@ -211,6 +211,7 @@ public struct MPPacketSetStateFloat : MPPacket
 public struct MPPacketBolts : MPPacket
 {
     public MPStateType stateType;
+    public uint offset;
     public uint value;
 }
 
@@ -734,7 +735,7 @@ public partial class Packet
     
     public static Packet MakeSetAddressFloatPacket(uint address, float value) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
-
+    
         MPPacketSetStateFloat setPlayerState = new MPPacketSetStateFloat {
             stateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
             offset = address,
@@ -742,16 +743,16 @@ public partial class Packet
         };
         
         packet.AddBodyPart(setPlayerState);
-
+    
         return packet;
     }
 
-    public static Packet MakeGiveBoltsPacket(uint bolts) {
+    public static Packet MakeGiveBoltsPacket(int bolts) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
         MPPacketBolts giveBolts = new MPPacketBolts {
             stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS,
-            value = bolts
+            value = (uint)bolts
         };
 
         packet.AddBodyPart(giveBolts);

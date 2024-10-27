@@ -122,3 +122,11 @@ function TeamRunPlayer:OnUnlockLevel(level)
         end
     end
 end
+
+function TeamRunPlayer:OnGiveBolts(bolts)
+    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+        if player ~= self then
+            player:GiveBolts(bolts)
+        end
+    end
+end
