@@ -11,6 +11,17 @@ using Lawrence.Game.UI;
 
 namespace Lawrence.Game;
 
+public enum MonitoredAddressDataType {
+    Number,
+    Float
+}
+
+public struct MonitoredAddress {
+    public uint Address;
+    public ushort Size;
+    public MonitoredAddressDataType DataType;
+}
+
 /// <summary>
 /// Networked Player entity. Communicates with Client to send and receive updates in the Player's game. 
 /// </summary>
@@ -18,6 +29,8 @@ public partial class Player : Moby {
     private readonly Client _client;
 
     public GameState GameState = 0;
+    
+    private List<MonitoredAddress> _monitoredAddresses = new();
 
     public override float x {
         get { return _x; }
@@ -237,6 +250,20 @@ partial class Player {
         
         SetLevelFlags(1, (byte)Level().GameID(), 0, levelFlags1.ToArray());
         SetLevelFlags(2, (byte)Level().GameID(), 0, levelFlags2.ToArray());
+    }
+
+    public void MonitorAddress(uint address, byte size, bool isFloat = false) {
+        _monitoredAddresses.Add(new MonitoredAddress {
+            Address = address,
+            Size = size,
+            DataType = isFloat ? MonitoredAddressDataType.Float : MonitoredAddressDataType.Number
+        });
+        
+        SendPacket(Packet.MakeMonitorAddressPacket(address, size, 0));
+    }
+    
+    public void SetAddressValue(uint address, uint value, byte size) {
+        SendPacket(Packet.MakeSetAddressValuePacket(address, value, size));
     }
 }
 #endregion
@@ -554,6 +581,18 @@ partial class Player : IClientHandler
         foreach (var moby in Level().GetHybridMobys()) {
             if (moby.UID == uid) {
                 moby.OnHybridValueChanged(this, type, offset, size, oldValue, newValue);
+            }
+        }
+    }
+    
+    public void OnMonitoredAddressChanged(uint address, byte size, byte[] oldValue, byte[] newValue) {
+        foreach (var monitoredAddress in _monitoredAddresses) {
+            if (monitoredAddress.Address == address) {
+                if (monitoredAddress.DataType == MonitoredAddressDataType.Number) {
+                    CallLuaFunction("MonitoredAddressChanged", LuaEntity(), address, BitConverter.ToUInt32(oldValue, 0), BitConverter.ToUInt32(newValue, 0));
+                } else {
+                    CallLuaFunction("MonitoredAddressChanged", LuaEntity(), address, BitConverter.ToSingle(oldValue, 0), BitConverter.ToSingle(newValue, 0));
+                }
             }
         }
     }

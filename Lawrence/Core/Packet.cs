@@ -37,9 +37,11 @@ public enum MPPacketType : ushort
     MP_PACKET_MONITORED_VALUE_CHANGED = 23,
     MP_PACKET_CHANGE_MOBY_VALUE = 24,
     MP_PACKET_LEVEL_FLAG_CHANGED = 25,
+    MP_PACKET_MONITOR_ADDRESS = 26,
+    MP_PACKET_MONITORED_ADDRESS_CHANGED = 27,
 }
 
-public enum MPStateType : uint
+public enum MPStateType : ushort
 {
     MP_STATE_TYPE_DAMAGE = 1,
     MP_STATE_TYPE_PLAYER =  2,
@@ -194,6 +196,7 @@ public struct MPPacketMobyCollision : MPPacket
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketSetState : MPPacket
 {
+    public ushort flags;
     public MPStateType stateType;
     public uint offset;
     public uint value;
@@ -339,6 +342,21 @@ public struct MPPacketLevelFlagChanged : MPPacket {
     public byte size;
     public ushort index;
     public uint value;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitorAddress : MPPacket {
+    public byte flags;
+    public byte size;
+    public uint address;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitoredAddressChanged : MPPacket {
+    public uint address;
+    public ushort size;
+    public uint oldValue;
+    public uint newValue;
 }
 
 public struct PacketBodyPart<T> where T : MPPacket {
@@ -718,11 +736,12 @@ public partial class Packet
         return packet;
     }
     
-    public static Packet MakeSetAddressValuePacket(uint address, uint value) {
+    public static Packet MakeSetAddressValuePacket(uint address, uint value, ushort size = 4) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
         MPPacketSetState setPlayerState = new MPPacketSetState {
             stateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
+            flags = size,
             offset = address,
             value = value
         };
@@ -924,6 +943,18 @@ public partial class Packet
             offset = offset,
             size = size,
             value = value
+        });
+        
+        return packet;
+    }
+    
+    public static Packet MakeMonitorAddressPacket(uint address, byte size, byte flags) {
+        var packet = new Packet(MPPacketType.MP_PACKET_MONITOR_ADDRESS);
+        
+        packet.AddBodyPart(new MPPacketMonitorAddress {
+            address = address,
+            size = size,
+            flags = flags
         });
         
         return packet;

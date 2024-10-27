@@ -38,6 +38,7 @@ public interface IClientHandler {
     void OnUnlockSkillpoint(byte skillpoint);
     void OnDisconnect();
     void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue);
+    void OnMonitoredAddressChanged(uint address, byte size, byte[] oldValue, byte[] newValue);
     void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value);
 }
 
@@ -585,6 +586,16 @@ public partial class Client {
                         BitConverter.GetBytes(valueChanged.newValue)
                     );
                     
+                    break;
+                }
+                case MPPacketType.MP_PACKET_MONITORED_ADDRESS_CHANGED: {
+                    var addressChanged = Packet.BytesToStruct<MPPacketMonitoredAddressChanged>(packetBody, _endianness);
+                    _clientHandler.OnMonitoredAddressChanged(
+                        addressChanged.address,
+                        (byte)addressChanged.size,
+                        BitConverter.GetBytes(addressChanged.oldValue),
+                        BitConverter.GetBytes(addressChanged.newValue)
+                    );
                     break;
                 }
                 case MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED: {

@@ -5,6 +5,20 @@ function TeamRunPlayer:Made()
     self.goldBoltCount = 0
     
     self.gameState = 0
+    
+    self.skillpointCounters = {
+        Player.offset.aridiaShipsKilled,
+        Player.offset.eudoraShipsKilled,
+        Player.offset.gasparShipsKilled,
+        Player.offset.pokitaruShipsKilled,
+        Player.offset.hovenShipsKilled,
+        Player.offset.oltanisShipsKilled,
+        Player.offset.veldin2CommandosKilled,
+    }
+    
+    for _, counter in ipairs(self.skillpointCounters) do
+        self:MonitorAddress(counter, 4)
+    end
 end
 
 function TeamRunPlayer:OnCollectedGoldBolt(planet, number)
@@ -15,6 +29,26 @@ function TeamRunPlayer:OnCollectedGoldBolt(planet, number)
     self.universe.blocked_bolts[#self.universe.blocked_bolts+1] = {planet, number}
 
     self.goldBoltCount = self.goldBoltCount + 1
+end
+
+function TeamRunPlayer:MonitoredAddressChanged(address, oldValue, newValue)
+    print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
+    
+    local addressIsSkillpointCounter = false
+    for _, counter in ipairs(self.skillpointCounters) do
+        if address == counter then
+            addressIsSkillpointCounter = true
+            break
+        end
+    end
+    
+    if addressIsSkillpointCounter and newValue > oldValue then
+        for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+            if player:GUID() ~= self:GUID() then
+                player:SetAddressValue(address, newValue, 4)
+            end
+        end
+    end
 end
 
 function TeamRunPlayer:OnAttack(moby)
