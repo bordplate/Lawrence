@@ -163,3 +163,13 @@ function TeamRunPlayer:OnUnlockSkillpoint(skillpoint)
         player:UnlockSkillpoint(skillpoint)
     end
 end
+
+
+function TeamRunPlayer:OnGiveBolts(boltDiff, totalBolts)
+    self.totalBolts = totalBolts
+    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+        if player ~= self then
+            player:GiveBolts(boltDiff)
+        end
+    end
+end

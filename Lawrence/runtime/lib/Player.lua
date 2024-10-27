@@ -33,6 +33,10 @@ function Player:OnUnlockLevel(level)
     self:UnlockLevel(level)
 end
 
+function Player:OnGiveBolts(boltDiff, totalBolts)
+    -- do nothing, the client merely notified the server that it received bolts
+end
+
 function Player:Unstuck()
     if self:Universe():LuaEntity().allowUnstuck then
         self:SetGhostRatchet(150)
