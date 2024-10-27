@@ -22,7 +22,7 @@ function TeamRunsUniverse:OnPlayerJoin(player)
     player:GiveItem(Item.GetByName("R.Y.N.O.").id)
     
     player:SetBolts(150000)
-    player:LoadLevel("Veldin2")
+    player:LoadLevel("Eudora")
 end
 
 function TeamRunsUniverse:OnTick()

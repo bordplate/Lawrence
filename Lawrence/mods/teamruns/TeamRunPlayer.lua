@@ -23,12 +23,13 @@ end
 
 function TeamRunPlayer:OnCollectedGoldBolt(planet, number)
     print("Player collected gold bolt on " .. planet .. " number: " .. number);
-
-    self:Parent():BlockGoldBolt(planet, number)
-
-    self.universe.blocked_bolts[#self.universe.blocked_bolts+1] = {planet, number}
-
-    self.goldBoltCount = self.goldBoltCount + 1
+    
+    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+        if player:GUID() ~= self:GUID() then
+            player:SetAddressValue(Player.offset.goldBolts + planet * 4 + number, 1, 1)
+            player:ToastMessage("\x0cGold Bolt\x08 acquired", 60*5)
+        end
+    end
 end
 
 function TeamRunPlayer:MonitoredAddressChanged(address, oldValue, newValue)

@@ -3,6 +3,7 @@
 Player = class("Player", Entity)
 
 Player.offset = {
+    goldBolts = 0xa0ca34,
     aridiaShipsKilled = 0x96c9dc,
     eudoraShipsKilled = 0x96c9e0,
     gasparShipsKilled = 0x96c9e4,
