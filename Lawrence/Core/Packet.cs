@@ -203,19 +203,11 @@ public struct MPPacketSetState : MPPacket
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct MPPacketSetStateFloat : MPPacket
-{
+public struct MPPacketSetStateFloat : MPPacket {
+    public ushort flags;
     public MPStateType stateType;
     public uint offset;
     public float value;
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct MPPacketBolts : MPPacket
-{
-    public MPStateType stateType;
-    public uint offset;
-    public uint value;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -769,10 +761,10 @@ public partial class Packet
     public static Packet MakeGiveBoltsPacket(int bolts, bool setBolts = false) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
-        MPPacketBolts giveBolts = new MPPacketBolts {
+        MPPacketSetState giveBolts = new MPPacketSetState {
             stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS,
             value = (uint)bolts,
-            offset = setBolts ? (uint)1 : (uint)0
+            offset = setBolts ? (uint)1 : 0
         };
 
         packet.AddBodyPart(giveBolts);
