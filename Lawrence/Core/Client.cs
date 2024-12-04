@@ -551,11 +551,19 @@ public partial class Client {
 
                         string name = serverInfo.GetName(packetBody);
 
-                        uint ip = serverInfo.ip != 0 ? serverInfo.ip : (uint)GetEndpoint().Address.Address;
+                        uint ip = serverInfo.Ip != 0 ? serverInfo.Ip : (uint)GetEndpoint().Address.Address;
 
                         IPAddress address = new IPAddress(ip);
 
-                        Lawrence.Directory().RegisterServer(address.ToString(), serverInfo.port, name, serverInfo.maxPlayers, serverInfo.playerCount);
+                        Lawrence.Directory().RegisterServer(
+                            address.ToString(), 
+                            serverInfo.Port, 
+                            name, 
+                            serverInfo.MaxPlayers, 
+                            serverInfo.PlayerCount, 
+                            serverInfo.GetDescription(packetBody), 
+                            serverInfo.GetOwner(packetBody)
+                        );
                     }
 
                     break;

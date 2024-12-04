@@ -223,14 +223,16 @@ public struct MPPacketSetHUDText : MPPacket
     public float size;
 }
 
-[StructLayout(LayoutKind.Explicit)]
+[StructLayout(LayoutKind.Sequential)]
 public struct MPPacketQueryResponseServer : MPPacket
 {
-    [FieldOffset(0x0)] public uint ip;
-    [FieldOffset(0x4)] public ushort port;
-    [FieldOffset(0x6)] public ushort maxPlayers;
-    [FieldOffset(0x8)] public ushort playerCount;
-    [FieldOffset(0xa)] public ushort nameLength;
+    public uint Ip;
+    public ushort Port;
+    public ushort MaxPlayers;
+    public ushort PlayerCount;
+    public ushort NameLength;
+    public ushort DescriptionLength;
+    public ushort OwnerLength;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -240,16 +242,30 @@ public struct MPPacketErrorMessage : MPPacket {
 
 [StructLayout(LayoutKind.Sequential)]
 public struct MPPacketRegisterServer : MPPacket {
-    public uint ip;
-    public ushort port;
-    public ushort maxPlayers;
-    public ushort playerCount;
-    public ushort nameLength;
+    public uint Ip;
+    public ushort Port;
+    public ushort MaxPlayers;
+    public ushort PlayerCount;
+    public ushort NameLength;
+    public ushort DescriptionLength;
+    public ushort OwnerNameLength;
     
     public string GetName(byte[] packetBody) {
-        byte[] nameBytes = packetBody.Skip(Marshal.SizeOf(this)).ToArray();
+        byte[] nameBytes = packetBody.Skip(Marshal.SizeOf(this)).Take(NameLength).ToArray();
         
         return Encoding.UTF8.GetString(nameBytes);
+    }
+    
+    public string GetDescription(byte[] packetBody) {
+        byte[] descriptionBytes = packetBody.Skip(Marshal.SizeOf(this) + NameLength).Take(DescriptionLength).ToArray();
+        
+        return Encoding.UTF8.GetString(descriptionBytes);
+    }
+    
+    public string GetOwner(byte[] packetBody) {
+        byte[] ownerBytes = packetBody.Skip(Marshal.SizeOf(this) + NameLength + DescriptionLength).Take(OwnerNameLength).ToArray();
+        
+        return Encoding.UTF8.GetString(ownerBytes);
     }
 }
 
@@ -616,19 +632,28 @@ public partial class Packet
                 uint addr = SwapEndianness((uint)ipAddress.Address);
 
                 MPPacketQueryResponseServer response = new MPPacketQueryResponseServer {
-                    ip = addr,
-                    port = (ushort)server.Port,
-                    maxPlayers = (ushort)server.MaxPlayers,
-                    playerCount = (ushort)server.PlayerCount,
-                    nameLength = (ushort)Encoding.UTF8.GetBytes(server.Name).Length
-                };
-                
-                MPPacketStringData data = new MPPacketStringData {
-                    data = server.Name
+                    Ip = addr,
+                    Port = (ushort)server.Port,
+                    MaxPlayers = (ushort)server.MaxPlayers,
+                    PlayerCount = (ushort)server.PlayerCount,
+                    NameLength = (ushort)Encoding.UTF8.GetBytes(server.Name).Length,
+                    DescriptionLength = (ushort)Encoding.UTF8.GetBytes(server.Description).Length,
+                    OwnerLength = (ushort)Encoding.UTF8.GetBytes(server.Owner).Length
                 };
 
                 packet.AddBodyPart(response);
-                packet.AddBodyPart(data);
+                
+                packet.AddBodyPart(new MPPacketStringData {
+                    data = server.Name
+                });
+                
+                packet.AddBodyPart(new MPPacketStringData {
+                    data = server.Description
+                });
+                
+                packet.AddBodyPart(new MPPacketStringData {
+                    data = server.Owner
+                });
             }
         }
 
@@ -636,7 +661,7 @@ public partial class Packet
     }
 
     public static Packet MakeRegisterServerPacket(string ip, ushort port, ushort maxPlayers,
-        ushort playerCount, string name) {
+        ushort playerCount, string name, string description = "", string owner = "") {
         var packet = new Packet(MPPacketType.MP_PACKET_REGISTER_SERVER, 0, 0);
 
         if (!IPAddress.TryParse(ip, out var address)) {
@@ -644,19 +669,28 @@ public partial class Packet
         }
 
         MPPacketRegisterServer response = new MPPacketRegisterServer {
-            ip = (uint)address.MapToIPv4().Address,
-            port = port,
-            maxPlayers = maxPlayers,
-            playerCount = playerCount,
-            nameLength = (ushort)name.Length
-        };
-
-        MPPacketStringData data = new MPPacketStringData {
-            data = name
+            Ip = (uint)address.MapToIPv4().Address,
+            Port = port,
+            MaxPlayers = maxPlayers,
+            PlayerCount = playerCount,
+            NameLength = (ushort)name.Length,
+            DescriptionLength = (ushort)description.Length,
+            OwnerNameLength = (ushort)owner.Length
         };
 
         packet.AddBodyPart(response);
-        packet.AddBodyPart(data);
+        
+        packet.AddBodyPart(new MPPacketStringData {
+            data = name
+        });
+        
+        packet.AddBodyPart(new MPPacketStringData {
+            data = description
+        });
+        
+        packet.AddBodyPart(new MPPacketStringData {
+            data = owner
+        });
         
         return packet;
     }

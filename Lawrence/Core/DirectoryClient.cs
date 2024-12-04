@@ -46,8 +46,15 @@ public class DirectoryClient {
 
                 string ipString = Settings.Default()
                     .Get<string>("Server.advertise_ip", _server.ListenAddress(), true);
-                Packet packet = Packet.MakeRegisterServerPacket(ipString,
-                    (ushort)_server.ListenPort(), (ushort)_server.MaxPlayers(), (ushort)players, _server.ServerName());
+                Packet packet = Packet.MakeRegisterServerPacket(
+                    ipString,
+                    (ushort)_server.ListenPort(), 
+                    (ushort)_server.MaxPlayers(), 
+                    (ushort)players, 
+                    _server.ServerName(),
+                    Settings.Default().Get("Server.description", ""),
+                    Settings.Default().Get("Server.owner", "N/A")
+                );
 
                 List<byte> packetData = new List<byte>();
                 
