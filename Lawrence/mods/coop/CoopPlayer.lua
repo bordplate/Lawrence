@@ -1,8 +1,12 @@
-TeamRunPlayer = class("TeamRunPlayer", Player)
+require 'TestMoby'
 
-function TeamRunPlayer:Made()
+CoopPlayer = class("CoopPlayer", Player)
+
+function CoopPlayer:Made()
     self.damageCooldown = 0
     self.goldBoltCount = 0
+    
+    self.clanky = null
     
     self.gameState = 0
     
@@ -21,7 +25,7 @@ function TeamRunPlayer:Made()
     end
 end
 
-function TeamRunPlayer:OnCollectedGoldBolt(planet, number)
+function CoopPlayer:OnCollectedGoldBolt(planet, number)
     print("Player collected gold bolt on " .. planet .. " number: " .. number);
     
     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
@@ -32,7 +36,7 @@ function TeamRunPlayer:OnCollectedGoldBolt(planet, number)
     end
 end
 
-function TeamRunPlayer:MonitoredAddressChanged(address, oldValue, newValue)
+function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
     
     local addressIsSkillpointCounter = false
@@ -52,30 +56,38 @@ function TeamRunPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     end
 end
 
-function TeamRunPlayer:OnAttack(moby)
+function CoopPlayer:OnAttack(moby, sourceOClass, damage)
     if self.damageCooldown <= 0 then
         moby:Damage(1)
         self.damageCooldown = 40
     end
 end
 
-function TeamRunPlayer:Unfreeze()
+function CoopPlayer:Unfreeze()
     self.state = 0
 end
 
-function TeamRunPlayer:OnTick()
+function CoopPlayer:OnTick()
+    --if self.clanky == null then
+    --    self.clanky = self:SpawnInstanced(TestMoby)
+    --    self.clanky:SetPosition(self.x, self.y, self.z + 2)
+    --end
+    --
+    --self.clanky:SetPosition(self.x, self.y, self.z + 2)
+    
     if (self.damageCooldown > 0) then
         self.damageCooldown = self.damageCooldown - 1
     end
 end
 
-function TeamRunPlayer:OnGameStateChanged(state)
+function CoopPlayer:OnGameStateChanged(state)
     self.gameState = state
 end
 
-function TeamRunPlayer:OnControllerInputTapped(input)
+function CoopPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         self:SetPosition(0, 0, -10000)
+        --self:SetAddressValue(0x969EAC, 100, 4)
     end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
@@ -93,7 +105,7 @@ function TeamRunPlayer:OnControllerInputTapped(input)
     end
 end
 
-function TeamRunPlayer:OnUnlockItem(item_id, equip)
+function CoopPlayer:OnUnlockItem(item_id, equip)
     item = Item.GetById(item_id)
     
     print("Unlocking item " .. item.name)
@@ -127,7 +139,7 @@ function TeamRunPlayer:OnUnlockItem(item_id, equip)
     end
 end
 
-function TeamRunPlayer:OnUnlockLevel(level)
+function CoopPlayer:OnUnlockLevel(level)
     Player.OnUnlockLevel(self, level)
     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
         player:UnlockLevel(level)
@@ -158,17 +170,18 @@ function TeamRunPlayer:OnUnlockLevel(level)
     end
 end
 
-function TeamRunPlayer:OnUnlockSkillpoint(skillpoint)
+function CoopPlayer:OnUnlockSkillpoint(skillpoint)
     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
         player:UnlockSkillpoint(skillpoint)
     end
 end
 
 
-function TeamRunPlayer:OnGiveBolts(boltDiff, totalBolts)
+function CoopPlayer:OnGiveBolts(boltDiff, totalBolts)
     self.totalBolts = totalBolts
     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
         if player ~= self then
+            print("Giving " .. boltDiff .. " bolts to " .. player:Username())
             player:GiveBolts(boltDiff)
         end
     end

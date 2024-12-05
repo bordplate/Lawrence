@@ -60,6 +60,22 @@ public class Moby : Entity
     static ushort COLLIDE_TICKS = 10;
     
     private int _oClass = 0;
+
+    /// <summary>
+    /// This is used when a moby is attached to a bone of another moby, like helmets, gear, backpack, etc. 
+    /// </summary>
+    public Moby AttachedTo;
+    
+    /// <summary>
+    /// Which bone we are attached to that decides the position on the body.
+    /// </summary>
+    public byte PositionBone;
+    
+    /// <summary>
+    /// We use this to determine which bone we follow the transformation of. This is often the same as PositionBone, but
+    ///   can be different if we want to follow the rotation of one bone, but the position of another.
+    /// </summary>
+    public byte TransformBone;
     
     /// <summary>
     /// UID is only used for hybrid mobys. 
@@ -73,6 +89,15 @@ public class Moby : Entity
         get;
         private set;
     }
+
+    /// <summary>
+    /// Synced mobys come from a game and is fully controlled by the game.
+    /// </summary>
+    public Moby SyncOwner {
+        get; 
+        private set;
+    }
+    public int SyncSpawnId { get; set; }
 
     // TODO: Make these HashSets instead?
     public List<MonitoredValue> MonitoredAttributes { get; private set; } = new();
@@ -148,6 +173,10 @@ public class Moby : Entity
     public void MakeHybrid(ushort uid) {
         UID = uid;
         IsHybrid = true;
+    }
+    
+    public void MakeSynced(Moby moby) {
+        SyncOwner = moby;
     }
     
     public Level Level() {
@@ -342,7 +371,7 @@ public class Moby : Entity
         CallLuaFunction("OnHit", LuaEntity(), attacker.LuaEntity());
     }
 
-    public virtual void OnAttack(Moby attacked) {
-        CallLuaFunction("OnAttack", LuaEntity(), attacked.LuaEntity());
+    public virtual void OnAttack(Moby attacked, ushort sourceOClass, float damage) {
+        CallLuaFunction("OnAttack", LuaEntity(), attacked.LuaEntity(), sourceOClass, damage);
     }
 }

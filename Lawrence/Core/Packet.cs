@@ -23,7 +23,7 @@ public enum MPPacketType : ushort
     MP_PACKET_MOBY_CREATE = 6,
     MP_PACKET_DISCONNECTED = 7,
     MP_PACKET_MOBY_DELETE = 8,
-    MP_PACKET_MOBY_COLLISION = 9,
+    MP_PACKET_MOBY_DAMAGE = 9,
     MP_PACKET_SET_STATE = 10,
     MP_PACKET_SET_HUD_TEXT = 11,
     MP_PACKET_QUERY_GAME_SERVERS = 12,
@@ -39,6 +39,7 @@ public enum MPPacketType : ushort
     MP_PACKET_LEVEL_FLAG_CHANGED = 25,
     MP_PACKET_MONITOR_ADDRESS = 26,
     MP_PACKET_MONITORED_ADDRESS_CHANGED = 27,
+    MP_PACKET_MOBY_CREATE_FAILURE = 28,
 }
 
 public enum MPStateType : ushort
@@ -61,23 +62,38 @@ public enum MPStateType : ushort
     MP_STATE_TYPE_UNLOCK_SKILLPOINT = 16,
 }
 
+public enum MPDamageFlags : uint {
+    Aggressive = 1,
+    GameMoby = 2,
+}
+
 public enum MPPacketFlags : ushort
 {
     MP_PACKET_FLAG_RPC = 0x1
 }
 
 [Flags]
-public enum MPMobyFlags : ushort
+public enum MPMobyFlags : byte
 {
     MP_MOBY_FLAG_ACTIVE = 0x1,
     MP_MOBY_NO_COLLISION = 0x2,
     MP_MOBY_FLAG_ORIG_UDPATE_FUNC = 0x4,
+    MP_MOBY_FLAG_ATTACHED_TO = 0x8,
 }
 
 public enum MPControllerInputFlags : ushort
 {
     MP_CONTROLLER_FLAGS_PRESSED = 0x1,
     MP_CONTROLLER_FLAGS_HELD = 0x2,
+}
+
+public enum MPMobyCreateFailureReason : byte
+{
+    UNKNOWN = 0,
+    NOT_READY = 1,
+    ALREADY_EXISTS = 2,
+    INVALID_PARENT = 3,
+    MAX_MOBYS = 4
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -140,27 +156,20 @@ public struct MPPacketConnectResponse: MPPacket {
     public MPPacketConnectResponseStatus status;
 }
 
-[StructLayout(LayoutKind.Explicit)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketMobyUpdate : MPPacket
 {
-    [FieldOffset(0x0)] public ushort uuid;
-    [FieldOffset(0x2)] public ushort parent;
-    [FieldOffset(0x4)] public MPMobyFlags mpFlags;
-    [FieldOffset(0x6)] public ushort oClass;
-    [FieldOffset(0x8)] public ushort level;
-    [FieldOffset(0xa)] public Int32 animationID;
-    [FieldOffset(0xe)] public Int32 animationDuration;
-    [FieldOffset(0x12)] public float x;
-    [FieldOffset(0x16)] public float y;
-    [FieldOffset(0x1a)] public float z;
-    [FieldOffset(0x1e)] public float rotX;
-    [FieldOffset(0x22)] public float rotY;
-    [FieldOffset(0x26)] public float rotZ;
-    [FieldOffset(0x2a)] public float scale;
-    [FieldOffset(0x2e)] public byte alpha;
-    [FieldOffset(0x2f)] public sbyte padding;
-    [FieldOffset(0x30)] public ushort modeBits;
-    [FieldOffset(0x32)] public ushort state;
+    public ushort uuid;
+    public ushort oClass;
+    public byte animationID;
+    public byte animationDuration;
+    public float x;
+    public float y;
+    public float z;
+    public float rotX;
+    public float rotY;
+    public float rotZ;
+    public float scale;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -178,19 +187,45 @@ public struct MPPacketMobyExtendedPayload : MPPacket {
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketMobyCreate : MPPacket
 {
-    public UInt32 uuid;
-    public UInt32 flags;
+    public ushort uuid;
+    public ushort parentUuid;
+    public byte spawnId;
+    public MPMobyFlags flags;
+    public ushort oClass;
+    public ushort modeBits;
+    public byte positionBone;
+    public byte transformBone;
 }
 
-[StructLayout(LayoutKind.Explicit)]
-public struct MPPacketMobyCollision : MPPacket
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyCreateResponse : MPPacket {
+    public ushort uuid;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyDelete : MPPacket {
+    public uint uuid;
+    public uint flags;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyCreateFailure : MPPacket {
+    public ushort uuid;
+    public MPMobyCreateFailureReason reason;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyDamage : MPPacket
 {
-    [FieldOffset(0x0)] public uint flags;
-    [FieldOffset(0x4)] public ushort uuid;
-    [FieldOffset(0x6)] public ushort collidedWith;
-    [FieldOffset(0x8)] public float x;
-    [FieldOffset(0xc)] public float y;
-    [FieldOffset(0x10)] public float z;
+    public ushort uuid;
+    public ushort collidedWithUuid;
+    public MPDamageFlags flags;
+    public ushort damagedOClass;
+    public ushort sourceOClass;
+    public float x;
+    public float y;
+    public float z;
+    public float damage;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -223,7 +258,13 @@ public struct MPPacketSetHUDText : MPPacket
     public float size;
 }
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketQueryGameServers : MPPacket {
+    public byte Version;
+    public uint Page;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketQueryResponseServer : MPPacket
 {
     public uint Ip;
@@ -368,6 +409,11 @@ public struct MPPacketMonitoredAddressChanged : MPPacket {
     public uint newValue;
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketSpawned : MPPacket {
+    public byte SpawnId;
+}
+
 public struct PacketBodyPart<T> where T : MPPacket {
     public T BodyPart;
     public int Size;
@@ -427,8 +473,7 @@ public partial class Packet {
     } 
 }
 
-public partial class Packet
-{
+public partial class Packet {
     public static Packet MakeAckPacket() {
         var packet = new Packet(MPPacketType.MP_PACKET_ACK, 0, 0);
 
@@ -453,7 +498,7 @@ public partial class Packet
             stateType = MPStateType.MP_STATE_TYPE_DAMAGE,
             value = damage
         };
-        
+
         packet.AddBodyPart(bonkState);
         packet.AddBodyPart(damageState);
 
@@ -480,16 +525,17 @@ public partial class Packet
             flags = (ushort)(textElementFlag | gameStateFlags | flagsSetFlag),
             id = id
         };
-        
+
         MPPacketStringData data = new MPPacketStringData {
             data = text
         };
-        
+
         packet.AddBodyPart(hudText);
         packet.AddBodyPart(data, 50);
-        
+
         return packet;
     }
+
     // TODO: change flag settings to reserve 2 bits for the current drop_shadow/delete options (since they are 1 and 2).
     // TODO: change flag settings to then reserve 3 bits for game state.
     // TODO: add game state argument for make to say on which gamestate it should be shown/should be moved to. maybe default it to something
@@ -513,33 +559,33 @@ public partial class Packet
     public static Packet MakeDeleteMobyPacket(ushort mobyUUID) {
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_DELETE);
 
-        MPPacketMobyCreate body = new MPPacketMobyCreate {
+        MPPacketMobyDelete body = new MPPacketMobyDelete {
             uuid = mobyUUID,
             flags = 1
         };
 
         packet.AddBodyPart(body);
-        
+
         return packet;
     }
-    
+
     public static Packet MakeDeleteAllMobysPacket(ushort oClass) {
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_DELETE);
 
-        MPPacketMobyCreate body = new MPPacketMobyCreate {
+        MPPacketMobyDelete body = new MPPacketMobyDelete {
             uuid = oClass,
             flags = 2
         };
 
         packet.AddBodyPart(body);
-        
+
         return packet;
     }
-    
+
     public static Packet MakeDeleteAllMobysUIDPacket(ushort uid) {
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_DELETE);
-        
-        MPPacketMobyCreate body = new MPPacketMobyCreate {
+
+        MPPacketMobyDelete body = new MPPacketMobyDelete {
             uuid = uid,
             flags = 8
         };
@@ -549,31 +595,45 @@ public partial class Packet
         return packet;
     }
 
-    public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
+    public static Packet MakeCreateMobyPacket(ushort id, Moby moby, ushort parentId = 0) {
+        var packet = new Packet(MPPacketType.MP_PACKET_MOBY_CREATE);
+
+        var flags = MPMobyFlags.MP_MOBY_FLAG_ACTIVE;
+        flags |= moby.CollisionEnabled ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
+        flags |= moby.MpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
+        flags |= moby.AttachedTo != null ? MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO : 0;
+
+        MPPacketMobyCreate mobyCreate = new MPPacketMobyCreate {
+            uuid = id,
+            parentUuid = parentId,
+            flags = flags,
+            oClass = (ushort)moby.oClass,
+            modeBits = moby.modeBits,
+            positionBone = moby.PositionBone,
+            transformBone = moby.TransformBone,
+        };
+
+        packet.AddBodyPart(mobyCreate);
+
+        return packet;
+    }
+    
+public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_UPDATE, 0, 0);
 
         MPPacketMobyUpdate mobyUpdate = new MPPacketMobyUpdate {
             uuid = id
         };
-
-        mobyUpdate.mpFlags |= moby.IsActive() ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
-        mobyUpdate.mpFlags |= moby.CollisionEnabled ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
-        mobyUpdate.mpFlags |= moby.MpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
         
-        mobyUpdate.parent = (ushort)0; // Parent isn't really used
         mobyUpdate.oClass = (ushort)moby.oClass;
-        mobyUpdate.level = moby.Level() != null ? (ushort)moby.Level().GameID() : (ushort)0;
         mobyUpdate.x = moby.x;
         mobyUpdate.y = moby.y;
         mobyUpdate.z = moby.z;
-        mobyUpdate.rotX = (float)(Math.PI / 180) * moby.rotX;
-        mobyUpdate.rotY = (float)(Math.PI / 180) * moby.rotY;
-        mobyUpdate.rotZ = (float)(Math.PI / 180) * moby.rotZ;
-        mobyUpdate.animationID = moby.AnimationId;
+        mobyUpdate.rotX = (float)(moby.rotX * (Math.PI/180));
+        mobyUpdate.rotY = (float)(moby.rotY * (Math.PI/180));
+        mobyUpdate.rotZ = (float)(moby.rotZ * (Math.PI/180));
+        mobyUpdate.animationID = (byte)moby.AnimationId;
         mobyUpdate.scale = moby.scale;
-        mobyUpdate.alpha = Math.Min((byte)(moby.alpha * 128), (byte)128);
-        
-        mobyUpdate.modeBits = moby.modeBits;
         
         packet.AddBodyPart(mobyUpdate);
 
@@ -618,6 +678,18 @@ public partial class Packet
 
         packet.AddBodyPart(destinationLevelState);
 
+        return packet;
+    }
+
+    public static Packet MakeMobyCreateResponsePacket(ushort uuid, byte ackId, byte ackCycle) {
+        var packet = new Packet(MPPacketType.MP_PACKET_ACK, ackId, ackCycle);
+        
+        MPPacketMobyCreateResponse mobyCreateResponse = new MPPacketMobyCreateResponse {
+            uuid = uuid
+        };
+        
+        packet.AddBodyPart(mobyCreateResponse);
+        
         return packet;
     }
 

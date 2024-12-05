@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Lawrence.Game;
@@ -20,6 +22,7 @@ public struct MonitoredAddress {
     public uint Address;
     public ushort Size;
     public MonitoredAddressDataType DataType;
+    public Action<object> Callback;
 }
 
 /// <summary>
@@ -31,6 +34,8 @@ public partial class Player : Moby {
     public GameState GameState = 0;
     
     private List<MonitoredAddress> _monitoredAddresses = new();
+
+    private int _respawns = 0;
 
     public override float x {
         get { return _x; }
@@ -54,7 +59,7 @@ public partial class Player : Moby {
 
     public override Color Color {
         get { return _color; }
-        set { base.Color = value; _client.SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.Color.ToUInt()) })); }
+        set { base.Color = value; _client.SendPacket(Packet.MakeMobyUpdateExtended(0, [new Packet.UpdateMobyValue(0x38, this.Color.ToUInt())])); }
     }
 
     private ushort _state = 0;
@@ -65,7 +70,8 @@ public partial class Player : Moby {
 
     // Some animations can cause crashes in other games, we filter those for the time being. 
     private List<int> _filteredAnimationIDs = new() {
-        130  // Gold bolt collect animation
+        130,  // Gold bolt collect animation
+        128,  // Electricity dying animation
     };
 
     public override int AnimationId {
@@ -95,6 +101,14 @@ public partial class Player : Moby {
     public override void Delete() {
         foreach (var label in _labels) {
             label?.Delete();
+        }
+        
+        // Clean all mobys this client has synced
+        var mobys = Find<Moby>().ToArray();
+        foreach (var moby in mobys) {
+            if (moby.SyncOwner == this) {
+                moby.Delete();
+            }
         }
 
         base.Delete();
@@ -161,6 +175,29 @@ partial class Player {
         SendPacket(Packet.MakeGoToLevelPacket(_level.GameID()));
         
         RegisterHybridMobys();
+        
+        MonitorAddress(0x969C70, 4, false, o => {
+            var planet = (uint)o;
+            
+            Logger.Log($"Player {Username()} changed planet to {planet}");
+            
+            // Wait until we have a parent
+            if (Parent() == null) {
+                return;
+            }
+
+            if (planet != Level().GameID()) {
+                Level lastLevel = _level;
+                
+                _level.Remove(this, false);
+                
+                _level = Universe().GetLevelByGameID((ushort)planet);
+                _level.Add(this);
+                Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
+                
+                SetCurrentLevelFlags();
+            }
+        });
     }
 
     public void RegisterHybridMobys() {
@@ -252,11 +289,12 @@ partial class Player {
         SetLevelFlags(2, (byte)Level().GameID(), 0, levelFlags2.ToArray());
     }
 
-    public void MonitorAddress(uint address, byte size, bool isFloat = false) {
+    public void MonitorAddress(uint address, byte size, bool isFloat = false, Action<object> callback = null) {
         _monitoredAddresses.Add(new MonitoredAddress {
             Address = address,
             Size = size,
-            DataType = isFloat ? MonitoredAddressDataType.Float : MonitoredAddressDataType.Number
+            DataType = isFloat ? MonitoredAddressDataType.Float : MonitoredAddressDataType.Number,
+            Callback = callback
         });
         
         SendPacket(Packet.MakeMonitorAddressPacket(address, size, 0));
@@ -287,9 +325,17 @@ partial class Player {
             
             return;
         }
-
+        
         if (_client.GetInactiveSeconds() > Lawrence.CLIENT_INACTIVE_TIMEOUT_SECONDS) {
             Logger.Log($"Client {_client.ID} inactive for more than {Lawrence.CLIENT_INACTIVE_TIMEOUT_SECONDS} seconds.");
+            
+            // Delete all children that aren't instanced
+            var mobys = Find<Moby>().ToArray();
+            foreach (var moby in mobys) {
+                if (!moby.IsInstanced()) {
+                    moby.Delete();
+                }
+            }
 
             // Notify client and delete client's mobys and their children
             _client.Disconnect();
@@ -322,16 +368,17 @@ partial class Player {
         } while (!visibilityGroup.MasksVisibility());
 
         foreach (Moby moby in visibilityGroup.Find<Moby>()) {
-            if (!moby.HasChanged || (moby.IsInstanced() && !moby.HasParent(this))) {
+            if (!moby.HasChanged || (moby.IsInstanced() && !moby.HasParent(this)) || (!moby.IsInstanced() && moby.HasParent(this))) {
                 continue;
             }
 
             float mobyDistance = DistanceTo(moby);
             if (mobyDistance > 10) {
-                if (Game.Shared().Ticks() % (int)(Math.Max(1, mobyDistance / 10)) != 0) {
+                if (Game.Shared().Ticks() % (int)Math.Max(1, mobyDistance / 10) != 0) {
                     continue;
                 }
             }
+            
             
             Update(moby);
         }
@@ -339,9 +386,11 @@ partial class Player {
 
     public override void OnDeleteEntity(DeleteEntityNotification notification) {
         if (notification.Entity is Moby moby) {
-            if (_client.HasMoby(moby)) {
+            if (_client.HasMoby(moby) && (!moby.HasParent(this) || moby.IsInstanced())) {
                 _client.DeleteMoby(moby);
             }
+            
+            Logger.Log($"Player [{Username()}]: Deleted moby {moby.oClass} [{moby.UID}]");
         }
 
         base.OnDeleteEntity(notification);
@@ -353,7 +402,8 @@ partial class Player {
 partial class Player {
     public void Update(Moby moby) {
         // We don't update ourselves.
-        if (moby == this) {
+        if (moby == this || moby.SyncOwner == this) {
+            Logger.Log($"Player [{Username()}]: Tried to update itself or its own moby.");
             return;
         }
         
@@ -397,6 +447,24 @@ partial class Player {
         
         SendPacket(Packet.MakeChangeMobyValuePacket(uid, MonitoredValueType.PVar, offset, size, val));
     }
+
+    public bool HasMoby(Moby moby) {
+        foreach (var m in Find<Moby>()) {
+            if (!m.IsInstanced()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void DeleteMoby(Moby moby) {
+        if (!moby.IsInstanced() && moby.HasParent(this)) {
+            moby.Delete();
+        } else {
+            Logger.Error($"Player [{Username()}] tried to delete a moby they don't control.");
+        }
+    }
 }
 #endregion
 
@@ -410,31 +478,30 @@ partial class Player : IClientHandler
     /// <param name="collidee"></param>
     /// <param name="aggressive">Set when the collision is an attack.</param>
     /// <exception cref="InvalidOperationException"></exception>
-    public void Collision(Moby collider, Moby collidee, bool aggressive = false)
-    {
-        if (collider == null) {
-            throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Got null-collider");
+    public void OnDamage(Moby source, Moby target, ushort sourceOClass, float damage) {
+        if (source == null) {
+            throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Got null-source");
         }
 
-        if (collidee == null) {
+        if (target == null) {
             return;
         }
         
-        if (collider != this) {
-            throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Illegal collider for collision update");
+        if (source != this) {
+            throw new InvalidOperationException($"Player [{_client.GetEndpoint()}]: Illegal target for damage update");
         }
 
-        if (collider == collidee) {
-            throw new InvalidOperationException($"$Player [{_client.GetEndpoint()}]: Collider and collidee can't be the same entity. You can't collide with yourself.");
+        if (source == target) {
+            throw new InvalidOperationException($"$Player [{_client.GetEndpoint()}]: source and target can't be the same entity. You can't damage yourself.");
         }
 
-        if (!aggressive) {
-            collider.AddCollider(collidee);
-            collidee.AddCollider(collider);
+        if (damage <= 0) {
+            source.AddCollider(target);
+            target.AddCollider(source);
         }
         else {
-            collidee.OnHit(collider);
-            collider.OnAttack(collidee);
+            target.OnHit(source);
+            source.OnAttack(target, sourceOClass, damage);
         }
     }
 
@@ -471,9 +538,17 @@ partial class Player : IClientHandler
     /// </summary>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public uint CreateMoby()
-    {
-        throw new NotImplementedException();
+    public Moby CreateMoby(ushort oClass, byte spawnId) {
+        var moby = new Moby();
+        moby.oClass = oClass;
+        moby.SyncSpawnId = spawnId;
+        
+        Logger.Log($"Player [{Username()}]: Created moby with oClass {oClass} and spawn ID {spawnId}");
+
+        Add(moby);
+        Level().Add(moby, false);
+
+        return moby;
     }
 
     /// <summary>
@@ -486,7 +561,7 @@ partial class Player : IClientHandler
     {
         // Update this moby if 0, update child moby if not 0
         if (mobyUpdate.uuid == 0) {
-            SetActive((mobyUpdate.mpFlags & MPMobyFlags.MP_MOBY_FLAG_ACTIVE) > 0);
+            SetActive(true);
 
             if (mobyUpdate.x != _x || mobyUpdate.y != _y || mobyUpdate.z != _z) {
                 HasChanged = true;
@@ -496,34 +571,45 @@ partial class Player : IClientHandler
             _y = mobyUpdate.y;
             _z = mobyUpdate.z;
             oClass = mobyUpdate.oClass;
-            _state = mobyUpdate.state;
-            rotX = (float)((180 / Math.PI) * (mobyUpdate.rotX + Math.PI));
-            rotY = (float)((180 / Math.PI) * (mobyUpdate.rotY + Math.PI));
-            _rotZ = (float)((180 / Math.PI) * (mobyUpdate.rotZ + Math.PI));
+            rotX = mobyUpdate.rotX * (float)(180/Math.PI);
+            rotY = mobyUpdate.rotY * (float)(180/Math.PI);
+            _rotZ = mobyUpdate.rotZ * (float)(180/Math.PI);
             scale = mobyUpdate.scale;
-            alpha = mobyUpdate.alpha / 128.0f;
             AnimationId = mobyUpdate.animationID;
             AnimationDuration = mobyUpdate.animationDuration;
+        } else {
+            // Update child moby 
+            Moby child = _client.GetMobyByInternalId(mobyUpdate.uuid);
             
-            // Wait until we have a parent
-            if (Parent() == null) {
+            if (child == null) {
+                Logger.Error($"Player [{Username()}]: Could not find child moby with UUID {mobyUpdate.uuid}");
                 return;
             }
 
-            if (mobyUpdate.level != Level().GameID()) {
-                Level lastLevel = _level;
-                
-                _level.Remove(this, false);
-                
-                _level = Universe().GetLevelByGameID(mobyUpdate.level);
-                _level.Add(this);
-                Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
-                
-                SetCurrentLevelFlags();
+            if (child.SyncOwner != this) {
+                Logger.Log($"Player [{Username()}]: Received moby update for moby they don't own (UID: {mobyUpdate.uuid}).");
+                Logger.Log(_client.DumpMobys());
+                return;
             }
-        } else {
-            // Update child moby 
-            throw new NotImplementedException("Players can't spawn child mobys yet");
+            
+            if (child.SyncSpawnId != _respawns) {
+                Logger.Error($"Player [{Username()}]: Received moby update against a moby (UID: {mobyUpdate.uuid}; " +
+                             $"spawnId: {child.SyncSpawnId} that doesn't match the player's spawn ID ({_respawns}).");
+                return;
+            }
+            
+            child.SetActive(true);
+            
+            child.x = mobyUpdate.x;
+            child.y = mobyUpdate.y;
+            child.z = mobyUpdate.z;
+            child.oClass = mobyUpdate.oClass;
+            child.rotX = mobyUpdate.rotX * (float)(180/Math.PI);
+            child.rotY = mobyUpdate.rotY * (float)(180/Math.PI);
+            child.rotZ = mobyUpdate.rotZ * (float)(180/Math.PI);
+            child.scale = mobyUpdate.scale;
+            child.AnimationId = mobyUpdate.animationID;
+            child.AnimationDuration = mobyUpdate.animationDuration;
         }
     }
 
@@ -538,10 +624,20 @@ partial class Player : IClientHandler
     /// <summary>
     /// Called after a player has respawned. 
     /// </summary>
-    public void PlayerRespawned() {
+    public void PlayerRespawned(byte spawnId) {
+        var mobys = Find<Moby>().ToArray();
+        foreach (var moby in mobys) {
+            if (moby.SyncOwner == this && (moby.SyncSpawnId <= _respawns || moby.SyncSpawnId > spawnId)) {
+                moby.Delete();
+            }
+        }
+        _client.CleanupStaleMobys();
+        
+        _respawns = spawnId;
+        
         CallLuaFunction("OnRespawned", LuaEntity());
         
-        SendPacket(Packet.MakeMobyUpdateExtended(0, new []{ new Packet.UpdateMobyValue(0x38, this.Color.ToUInt()) }));
+        SendPacket(Packet.MakeMobyUpdateExtended(0, [new Packet.UpdateMobyValue(0x38, Color.ToUInt())]));
         
         RegisterHybridMobys();
     }
@@ -552,7 +648,7 @@ partial class Player : IClientHandler
     /// </summary>
     /// <param name="gameState">Game state this Player's client has changed to</param>
     public void GameStateChanged(GameState gameState) {
-        this.GameState = gameState;
+        GameState = gameState;
         CallLuaFunction("OnGameStateChanged", LuaEntity(), (int)gameState);
     }
 
@@ -588,11 +684,23 @@ partial class Player : IClientHandler
     public void OnMonitoredAddressChanged(uint address, byte size, byte[] oldValue, byte[] newValue) {
         foreach (var monitoredAddress in _monitoredAddresses) {
             if (monitoredAddress.Address == address) {
+                if (monitoredAddress.Callback != null) {
+                    if (monitoredAddress.DataType == MonitoredAddressDataType.Number) {
+                        monitoredAddress.Callback(BitConverter.ToUInt32(newValue, 0));
+                    } else {
+                        monitoredAddress.Callback(BitConverter.ToSingle(newValue, 0));
+                    }
+
+                    return;
+                }
+                
                 if (monitoredAddress.DataType == MonitoredAddressDataType.Number) {
                     CallLuaFunction("MonitoredAddressChanged", LuaEntity(), address, BitConverter.ToUInt32(oldValue, 0), BitConverter.ToUInt32(newValue, 0));
-                } else {
-                    CallLuaFunction("MonitoredAddressChanged", LuaEntity(), address, BitConverter.ToSingle(oldValue, 0), BitConverter.ToSingle(newValue, 0));
+                    return;
                 }
+            
+                CallLuaFunction("MonitoredAddressChanged", LuaEntity(), address, BitConverter.ToSingle(oldValue, 0), BitConverter.ToSingle(newValue, 0));
+                return;
             }
         }
     }

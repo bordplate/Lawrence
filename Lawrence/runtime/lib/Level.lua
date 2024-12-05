@@ -5,5 +5,5 @@ Level = class("Level", Entity)
 function Level:initialize(internalEntity)
     Entity.initialize(self, internalEntity)
     
-    print("Initializing level " .. self:GetName())
+    print("Loading level " .. self:GetName())
 end

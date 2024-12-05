@@ -247,7 +247,6 @@ partial class Entity {
                 return function;
             }
         }
-        
 
         return null;
     }

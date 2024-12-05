@@ -22,15 +22,15 @@ public struct AckedMetadata {
 }
 
 public interface IClientHandler {
-    uint CreateMoby();
+    Moby CreateMoby(ushort oClass, byte spawnId);
     void UpdateMoby(MPPacketMobyUpdate updatePacket);
-    void Collision(Moby collider, Moby collidee, bool aggressive = false);
+    void OnDamage(Moby source, Moby target, ushort sourceOClass, float damage);
     void ControllerInputTapped(ControllerInput input);
     void ControllerInputHeld(ControllerInput input);
     void ControllerInputReleased(ControllerInput input);
     void Delete();
     Moby Moby();
-    void PlayerRespawned();
+    void PlayerRespawned(byte spawnId);
     void GameStateChanged(GameState state);
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
@@ -41,6 +41,8 @@ public interface IClientHandler {
     void OnMonitoredAddressChanged(uint address, byte size, byte[] oldValue, byte[] newValue);
     void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value);
     void OnGiveBolts(int boltDiff, uint totalBolts);
+    bool HasMoby(Moby moby);
+    void DeleteMoby(Moby moby);
 }
 
 public partial class Client {
@@ -213,6 +215,8 @@ public partial class Client {
         SendPacket(header, body);
     }
 
+    private long _lastTimeSent = 0;
+
     // Parse and process a packet
     public void ParsePacket(byte[] packet) {
         int index = 0;
@@ -246,6 +250,14 @@ public partial class Client {
                 .ToArray();
 
             index += (int)packetHeader.size;
+            
+            if (packetHeader.timeSent < _lastTimeSent) {
+                // This packet is older than the last one we received. We don't want to process it.
+                Logger.Log($"Player({ID}) sent an old packet. Ignoring.");
+                continue;
+            }
+            
+            _lastTimeSent = packetHeader.timeSent;
 
             // Check if handshake is complete, otherwise start completing it. 
 
@@ -455,40 +467,91 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_CREATE: {
-                    uint createdUUID = _clientHandler.CreateMoby();
+                    MPPacketMobyCreate create = Packet.BytesToStruct<MPPacketMobyCreate>(packetBody, _endianness);
+                    
+                    Moby newMoby = _clientHandler.CreateMoby(create.oClass, create.spawnId);
+                    newMoby.modeBits = create.modeBits;
 
-                    MPPacketMobyCreate createPacket = new MPPacketMobyCreate {
-                        uuid = createdUUID
-                    };
+                    if (create.flags.HasFlag(MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO)) {
+                        Moby parent = create.parentUuid == 0 ?
+                            _clientHandler.Moby() :
+                            GetMobyByInternalId(create.parentUuid);
+                        
+                        if (parent != null) {
+                            newMoby.AttachedTo = parent;
+                            newMoby.PositionBone = create.positionBone;
+                            newMoby.TransformBone = create.transformBone;
 
-                    MPPacketHeader header = new MPPacketHeader {
-                        ptype = MPPacketType.MP_PACKET_ACK,
-                        flags = MPPacketFlags.MP_PACKET_FLAG_RPC,
-                        size = (uint)Marshal.SizeOf<MPPacketMobyCreate>(),
-                        requiresAck = packetHeader.requiresAck,
-                        ackCycle = packetHeader.ackCycle
-                    };
+                            if (create.oClass == 173) {
+                                newMoby.PositionBone = (byte)(create.positionBone == 6 ? 22 : 23);
+                                newMoby.TransformBone = (byte)(create.positionBone == 6 ? 22 : 23);
+                            }
+                        } else {
+                            Logger.Error($"Player({ID}) tried to attach moby [oClass:{create.oClass}] to a parent [{create.parentUuid}] that doesn't exist.");
+                        }
+                    }
+                    
+                    newMoby.MakeSynced(_clientHandler.Moby());
 
-                    Logger.Log($"Player({this.ID}) created moby (uuid: {createdUUID})");
-
-                    SendPacket(header,
-                        Packet.StructToBytes(createPacket, _endianness));
+                    var internalId = AssignInternalId(newMoby);
+                    
+                    SendPacket(Packet.MakeMobyCreateResponsePacket(internalId, packetHeader.requiresAck, packetHeader.ackCycle));
+                    
+                    Logger.Log($"Player({ID}) created moby (oClass: {create.oClass}) with internal ID {internalId}.");
 
                     break;
                 }
-                case MPPacketType.MP_PACKET_MOBY_COLLISION: {
-                    MPPacketMobyCollision collision =
-                        Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, _endianness);
+                case MPPacketType.MP_PACKET_MOBY_CREATE_FAILURE: {
+                    MPPacketMobyCreateFailure createFailure =
+                        Packet.BytesToStruct<MPPacketMobyCreateFailure>(packetBody, _endianness);
 
-                    Moby collider = collision.uuid == 0
+                    switch (createFailure.reason) {
+                        case MPMobyCreateFailureReason.UNKNOWN:
+                            Logger.Error($"Couldn't create moby for Player({ID}): unknown error.");
+                            break;
+                        case MPMobyCreateFailureReason.NOT_READY:
+                            break;
+                        case MPMobyCreateFailureReason.ALREADY_EXISTS:
+                            Logger.Error($"Couldn't create moby for Player({ID}): already exists.");
+                            break;
+                        case MPMobyCreateFailureReason.MAX_MOBYS:
+                            Logger.Error($"Couldn't create moby for Player({ID}): out of moby space.");
+                            break;
+                    }
+                    
+                    ClearMoby(createFailure.uuid);
+                    
+                    break;
+                }
+                case MPPacketType.MP_PACKET_MOBY_DELETE: {
+                    MPPacketMobyDelete delete = Packet.BytesToStruct<MPPacketMobyDelete>(packetBody, _endianness);
+
+                    var moby = GetMobyByInternalId((ushort)delete.uuid);
+                    if (moby != null) {
+                        _clientHandler.DeleteMoby(moby);
+                    } else {
+                        Logger.Error($"Player [{ID}] tried to delete a moby that doesn't exist in its moby table.");
+                    }
+
+                    break;
+                }
+                case MPPacketType.MP_PACKET_MOBY_DAMAGE: {
+                    MPPacketMobyDamage damage =
+                        Packet.BytesToStruct<MPPacketMobyDamage>(packetBody, _endianness);
+
+                    Moby collider = damage.uuid == 0
                         ? _clientHandler.Moby()
-                        : GetMobyByInternalId(collision.uuid);
+                        : GetMobyByInternalId(damage.uuid);
 
-                    Moby collidee = collision.collidedWith == 0
+                    Moby collidee = damage.collidedWithUuid == 0
                         ? _clientHandler.Moby()
-                        : GetMobyByInternalId(collision.collidedWith);
+                        : GetMobyByInternalId(damage.collidedWithUuid);
 
-                    _clientHandler.Collision(collider, collidee, collision.flags > 0);
+                    if (!damage.flags.HasFlag(MPDamageFlags.GameMoby)) {
+                        // This is an attack against a server-spawned moby, like another player or other entity.
+                        _clientHandler.OnDamage(collider, collidee, damage.sourceOClass, damage.damage);
+                    }
+
                     break;
                 }
                 case MPPacketType.MP_PACKET_SET_STATE: {
@@ -519,7 +582,6 @@ public partial class Client {
                     }
 
                     if (state.stateType == MPStateType.MP_STATE_TYPE_GIVE_BOLTS) {
-                        Logger.Log($"Player got bolts: {(int)state.value}. their total bolts are now: {state.offset}");
                         _clientHandler.OnGiveBolts((int)state.value, state.offset);
                     }
                         
@@ -532,6 +594,26 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_QUERY_GAME_SERVERS: {
                     if (Lawrence.DirectoryMode()) {
+                        if (packetHeader.size < Marshal.SizeOf<MPPacketQueryGameServers>()) {
+                            Logger.Error(
+                                $"(Player {ID}) tried to query us with outdated version.");
+
+                            packetHeader.ptype = MPPacketType.MP_PACKET_ACK;
+                            packetHeader.size = 0x2d;
+                            packetHeader.timeSent = (long)Game.Game.Shared().Time();
+                            
+                            // We didn't use to have a version field on the query packet, and also no way to tell a
+                            // querying client that it is outdated. The byte array is a query response with 1 server named
+                            // "Your multiplayer mod is outdated." for the old client. 
+                            SendPacket(packetHeader, [
+                                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x21,0x59,0x6f,0x75,0x72,0x20,
+                                0x6d,0x75,0x6c,0x74,0x69,0x70,0x6c,0x61,0x79,0x65,0x72,0x20,0x6d,0x6f,0x64,0x20,0x69,
+                                0x73,0x20,0x6f,0x75,0x74,0x64,0x61,0x74,0x65,0x64,0x2e
+                            ]);
+                            
+                            return;
+                        }
+                        
                         List<ServerItem> servers = Lawrence.Directory().Servers();
 
                         SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.requiresAck,
@@ -586,7 +668,9 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_PLAYER_RESPAWNED: {
-                    _clientHandler.PlayerRespawned();
+                    var spawned = Packet.BytesToStruct<MPPacketSpawned>(packetBody, _endianness);
+                    
+                    _clientHandler.PlayerRespawned(spawned.SpawnId);
                     break;
                 }
                 case MPPacketType.MP_PACKET_MONITORED_VALUE_CHANGED: {
@@ -634,8 +718,9 @@ public partial class Client {
 
     private readonly Mutex _recvLock;
     private readonly bool _resetBuffer = false;
-    private List<byte[]> _recvBuffer = new(400);
+    private List<byte[]> _recvBuffer = new(4096);
     private readonly Dictionary<uint, long> _lastHashes = new(10);
+    
     public void ReceiveData(byte[] data) {
         if (_disconnected) {
             return;
@@ -648,7 +733,7 @@ public partial class Client {
         _recvLock.WaitOne();
 
         if (_resetBuffer) {
-            _recvBuffer = new List<byte[]>(100);
+            _recvBuffer = new List<byte[]>(4096);
         }
 
         uint currentHash = Crc32Algorithm.Compute(data);
@@ -773,20 +858,29 @@ partial class Client {
         public Moby MobyRef;
     }
 
-    private readonly ConcurrentDictionary<Guid, ushort> _mobysTable = new ConcurrentDictionary<Guid, ushort>();
-    private readonly ConcurrentDictionary<ushort, MobyData> _mobys = new ConcurrentDictionary<ushort, MobyData>();
+    private readonly ConcurrentDictionary<Guid, ushort> _mobysTable = new();
+    private readonly ConcurrentDictionary<ushort, MobyData> _mobys = new();
 
     public void UpdateMoby(Moby moby) {
+        if (moby.SyncOwner == _clientHandler.Moby()) {
+            Logger.Error("We're trying to send updates to a player about their own synced moby.");
+            return;
+        }
+        
         var internalId = GetOrCreateInternalId(moby);
         
         if (internalId == 0) {
-            Logger.Error("A player has run out of moby space.");
             return;
         }
 
         _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
         SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
-        SendPacket(Packet.MakeMobyUpdateExtended(internalId, new [] { new Packet.UpdateMobyValue(0x38, moby.Color.ToUInt()) }));
+        SendPacket(Packet.MakeMobyUpdateExtended(internalId, [new Packet.UpdateMobyValue(0x38, moby.Color.ToUInt())]));
+    }
+    
+    public void ClearInternalMobyCache() {
+        _mobys.Clear();
+        _mobysTable.Clear();
     }
 
     private ushort GetOrCreateInternalId(Moby moby) {
@@ -794,10 +888,40 @@ partial class Client {
             return internalId;
         }
 
+        ushort parentInternalId = 0;
+        if (moby.AttachedTo != null) {
+            parentInternalId = GetOrCreateInternalId(moby.AttachedTo);
+            if (parentInternalId == 0) {
+                Logger.Error($"Player({_clientHandler.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
+                return 0;
+            }
+        }
+        
+        // Find next available ID
+        for (ushort i = 1; i <= 4096; i++) {
+            if (!_mobys.ContainsKey(i) && _lastDeletedId != i) {
+                SendPacket(Packet.MakeCreateMobyPacket(i, moby, parentInternalId));
+                
+                _mobysTable[moby.GUID()] = i;
+                _mobys[i] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+                return i;
+            }
+        }
+
+        return 0;
+    }
+    
+    private ushort AssignInternalId(Moby moby) {
+        if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
+            return internalId;
+        }
+        
         // Find next available ID
         for (ushort i = 1; i <= 4096; i++) {
             if (!_mobys.ContainsKey(i) && _lastDeletedId != i) {
                 _mobysTable[moby.GUID()] = i;
+                _mobys[i] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+                
                 return i;
             }
         }
@@ -805,14 +929,14 @@ partial class Client {
         return 0;
     }
 
-    private Moby GetMobyByInternalId(ushort internalId) {
+    public Moby GetMobyByInternalId(ushort internalId) {
         if (!_mobys.TryGetValue(internalId, out var mobyData)) {
             return null; // No Moby found with the given internalId.
         }
 
         // Check if Moby is stale.
         long currentTicks = Game.Game.Shared().Ticks();
-        if (mobyData.LastUpdate < currentTicks - 120) {
+        if (!_clientHandler.HasMoby(mobyData.MobyRef) && mobyData.LastUpdate < currentTicks - 120) {
             // Moby is stale, delete it and return null.
             DeleteMoby(mobyData.MobyRef);
             return null;
@@ -829,8 +953,11 @@ partial class Client {
     public void CleanupStaleMobys() {
         long currentTicks = Game.Game.Shared().Ticks();
         foreach (var pair in _mobys) {
-            if (pair.Value.LastUpdate < currentTicks - 10) {
-                SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
+            if (pair.Value.LastUpdate < currentTicks - 60) {
+                if (pair.Value.MobyRef.SyncOwner != _clientHandler.Moby()) {
+                    SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
+                }
+
                 _mobys.TryRemove(pair.Key, out _);
                 _mobysTable.TryRemove(pair.Value.Id, out _);
             }
@@ -839,8 +966,11 @@ partial class Client {
 
     public void DeleteMoby(Moby moby) {
         if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
-            // If found, delete it from the game
-            SendPacket(Packet.MakeDeleteMobyPacket(internalId));
+            // If found, delete it from the game if our client is not the sync owner
+            if (moby.SyncOwner != _clientHandler.Moby()) {
+                SendPacket(Packet.MakeDeleteMobyPacket(internalId));
+            }
+
             // And remove it from our dictionaries
             _mobys.TryRemove(internalId, out _);
             _mobysTable.TryRemove(moby.GUID(), out _);
@@ -848,6 +978,43 @@ partial class Client {
         } else {
             Logger.Error($"Trying to delete a moby that does not exist: {moby.GUID()}");
         }
+    }
+
+    public void ClearMoby(ushort id) {
+        if (_mobys.TryGetValue(id, out var mobyData)) {
+            _mobysTable.TryRemove(mobyData.Id, out _);
+            _mobys.TryRemove(id, out _);
+        }
+    }
+
+    public string DumpMobys() {
+        Player player = (Player)_clientHandler.Moby();
+        
+        string dump = $"Player({player.Username()}) Mobys:";
+        
+        foreach (var pair in _mobys) {
+            dump += "\n";
+            
+            var moby = pair.Value.MobyRef;
+            var owner = (Player)moby.AttachedTo;
+            var ownerUsername = owner == null ? "None" : owner.Username();
+                            
+            dump += $"\tInternal ID: {pair.Key}, GUID: {pair.Value.Id}, LastUpdate: {pair.Value.LastUpdate}\n";
+            dump += $"\t\t- oClass {moby.oClass}\n";
+            dump += $"\t\t- Owner: {ownerUsername}\n";
+            dump += $"\t\t- SyncSpawnId: {moby.SyncSpawnId}\n";
+            
+            if (moby.AttachedTo != null) {
+                ushort attachedToId = 0;
+                _mobysTable.TryGetValue(moby.AttachedTo.GUID(), out attachedToId);
+                dump += $"\t\t- Attached to: {attachedToId}\n";
+                
+                dump += $"\t\t\t- oClass: {moby.AttachedTo.oClass}\n";
+                dump += $"\t\t\t- SyncSpawnId: {moby.AttachedTo.SyncSpawnId}\n";
+            }
+        }
+
+        return dump;
     }
 }
 #endregion

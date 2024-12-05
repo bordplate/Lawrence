@@ -35,7 +35,7 @@ end
 function Entity:__newindex(key, value)
     -- If the key exists in the internal C# object, set it
     -- We ignore OnTick, because of an unknown error that eventually causes a Lua stack overflow
-    if key ~= "OnTick" and rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
+    if rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
         self._internalEntity[key] = value
     else
         -- Otherwise, set it in the Entity object
