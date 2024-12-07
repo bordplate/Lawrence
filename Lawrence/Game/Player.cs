@@ -574,56 +574,56 @@ partial class Player : IClientHandler
     public void UpdateMoby(MPPacketMobyUpdate mobyUpdate)
     {
         // Update this moby if 0, update child moby if not 0
-        if (mobyUpdate.uuid == 0) {
+        if (mobyUpdate.Uuid == 0) {
             SetActive(true);
 
-            if (mobyUpdate.x != _x || mobyUpdate.y != _y || mobyUpdate.z != _z) {
+            if (mobyUpdate.X != _x || mobyUpdate.Y != _y || mobyUpdate.Z != _z) {
                 HasChanged = true;
             }
             
-            _x = mobyUpdate.x;
-            _y = mobyUpdate.y;
-            _z = mobyUpdate.z;
-            oClass = mobyUpdate.oClass;
-            rotX = mobyUpdate.rotX * (float)(180/Math.PI);
-            rotY = mobyUpdate.rotY * (float)(180/Math.PI);
-            _rotZ = mobyUpdate.rotZ * (float)(180/Math.PI);
-            scale = mobyUpdate.scale;
-            AnimationId = mobyUpdate.animationID;
-            AnimationDuration = mobyUpdate.animationDuration;
+            _x = mobyUpdate.X;
+            _y = mobyUpdate.Y;
+            _z = mobyUpdate.Z;
+            oClass = mobyUpdate.OClass;
+            rotX = mobyUpdate.RotX * (float)(180/Math.PI);
+            rotY = mobyUpdate.RotY * (float)(180/Math.PI);
+            _rotZ = mobyUpdate.RotZ * (float)(180/Math.PI);
+            scale = mobyUpdate.Scale;
+            AnimationId = mobyUpdate.AnimationID;
+            AnimationDuration = mobyUpdate.AnimationDuration;
         } else {
             // Update child moby 
-            Moby child = _client.GetMobyByInternalId(mobyUpdate.uuid);
+            Moby child = _client.GetMobyByInternalId(mobyUpdate.Uuid);
             
             if (child == null) {
-                Logger.Error($"Player [{Username()}]: Could not find child moby with UUID {mobyUpdate.uuid}");
+                Logger.Error($"Player [{Username()}]: Could not find child moby with UUID {mobyUpdate.Uuid}");
                 return;
             }
 
             if (child.SyncOwner != this) {
-                Logger.Log($"Player [{Username()}]: Received moby update for moby they don't own (UID: {mobyUpdate.uuid}).");
+                Logger.Log($"Player [{Username()}]: Received moby update for moby they don't own (UID: {mobyUpdate.Uuid}).");
                 Logger.Log(_client.DumpMobys());
                 return;
             }
             
             if (child.SyncSpawnId != _respawns) {
-                Logger.Error($"Player [{Username()}]: Received moby update against a moby (UID: {mobyUpdate.uuid}; " +
+                Logger.Error($"Player [{Username()}]: Received moby update against a moby (UID: {mobyUpdate.Uuid}; " +
                              $"spawnId: {child.SyncSpawnId} that doesn't match the player's spawn ID ({_respawns}).");
                 return;
             }
             
             child.SetActive(true);
             
-            child.x = mobyUpdate.x;
-            child.y = mobyUpdate.y;
-            child.z = mobyUpdate.z;
-            child.oClass = mobyUpdate.oClass;
-            child.rotX = mobyUpdate.rotX * (float)(180/Math.PI);
-            child.rotY = mobyUpdate.rotY * (float)(180/Math.PI);
-            child.rotZ = mobyUpdate.rotZ * (float)(180/Math.PI);
-            child.scale = mobyUpdate.scale;
-            child.AnimationId = mobyUpdate.animationID;
-            child.AnimationDuration = mobyUpdate.animationDuration;
+            child.x = mobyUpdate.X;
+            child.y = mobyUpdate.Y;
+            child.z = mobyUpdate.Z;
+            child.oClass = mobyUpdate.OClass;
+            child.rotX = mobyUpdate.RotX * (float)(180/Math.PI);
+            child.rotY = mobyUpdate.RotY * (float)(180/Math.PI);
+            child.rotZ = mobyUpdate.RotZ * (float)(180/Math.PI);
+            child.scale = mobyUpdate.Scale;
+            child.AnimationId = mobyUpdate.AnimationID;
+            child.AnimationDuration = mobyUpdate.AnimationDuration;
         }
     }
 
