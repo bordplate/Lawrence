@@ -338,6 +338,16 @@ public class Game {
 
             _state.LoadCLRPackage();
             _state["Game"] = this;
+            
+            _state["NativeView"] = () => new View();
+            _state["NativeListMenuElement"] = () => new ListMenuElement();
+            _state["NativeTextAreaElement"] = () => new TextAreaElement();
+            _state["NativeTextElement"] = () => new TextElement();
+            _state["NativeInputElement"] = () => new InputElement();
+            
+            _state["GetTypeName"] = (object? obj) => {
+                return obj?.GetType().Name;
+            };
 
             _state["print"] = (string text) => {
                 Logger.Log(text);

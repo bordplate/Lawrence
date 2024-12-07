@@ -25,6 +25,10 @@ function Player:SpawnInstanced(mobyType)
     return moby
 end
 
+function Player:ShowView(view)
+    self._internalEntity:ShowView(view._internalEntity)
+end
+
 function Player:OnUnlockItem(item, equip)
     self:GiveItem(item, equip)
 end

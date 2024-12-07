@@ -342,6 +342,16 @@ partial class Player {
 
             return;
         }
+        
+        if (_activeView != null) {
+            foreach (var viewElement in _viewElements) {
+                var packet = Packet.MakeUIItemPacket(viewElement, MPUIOperationFlag.Update);
+
+                if (packet != null) {
+                    SendPacket(packet);
+                }
+            }
+        }
 
         // Nothing here for the player if they're not in a level yet.
         if (_level == null) {
@@ -529,6 +539,10 @@ partial class Player : IClientHandler
     /// <param name="input">The pressed inputs, including any other buttons that are held.</param>
     public void ControllerInputTapped(ControllerInput input)
     {
+        if (_activeView != null) {
+            _activeView.OnControllerInputPresset(this, input);
+        }
+        
         CallLuaFunction("OnControllerInputTapped", LuaEntity(), (int)input);
     }
 
@@ -719,6 +733,46 @@ partial class Player : IClientHandler
     public void OnGiveBolts(int boltdiff, uint totalBolts) {
         CallLuaFunction("OnGiveBolts", LuaEntity(), boltdiff, totalBolts);
     }
+    
+    public void UIEvent(MPUIElementEventType eventType, ushort elementId, uint data, byte[] extraData) {
+        var deferredCalls = new List<Action>();
+        
+        foreach (var element in _viewElements) {
+            if (element.Id == elementId) {
+                switch (eventType) {
+                    case MPUIElementEventType.MPUIElementEventTypeItemActivated: {
+                        if (element is ListMenuElement listMenu) {
+                            deferredCalls.Add(() => {
+                                listMenu.OnItemActivated(data);
+                            });
+                        }
+                        break;
+                    }
+                    case MPUIElementEventType.MPUIElementEventTypeItemSelected: {
+                        if (element is ListMenuElement listMenu) {
+                            listMenu.OnItemSelected(data);
+                        }
+                        break;
+                    }
+                    case MPUIElementEventType.MPUIElementEventTypeInputCallback: {
+                        if (element is InputElement inputElement) {
+                            var text = System.Text.Encoding.UTF8.GetString(extraData);
+                            
+                            deferredCalls.Add(() => {
+                                inputElement.OnInputCallback(this, text);
+                            });
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+        
+        foreach (var deferredCall in deferredCalls) {
+            deferredCall();
+        }
+    }
 }
 #endregion
 
@@ -730,6 +784,51 @@ partial class Player {
     ///     to only send updates to the user when we know something about the Label has updated. 
     /// </summary>
     private List<Label> _labels = new ();
+
+    private List<ViewElement> _viewElements = new ();
+    private View _activeView = null;
+
+    public void ShowView(View view) {
+        _activeView = view;
+        Add(view);
+        
+        // view.Activate += () => {
+            _viewElements.Clear();
+            
+            var operations = MPUIOperationFlag.Create | MPUIOperationFlag.ClearAll;
+            foreach (var element in view.Elements()) {
+                _viewElements.Add(element);
+
+                if (element is ListMenuElement listMenu) {
+                    listMenu.MakeFocusedDelegate += () => {
+                        SendPacket(Packet.MakeUIEventPacket(MPUIElementEventType.MPUIElementEventTypeMakeFocused, element));
+                    };
+                }
+
+                if (element is InputElement inputElement) {
+                    inputElement.ActivateDelegate += () => {
+                        SendPacket(Packet.MakeUIEventPacket(MPUIElementEventType.MPUIElementEventTypeActivate, element));
+                    };
+                }
+                
+                // FIXME: We want the first packet we send to include the ClearAll flag, but not subsequent ones. 
+                //      Since we send UDP, it's possible that the client receives the packets out of order.
+                SendPacket(Packet.MakeUIItemPacket(element, operations));
+
+                operations = MPUIOperationFlag.Create;
+            }
+        // };
+        
+        view.OnPresent();
+    }
+
+    public void CloseView() {
+        if (_activeView == null) {
+            return;
+        }
+        
+        SendPacket(Packet.MakeUIItemPacket(null, MPUIOperationFlag.ClearAll));
+    }
 
     /// <summary>
     /// Adds a label to the player's screen.

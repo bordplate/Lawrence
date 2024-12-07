@@ -43,6 +43,7 @@ public interface IClientHandler {
     void OnGiveBolts(int boltDiff, uint totalBolts);
     bool HasMoby(Moby moby);
     void DeleteMoby(Moby moby);
+    void UIEvent(MPUIElementEventType eventType, ushort elementId, uint data, byte[] extraData);
 }
 
 public partial class Client {
@@ -705,6 +706,15 @@ public partial class Client {
                         flagChanged.index,
                         flagChanged.value
                     );
+                    break;
+                }
+                case MPPacketType.MP_PACKET_UI_EVENT: {
+                    var uiEvent = Packet.BytesToStruct<MPPacketUIEvent>(packetBody, _endianness);
+
+                    byte[] extraData = uiEvent.GetExtraData(packetBody);
+
+                    _clientHandler.UIEvent(uiEvent.EventType, uiEvent.ElementId, uiEvent.Data, extraData);
+                    
                     break;
                 }
                 default: {

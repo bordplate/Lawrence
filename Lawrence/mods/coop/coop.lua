@@ -1,4 +1,5 @@
 require 'CoopPlayer'
+require 'LobbyListView'
 
 local CoopUniverse = class("CoopUniverse", Universe)
 function CoopUniverse:initialize()
@@ -7,6 +8,10 @@ end
  
 function CoopUniverse:OnPlayerJoin(player)
     player = player:Make(CoopPlayer)
+    
+    local lobby = LobbyListView()
+    
+    player:ShowView(lobby)
     
     player:GiveItem(Item.GetByName("Heli-pack").id)
     player:GiveItem(Item.GetByName("Thruster-pack").id)
@@ -27,7 +32,6 @@ function CoopUniverse:OnPlayerJoin(player)
     player:GiveItem(Item.GetByName("Blaster").id)
     
     player:SetBolts(150000)
-    player:LoadLevel("KaleboIII")
 end
 
 function CoopUniverse:OnTick()

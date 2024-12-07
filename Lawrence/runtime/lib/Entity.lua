@@ -19,11 +19,15 @@ function Entity:__index(key)
     if value ~= nil then
         return value
     end
-
+    
     if self._internalEntity[key] ~= nil then
         -- If the key does not exist, redirect the call to internal C# object.
         if type(self._internalEntity[key]) ~= 'userdata' then
             return self._internalEntity[key]
+        end
+        
+        if (GetTypeName(self._internalEntity[key]) == "ViewAttribute`1") then
+            return self._internalEntity[key].Value
         end
 
         return function(self, ...)
@@ -36,6 +40,11 @@ function Entity:__newindex(key, value)
     -- If the key exists in the internal C# object, set it
     -- We ignore OnTick, because of an unknown error that eventually causes a Lua stack overflow
     if rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
+        if GetTypeName(self._internalEntity[key]) == "ViewAttribute`1" then
+            self._internalEntity[key]:Set(value)
+            return
+        end
+        
         self._internalEntity[key] = value
     else
         -- Otherwise, set it in the Entity object

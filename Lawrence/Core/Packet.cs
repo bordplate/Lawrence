@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using Lawrence.Game;
+using Lawrence.Game.UI;
 
 namespace Lawrence.Core;
 
@@ -40,6 +41,8 @@ public enum MPPacketType : ushort
     MP_PACKET_MONITOR_ADDRESS = 26,
     MP_PACKET_MONITORED_ADDRESS_CHANGED = 27,
     MP_PACKET_MOBY_CREATE_FAILURE = 28,
+    MP_PACKET_UI = 29,
+    MP_PACKET_UI_EVENT = 30,
 }
 
 public enum MPStateType : ushort
@@ -139,10 +142,20 @@ public enum MPPacketConnectResponseStatus : Int32 {
 
 public interface MPPacket {
     public long GetSize() {
+        if (this is MPPacketData data) {
+            return data.GetData().Length;
+        }
+        
         return Marshal.SizeOf(this);
     }
 
     public byte[] GetBytes(Packet.Endianness endianness) {
+        // If we're MPPacketData, we take the _data field and return it
+        if (this is MPPacketData data) {
+            return data.GetData();
+        }
+        
+        // Otherwise, we marshal the struct to bytes
         return Packet.MPStructToBytes(this, endianness);
     }
 
@@ -414,6 +427,100 @@ public struct MPPacketSpawned : MPPacket {
     public byte SpawnId;
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketUI : MPPacket {
+    public ushort Id;
+    public MPUIElementType ElementType;
+    public MPUIOperationFlag Operations;
+    public byte Items;
+}
+    
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketUIItem : MPPacket {
+    public ushort Id;
+    public MPUIOperationFlag Operations;
+    public byte Pad;
+    public ushort Attribute;
+    public ushort DataLength;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketUIEvent : MPPacket {
+    public MPUIElementEventType EventType;
+    public ushort ElementId;
+    public uint Data;
+    public ushort ExtraLength;
+    
+    public byte[] GetExtraData(byte[] packetBody) {
+        return packetBody.Skip(Marshal.SizeOf(this)).Take(ExtraLength).ToArray();
+    }
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketData () : MPPacket {
+    private List<byte> _data = new();
+    
+    public byte[] GetData() {
+        return _data.ToArray();
+    }
+
+    public void Write(byte[] data) {
+        _data.AddRange(data);
+    }
+}
+
+[Flags]
+public enum MPUIOperationFlag : byte {
+    Create = 1,
+    Update = 2,
+    Delete = 4,
+    ClearAll = 8
+}
+
+public enum MPUIElementType : ushort {
+    None = 0,
+    Text = 1, 
+    TextArea = 2,
+    ListMenu = 3,
+    Input = 4,
+}
+
+public enum MPUIElementAttribute : ushort {
+    None,
+    Position,
+    Size,
+    Margins,
+    Visible,
+    States,
+    LineSpacing,
+    ElementSpacing,
+    DrawsBackground,
+    Text,
+    TitleText,
+    DetailsText,
+    TextSize,
+    TextColor,
+    TitleTextSize,
+    TitleTextColor,
+    DetailsTextSize,
+    DetailsTextColor,
+    MenuDefaultColor,
+    MenuSelectedColor,
+    MenuSelectedItem,
+    MenuItems,
+    Shadow,
+    InputPrompt,
+}
+    
+public enum MPUIElementEventType: ushort {
+    MPUIElementEventTypeNone,
+    MPUIElementEventTypeItemActivated,
+    MPUIElementEventTypeItemSelected,
+    MPUIElementEventTypeMakeFocused,
+    MPUIElementEventTypeActivate,
+    MPUIElementEventTypeInputCallback,
+}
+
 public struct PacketBodyPart<T> where T : MPPacket {
     public T BodyPart;
     public int Size;
@@ -533,6 +640,83 @@ public partial class Packet {
         packet.AddBodyPart(hudText);
         packet.AddBodyPart(data, 50);
 
+        return packet;
+    }
+
+    public static Packet? MakeUIItemPacket(ViewElement element, MPUIOperationFlag flags) {
+        if (element.View == null) {
+            return null;
+        }
+
+        var packet = new Packet(MPPacketType.MP_PACKET_UI);
+        
+        var attributes = new List<MPPacket>();
+
+        foreach (var attribute in element.GetAttributes()) {
+            if (!attribute.Dirty && (flags & MPUIOperationFlag.Create) == 0) {
+                continue;
+            }
+
+            attribute.Dirty = false;
+
+            var dataPacket = attribute.GetPacket();
+            var attributePacket = new MPPacketUIItem {
+                Id = element.Id,
+                Operations = flags,
+                Attribute = (ushort)attribute.ElementAttribute,
+                DataLength = (ushort)dataPacket.GetSize()
+            };
+            
+            attributes.Add(attributePacket);
+            attributes.Add(dataPacket);
+        }
+        
+        MPUIElementType elementType = MPUIElementType.None;
+        switch (element) {
+            case TextElement text:
+                elementType = MPUIElementType.Text;
+                break;
+            case TextAreaElement textArea:
+                elementType = MPUIElementType.TextArea;
+                break;
+            case ListMenuElement listMenu:
+                elementType = MPUIElementType.ListMenu;
+                break;
+            case InputElement input:
+                elementType = MPUIElementType.Input;
+                break;
+        }
+        
+        packet.AddBodyPart(new MPPacketUI {
+            Id = element.Id,
+            ElementType = elementType,
+            Operations = flags,
+            Items = (byte)(attributes.Count / 2)
+        });
+
+        if (attributes.Count == 0) {
+            return null;
+        }
+        
+        foreach (var attribute in attributes) {
+            packet.AddBodyPart(attribute);
+        }
+
+        return packet;
+    }
+
+    public static Packet MakeUIEventPacket(MPUIElementEventType eventType, ViewElement element) {
+        var packet = new Packet(MPPacketType.MP_PACKET_UI_EVENT);
+        
+        var uiEvent = new MPPacketUIEvent {
+            EventType = eventType,
+            ElementId = element.Id,
+            Data = 0,
+            ExtraLength = 0
+        };
+        
+        packet.AddBodyPart(uiEvent);
+        
         return packet;
     }
 
