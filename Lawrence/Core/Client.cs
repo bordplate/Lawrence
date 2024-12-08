@@ -68,9 +68,9 @@ public partial class Client {
     /// </summary>
     public bool WaitingToConnect = true;
 
-    IClientHandler _clientHandler;
+    IClientHandler? _clientHandler;
 
-    private string _username = null;
+    private string? _username = null;
     private int _userid = 0;
 
     readonly IPEndPoint _endpoint;
@@ -111,7 +111,7 @@ public partial class Client {
         return _endpoint;
     }
 
-    public string GetUsername() {
+    public string? GetUsername() {
         return _username;
     }
 
@@ -152,7 +152,7 @@ public partial class Client {
     private readonly List<byte> _buffer = new();
     private const int BufferSize = 1024;
 
-    public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody) {
+    public void SendPacket(MPPacketHeader packetHeader, byte[]? packetBody) {
         packetHeader.TimeSent = (long)Game.Game.Shared().Time();
 
         var bodyLen = 0;
@@ -224,8 +224,11 @@ public partial class Client {
 
         while (index < packet.Length && packet.Length - index >= Marshal.SizeOf<MPPacketHeader>()) {
             // Start out by reading the header
-            MPPacketHeader packetHeader =
-                Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness);
+            if (Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness)
+                is not { } packetHeader) {
+                throw new Exception("Bad packet");
+            }
+            
             index += Marshal.SizeOf<MPPacketHeader>();
 
             if (packetHeader.Size > packet.Length - index) {
@@ -239,7 +242,11 @@ public partial class Client {
                 
                 // Reset index
                 index -= Marshal.SizeOf<MPPacketHeader>();
-                packetHeader = Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness);
+                if (Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness) is not { } resetPacketHeader) {
+                    throw new Exception("Bad packet");
+                }
+
+                packetHeader = resetPacketHeader;
                 
                 if (packetHeader.Size > packet.Length - index) {
                     // Still too big, throw exception
@@ -331,7 +338,10 @@ public partial class Client {
                     }
 
                     // Decode the packet
-                    MPPacketConnect connectPacket = Packet.BytesToStruct<MPPacketConnect>(packetBody, _endianness);
+                    if (Packet.BytesToStruct<MPPacketConnect>(packetBody, _endianness) is not { } connectPacket) {
+                        throw new NetworkParsingException("Failed to parse connect packet.");
+                    }
+                    
                     string username = connectPacket.GetUsername(packetBody);
                     
                     // Check that the API versions are compatible
@@ -460,22 +470,29 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_UPDATE: {
-                    MPPacketMobyUpdate update =
-                        Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, _endianness);
-
-                    _clientHandler.UpdateMoby(update);
+                    if (Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, _endianness) is { } update) {
+                        _clientHandler?.UpdateMoby(update);
+                    }
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_CREATE: {
-                    MPPacketMobyCreate create = Packet.BytesToStruct<MPPacketMobyCreate>(packetBody, _endianness);
+                    if (Packet.BytesToStruct<MPPacketMobyCreate>(packetBody, _endianness) is not { } create) {
+                        throw new NetworkParsingException("Failed to parse moby create packet.");
+                    }
                     
-                    Moby newMoby = _clientHandler.CreateMoby(create.OClass, create.SpawnId);
+                    var newMoby = _clientHandler?.CreateMoby(create.OClass, create.SpawnId);
+                    
+                    if (newMoby == null) {
+                        Logger.Error($"Client({ID}) failed to create moby [oClass:{create.OClass}].");
+                        return;
+                    }
+                    
                     newMoby.modeBits = create.ModeBits;
 
                     if (create.Flags.HasFlag(MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO)) {
-                        Moby parent = create.ParentUuid == 0 ?
-                            _clientHandler.Moby() :
+                        var parent = create.ParentUuid == 0 ?
+                            _clientHandler?.Moby() :
                             GetMobyByInternalId(create.ParentUuid);
                         
                         if (parent != null) {
@@ -491,8 +508,10 @@ public partial class Client {
                             Logger.Error($"Player({ID}) tried to attach moby [oClass:{create.OClass}] to a parent [{create.ParentUuid}] that doesn't exist.");
                         }
                     }
-                    
-                    newMoby.MakeSynced(_clientHandler.Moby());
+
+                    if (_clientHandler?.Moby() is { } moby) {
+                        newMoby.MakeSynced(moby);
+                    }
 
                     var internalId = AssignInternalId(newMoby);
                     
@@ -503,8 +522,9 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_CREATE_FAILURE: {
-                    MPPacketMobyCreateFailure createFailure =
-                        Packet.BytesToStruct<MPPacketMobyCreateFailure>(packetBody, _endianness);
+                    if (Packet.BytesToStruct<MPPacketMobyCreateFailure>(packetBody, _endianness) is not {} createFailure) {
+                        throw new NetworkParsingException("Failed to parse moby create failure packet.");
+                    }
 
                     switch (createFailure.Reason) {
                         case MPMobyCreateFailureReason.UNKNOWN:
@@ -525,11 +545,13 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_DELETE: {
-                    MPPacketMobyDelete delete = Packet.BytesToStruct<MPPacketMobyDelete>(packetBody, _endianness);
+                    if (Packet.BytesToStruct<MPPacketMobyDelete>(packetBody, _endianness) is not { } delete) {
+                        throw new NetworkParsingException("Failed to parse moby delete packet.");
+                    }
 
                     var moby = GetMobyByInternalId((ushort)delete.Uuid);
                     if (moby != null) {
-                        _clientHandler.DeleteMoby(moby);
+                        _clientHandler?.DeleteMoby(moby);
                     } else {
                         Logger.Error($"Player [{ID}] tried to delete a moby that doesn't exist in its moby table.");
                     }
@@ -537,35 +559,39 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_DAMAGE: {
-                    MPPacketMobyDamage damage =
-                        Packet.BytesToStruct<MPPacketMobyDamage>(packetBody, _endianness);
+                    if (Packet.BytesToStruct<MPPacketMobyDamage>(packetBody, _endianness) is not {} damage) {
+                        throw new NetworkParsingException("Failed to parse moby damage packet.");
+                    }
 
-                    Moby collider = damage.Uuid == 0
-                        ? _clientHandler.Moby()
+                    var collider = damage.Uuid == 0
+                        ? _clientHandler?.Moby()
                         : GetMobyByInternalId(damage.Uuid);
 
-                    Moby collidee = damage.CollidedWithUuid == 0
-                        ? _clientHandler.Moby()
+                    var collidee = damage.CollidedWithUuid == 0
+                        ? _clientHandler?.Moby()
                         : GetMobyByInternalId(damage.CollidedWithUuid);
 
                     if (!damage.Flags.HasFlag(MPDamageFlags.GameMoby)) {
                         // This is an attack against a server-spawned moby, like another player or other entity.
-                        _clientHandler.OnDamage(collider, collidee, damage.SourceOClass, damage.Damage);
+                        if (collider is {} _ && collidee is {} __) {
+                            _clientHandler?.OnDamage(collider, collidee, damage.SourceOClass, damage.Damage);
+                        }
                     }
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_SET_STATE: {
-                    MPPacketSetState state =
-                        Packet.BytesToStruct<MPPacketSetState>(packetBody, _endianness);
+                    if (Packet.BytesToStruct<MPPacketSetState>(packetBody, _endianness) is not { } state) {
+                        throw new NetworkParsingException("Failed to parse set state packet.");
+                    }
 
                     if (state.StateType == MPStateType.MP_STATE_TYPE_GAME) {
-                        _clientHandler.GameStateChanged((GameState)state.Value);
+                        _clientHandler?.GameStateChanged((GameState)state.Value);
                     }
 
                     if (state.StateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
                         Logger.Log($"Player got bolt #{state.Value}");
-                        _clientHandler.CollectedGoldBolt((int)state.Offset, (int)state.Value);
+                        _clientHandler?.CollectedGoldBolt((int)state.Offset, (int)state.Value);
                     }
 
                     if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
@@ -574,21 +600,21 @@ public partial class Client {
                         bool equip = (state.Value >> 16) == 1;
                         
                         Logger.Log($"Player got item #{item}: equip: {equip}");
-                        _clientHandler.UnlockItem((int)item, equip);
+                        _clientHandler?.UnlockItem((int)item, equip);
                     }
 
                     if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
                         Logger.Log($"Player unlocked level #{state.Value}");
-                        _clientHandler.OnUnlockLevel((int)state.Value);
+                        _clientHandler?.OnUnlockLevel((int)state.Value);
                     }
 
                     if (state.StateType == MPStateType.MP_STATE_TYPE_GIVE_BOLTS) {
-                        _clientHandler.OnGiveBolts((int)state.Value, state.Offset);
+                        _clientHandler?.OnGiveBolts((int)state.Value, state.Offset);
                     }
                         
                     if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
                         Logger.Log($"Player unlocked skillpoint #{state.Value}");
-                        _clientHandler.OnUnlockSkillpoint((byte)state.Value);
+                        _clientHandler?.OnUnlockSkillpoint((byte)state.Value);
                     }
 
                     break;
@@ -614,11 +640,11 @@ public partial class Client {
                             
                             return;
                         }
-                        
-                        List<ServerItem> servers = Lawrence.Directory().Servers();
 
-                        SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.RequiresAck,
-                            packetHeader.AckCycle));
+                        if (Lawrence.Directory()?.Servers() is { } servers) {
+                            SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.RequiresAck,
+                                packetHeader.AckCycle));
+                        }
                     }
                     else {
                         Logger.Error(
@@ -629,8 +655,10 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_REGISTER_SERVER: {
                     if (Lawrence.DirectoryMode()) {
-                        MPPacketRegisterServer serverInfo =
-                            Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, _endianness);
+                        if (Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, _endianness) is not
+                            { } serverInfo) {
+                            throw new NetworkParsingException("Failed to parse register server packet.");
+                        }
 
                         string name = serverInfo.GetName(packetBody);
 
@@ -638,7 +666,7 @@ public partial class Client {
 
                         IPAddress address = new IPAddress(ip);
 
-                        Lawrence.Directory().RegisterServer(
+                        Lawrence.Directory()?.RegisterServer(
                             address.ToString(), 
                             serverInfo.Port, 
                             name, 
@@ -652,31 +680,36 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_CONTROLLER_INPUT: {
-                    // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons. 
-
-                    MPPacketControllerInput input =
-                        Packet.BytesToStruct<MPPacketControllerInput>(packetBody, _endianness);
+                    // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons.
+                    if (Packet.BytesToStruct<MPPacketControllerInput>(packetBody, _endianness) is not { } input) {
+                        throw new NetworkParsingException("Failed to parse controller input packet.");
+                    }
+                    
                     if ((input.Flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
-                        _clientHandler.ControllerInputHeld((ControllerInput)input.Input);
+                        _clientHandler?.ControllerInputHeld((ControllerInput)input.Input);
                     }
 
                     if ((input.Flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0) {
                         ControllerInput pressedButtons = (ControllerInput)input.Input;
 
-                        _clientHandler.ControllerInputTapped(pressedButtons);
+                        _clientHandler?.ControllerInputTapped(pressedButtons);
                     }
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_PLAYER_RESPAWNED: {
-                    var spawned = Packet.BytesToStruct<MPPacketSpawned>(packetBody, _endianness);
-                    
-                    _clientHandler.PlayerRespawned(spawned.SpawnId);
+                    if (Packet.BytesToStruct<MPPacketSpawned>(packetBody, _endianness) is { } spawned) {
+                        _clientHandler?.PlayerRespawned(spawned.SpawnId);
+                    }
+
                     break;
                 }
                 case MPPacketType.MP_PACKET_MONITORED_VALUE_CHANGED: {
-                    var valueChanged = Packet.BytesToStruct<MPPacketMonitoredValueChanged>(packetBody, _endianness);
-                    _clientHandler.OnHybridMobyValueChange(
+                    if (Packet.BytesToStruct<MPPacketMonitoredValueChanged>(packetBody, _endianness) is not {} valueChanged) {
+                        throw new NetworkParsingException("Failed to parse monitored value changed packet.");
+                    }
+                    
+                    _clientHandler?.OnHybridMobyValueChange(
                         valueChanged.Uid,
                         valueChanged.Flags == 1 ? MonitoredValueType.Attribute : MonitoredValueType.PVar,
                         valueChanged.Offset,
@@ -688,8 +721,12 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_MONITORED_ADDRESS_CHANGED: {
-                    var addressChanged = Packet.BytesToStruct<MPPacketMonitoredAddressChanged>(packetBody, _endianness);
-                    _clientHandler.OnMonitoredAddressChanged(
+                    if (Packet.BytesToStruct<MPPacketMonitoredAddressChanged>(packetBody, _endianness) is not
+                        { } addressChanged) {
+                        throw new NetworkParsingException("Failed to parse monitored address changed packet.");
+                    }
+                    
+                    _clientHandler?.OnMonitoredAddressChanged(
                         addressChanged.Address,
                         (byte)addressChanged.Size,
                         BitConverter.GetBytes(addressChanged.OldValue),
@@ -698,8 +735,11 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED: {
-                    var flagChanged = Packet.BytesToStruct<MPPacketLevelFlagChanged>(packetBody, _endianness);
-                    _clientHandler.OnLevelFlagChanged(
+                    if (Packet.BytesToStruct<MPPacketLevelFlagChanged>(packetBody, _endianness) is not {} flagChanged) {
+                        throw new NetworkParsingException("Failed to parse level flag changed packet.");
+                    }
+                    
+                    _clientHandler?.OnLevelFlagChanged(
                         flagChanged.Type,
                         flagChanged.Level,
                         flagChanged.Size,
@@ -709,11 +749,13 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_UI_EVENT: {
-                    var uiEvent = Packet.BytesToStruct<MPPacketUIEvent>(packetBody, _endianness);
-
+                    if (Packet.BytesToStruct<MPPacketUIEvent>(packetBody, _endianness) is not {} uiEvent) {
+                        throw new NetworkParsingException("Failed to parse UI event packet.");
+                    }
+                    
                     byte[] extraData = uiEvent.GetExtraData(packetBody);
 
-                    _clientHandler.UIEvent(uiEvent.EventType, uiEvent.ElementId, uiEvent.Data, extraData);
+                    _clientHandler?.UIEvent(uiEvent.EventType, uiEvent.ElementId, uiEvent.Data, extraData);
                     
                     break;
                 }
@@ -773,7 +815,7 @@ public partial class Client {
         }
     }
 
-    private List<byte[]> DrainPackets() {
+    private List<byte[]>? DrainPackets() {
         // We take at max 50 packets out of the buffer
         int takePackets = Math.Min(50, _recvBuffer.Count);
 
@@ -858,6 +900,8 @@ public partial class Client {
     }
 }
 
+public class NetworkParsingException(string message) : Exception(message) { }
+
 #region Handling Mobys
 partial class Client {
     private ushort _lastDeletedId = 0;
@@ -872,7 +916,7 @@ partial class Client {
     private readonly ConcurrentDictionary<ushort, MobyData> _mobys = new();
 
     public void UpdateMoby(Moby moby) {
-        if (moby.SyncOwner == _clientHandler.Moby()) {
+        if (moby.SyncOwner == _clientHandler?.Moby()) {
             Logger.Error("We're trying to send updates to a player about their own synced moby.");
             return;
         }
@@ -902,7 +946,7 @@ partial class Client {
         if (moby.AttachedTo != null) {
             parentInternalId = GetOrCreateInternalId(moby.AttachedTo);
             if (parentInternalId == 0) {
-                Logger.Error($"Player({_clientHandler.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
+                Logger.Error($"Player({_clientHandler?.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
                 return 0;
             }
         }
@@ -939,9 +983,13 @@ partial class Client {
         return 0;
     }
 
-    public Moby GetMobyByInternalId(ushort internalId) {
+    public Moby? GetMobyByInternalId(ushort internalId) {
         if (!_mobys.TryGetValue(internalId, out var mobyData)) {
             return null; // No Moby found with the given internalId.
+        }
+
+        if (_clientHandler == null) {
+            return null;
         }
 
         // Check if Moby is stale.
@@ -964,7 +1012,7 @@ partial class Client {
         long currentTicks = Game.Game.Shared().Ticks();
         foreach (var pair in _mobys) {
             if (pair.Value.LastUpdate < currentTicks - 60) {
-                if (pair.Value.MobyRef.SyncOwner != _clientHandler.Moby()) {
+                if (pair.Value.MobyRef.SyncOwner != _clientHandler?.Moby()) {
                     SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
                 }
 
@@ -977,7 +1025,7 @@ partial class Client {
     public void DeleteMoby(Moby moby) {
         if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
             // If found, delete it from the game if our client is not the sync owner
-            if (moby.SyncOwner != _clientHandler.Moby()) {
+            if (moby.SyncOwner != _clientHandler?.Moby()) {
                 SendPacket(Packet.MakeDeleteMobyPacket(internalId));
             }
 
@@ -998,33 +1046,35 @@ partial class Client {
     }
 
     public string DumpMobys() {
-        Player player = (Player)_clientHandler.Moby();
-        
-        string dump = $"Player({player.Username()}) Mobys:";
-        
-        foreach (var pair in _mobys) {
-            dump += "\n";
-            
-            var moby = pair.Value.MobyRef;
-            var owner = (Player)moby.AttachedTo;
-            var ownerUsername = owner == null ? "None" : owner.Username();
-                            
-            dump += $"\tInternal ID: {pair.Key}, GUID: {pair.Value.Id}, LastUpdate: {pair.Value.LastUpdate}\n";
-            dump += $"\t\t- oClass {moby.oClass}\n";
-            dump += $"\t\t- Owner: {ownerUsername}\n";
-            dump += $"\t\t- SyncSpawnId: {moby.SyncSpawnId}\n";
-            
-            if (moby.AttachedTo != null) {
-                ushort attachedToId = 0;
-                _mobysTable.TryGetValue(moby.AttachedTo.GUID(), out attachedToId);
-                dump += $"\t\t- Attached to: {attachedToId}\n";
-                
-                dump += $"\t\t\t- oClass: {moby.AttachedTo.oClass}\n";
-                dump += $"\t\t\t- SyncSpawnId: {moby.AttachedTo.SyncSpawnId}\n";
-            }
-        }
+        if (_clientHandler?.Moby() is Player player) {
+            string dump = $"Player({player.Username()}) Mobys:";
 
-        return dump;
+            foreach (var pair in _mobys) {
+                dump += "\n";
+
+                var moby = pair.Value.MobyRef;
+                var owner = (Player?)moby.AttachedTo;
+                var ownerUsername = owner == null ? "None" : owner.Username();
+
+                dump += $"\tInternal ID: {pair.Key}, GUID: {pair.Value.Id}, LastUpdate: {pair.Value.LastUpdate}\n";
+                dump += $"\t\t- oClass {moby.oClass}\n";
+                dump += $"\t\t- Owner: {ownerUsername}\n";
+                dump += $"\t\t- SyncSpawnId: {moby.SyncSpawnId}\n";
+
+                if (moby.AttachedTo != null) {
+                    ushort attachedToId = 0;
+                    _mobysTable.TryGetValue(moby.AttachedTo.GUID(), out attachedToId);
+                    dump += $"\t\t- Attached to: {attachedToId}\n";
+
+                    dump += $"\t\t\t- oClass: {moby.AttachedTo.oClass}\n";
+                    dump += $"\t\t\t- SyncSpawnId: {moby.AttachedTo.SyncSpawnId}\n";
+                }
+            }
+
+            return dump;
+        }
+        
+        return "Invalid client handler or Player moby.";
     }
 }
 #endregion

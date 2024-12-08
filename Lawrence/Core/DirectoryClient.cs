@@ -22,7 +22,7 @@ public class DirectoryClient {
     }
     
     private void Run() {
-        UdpClient client = null;
+        UdpClient? client = null;
         
         while (true) {
             if ((DateTime.Now - _lastDirectoryPing).TotalMinutes >= 1.0) {
@@ -45,15 +45,15 @@ public class DirectoryClient {
                 _lastDirectoryPing = DateTime.Now;
 
                 string ipString = Settings.Default()
-                    .Get<string>("Server.advertise_ip", _server.ListenAddress(), true);
+                    .Get<string>("Server.advertise_ip", _server.ListenAddress(), true)!;
                 Packet packet = Packet.MakeRegisterServerPacket(
                     ipString,
                     (ushort)_server.ListenPort(), 
                     (ushort)_server.MaxPlayers(), 
                     (ushort)players, 
                     _server.ServerName(),
-                    Settings.Default().Get("Server.description", ""),
-                    Settings.Default().Get("Server.owner", "N/A")
+                    Settings.Default().Get("Server.description", "")!,
+                    Settings.Default().Get("Server.owner", "N/A")!
                 );
 
                 List<byte> packetData = new List<byte>();

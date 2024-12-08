@@ -4,10 +4,10 @@ namespace Lawrence.Core;
 
 public class Command {
     public delegate void CommandHandler(string[] args);
-    public event CommandHandler OnCommand;
+    public event CommandHandler? OnCommand;
 
     public struct Arg {
-        public string Name;
+        public string? Name;
         public bool Optional = false;
         public string Type = "string";
 
@@ -19,10 +19,10 @@ public class Command {
             return Optional ? $"[{Name}]" : $"<{Name}>";
         }
     }
-    public string Name { get; set; }
-    public Arg[] Args { get; set; }
+    public string? Name { get; set; }
+    public Arg[] Args { get; set; } = { };
     
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     public void Run(string[] args) {
         var numRequiredArgs = Args.Count(arg => !arg.Optional);

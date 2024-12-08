@@ -11,7 +11,7 @@ public class View(LuaTable playerTable) : Entity(null) {
     public LuaTable PlayerTable { get; private set; } = playerTable;
     
     public delegate void OnActivate();
-    public event OnActivate Activate;
+    public event OnActivate? Activate;
 
     public void AddElement(ViewElement element) {
         element.Id = _nextElementId++;

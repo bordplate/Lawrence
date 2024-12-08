@@ -70,15 +70,14 @@ public class ListMenuElement: ViewElement {
     }
     
     public LuaTable GetItems() {
-        var lua = LuaEntity();
         var table = Game.Shared().State().DoString("return {}")[0] as LuaTable;
         for (var i = 0; i < Items.Value.Count; i++) {
             var item = Items.Value[i];
 
-            table[i + 1] = item;
+            table![i + 1] = item;
         }
         
-        return table;
+        return table!;
     }
 
     public void Focus() {

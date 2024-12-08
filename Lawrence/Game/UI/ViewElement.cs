@@ -33,7 +33,7 @@ public class ViewElement: Entity {
     public List<IViewAttribute> GetAttributes() {
         return GetType().GetFields()
             .Where(f => f.FieldType.IsGenericType && f.FieldType.GetGenericTypeDefinition() == typeof(ViewAttribute<>))
-            .Select(f => (IViewAttribute)f.GetValue(this))
+            .Select(f => (IViewAttribute)f.GetValue(this)!)
             .ToList();
     }
 }

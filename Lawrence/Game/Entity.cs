@@ -71,12 +71,12 @@ partial class Entity {
 }
 
 partial class Entity { 
-    public Entity Parent() {
+    public Entity? Parent() {
         return _parent;
     }
 
     public bool HasParent(Entity entity) {
-        Entity next = this;
+        Entity? next = this;
         do {
             if (next == entity) {
                 return true;
@@ -154,7 +154,7 @@ partial class Entity {
     }
 
     public List<LuaTable> FindChildrenInternal(string entityType) {
-        Type type = Type.GetType($"Lawrence.Game.{entityType}, Lawrence");
+        Type? type = Type.GetType($"Lawrence.Game.{entityType}, Lawrence");
         List<Entity> removeEntities = new List<Entity>();
         List<LuaTable> entities = new List<LuaTable>();
 
@@ -170,12 +170,12 @@ partial class Entity {
             }
             
             if (entity.GetType() == type) {
-                entities.Add(entity.LuaEntity());
+                if (entity.LuaEntity() != null) entities.Add(entity.LuaEntity()!);
             }
 
             // Recursively search the children
             foreach (var e in entity.FindChildrenInternal(entityType)) {
-                entities.Add(entity.LuaEntity());
+                if (entity.LuaEntity() != null) entities.Add(entity.LuaEntity()!);
             }
         }
         
@@ -205,7 +205,7 @@ partial class Entity {
     /// Gets a Lua function in the Lua entity reflecting this class and caches it. 
     /// </summary>
     /// <param name="functionName">Name of the function to get.</param>
-    private LuaFunction GetLuaFunction(string functionName) {
+    private LuaFunction? GetLuaFunction(string functionName) {
         if (_luaEntity == null) {
             return null;
         }
@@ -257,8 +257,8 @@ partial class Entity {
     /// <param name="functionName">Name of the function to call</param>
     /// <param name="args">Args to pass to the function</param>
     /// <returns>null if not found or whatever the called function returns (often null).</returns>
-    protected object CallLuaFunction(string functionName, params object[] args) {
-        LuaFunction function = GetLuaFunction(functionName);
+    protected object? CallLuaFunction(string functionName, params object?[] args) {
+        var function = GetLuaFunction(functionName);
 
         return function?.Call(args);
     }
@@ -273,7 +273,7 @@ partial class Entity {
         _luaFunctions = new Dictionary<string, LuaFunction>();
     }
 
-    public LuaTable LuaEntity() {
+    public LuaTable? LuaEntity() {
         return _luaEntity;
     }
 
@@ -302,9 +302,9 @@ public partial class Entity {
     /// <summary>
     /// Lua counterpart of this object. 
     /// </summary>
-    LuaTable _luaEntity;
+    LuaTable? _luaEntity;
 
-    private Entity _parent;
+    private Entity? _parent;
     List<Entity> _children = new();
 
     private bool _maskVisibility;
@@ -326,8 +326,8 @@ public partial class Entity {
     
     private bool _deleted;
 
-    public Entity(LuaTable luaEntity = null) {
-        this._luaEntity = luaEntity;
+    public Entity(LuaTable? luaEntity = null) {
+        _luaEntity = luaEntity;
 
         Game.Shared().NotificationCenter().Subscribe<TickNotification>(OnTick);
         Game.Shared().NotificationCenter().Subscribe<DeleteEntityNotification>(OnDeleteEntity);

@@ -43,11 +43,11 @@ public enum GameState {
 }
 
 public class Game {
-    private static Game _sharedGame;
+    private static Game? _sharedGame;
 
     private NotificationCenter _notificationCenter = new();
 
-    private Lua _state;
+    private Lua? _state;
 
     private readonly string[] _modsFolders;
     private readonly string[] _runtimeScripts;
@@ -120,7 +120,7 @@ public class Game {
                         Mod mod = new Mod(file, canonicalName);
 
                         // Run the entry Lua file
-                        string entry = mod.Settings().Get<string>("General.entry");
+                        var entry = mod.Settings().Get<string>("General.entry");
                         if (entry == null) {
                             Logger.Error(
                                 $"Mod at {file} does not contain `General.entry` Lua file to specify which Lua file should be executed first to start the mod. ");
@@ -135,7 +135,7 @@ public class Game {
                         }
                         
                         // Add the mod path to Lua package path
-                        _state.DoString($"package.path = package.path .. \";{folder.Replace("\\", "\\\\")}/?.lua\"", "set package path chunk");
+                        _state?.DoString($"package.path = package.path .. \";{folder.Replace("\\", "\\\\")}/?.lua\"", "set package path chunk");
 
                         State().DoString(entryFile, entry);
 
@@ -208,7 +208,7 @@ public class Game {
             var info = 
                 $"""
                 {playerName}: 
-                    level: {player.Level().GetName()}
+                    level: {player.Level()?.GetName()}
                  
                     x: {player.x}
                     y: {player.y}
@@ -238,7 +238,7 @@ public class Game {
             }
             
             var levelName = args[1];
-            var level = player.Universe().GetLevelByName(levelName);
+            var level = player.Universe()?.GetLevelByName(levelName);
             
             if (level == null) {
                 Logger.Raw($"Could not find level with name {levelName}", false);
@@ -290,7 +290,7 @@ public class Game {
         List<Mod> mods = new();
         
         string[] modsFolders = Directory.GetDirectories(
-            Settings.Default().Get("Server.mods_path", "mods/", true)
+            Settings.Default().Get("Server.mods_path", "mods/", true)!
         );
         
         foreach (var folder in modsFolders) {
@@ -387,7 +387,11 @@ public class Game {
 	{
 		if (_sharedGame == null)
 		{
-			_sharedGame = new Game(Lawrence.Server());
+            if (Lawrence.Server() is not { } server) {
+                throw new Exception("Server is not initialized.");
+            }
+            
+			_sharedGame = new Game(server);
             _sharedGame.Initialize();
 		}
 
@@ -442,7 +446,7 @@ public class Game {
     /// </summary>
     /// <param name="luaEntity">Lua behavior object for the entity.</param>
     /// <returns></returns>
-    public Entity NewEntity(LuaTable luaEntity = null) {
+    public Entity NewEntity(LuaTable? luaEntity = null) {
         Entity entity = new Entity(luaEntity);
 
         return entity;
@@ -454,7 +458,7 @@ public class Game {
         return label;
     }
     
-    public Player FindPlayerByUsername(string username) {
+    public Player? FindPlayerByUsername(string username) {
         foreach (var universe in _universes) {
             foreach (var player in universe.Find<Player>()) {
                 if (player.Username() == username) {

@@ -11,7 +11,7 @@ public interface IViewAttribute {
     public bool Dirty { get; set; }
     public MPUIElementAttribute ElementAttribute { get; }
     
-    public MPPacket GetPacket();
+    public MPPacket? GetPacket();
 }
 
 public class ViewAttribute<T> : IViewAttribute {

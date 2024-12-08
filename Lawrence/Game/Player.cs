@@ -22,7 +22,7 @@ public struct MonitoredAddress {
     public uint Address;
     public ushort Size;
     public MonitoredAddressDataType DataType;
-    public Action<object> Callback;
+    public Action<object>? Callback;
 }
 
 /// <summary>
@@ -118,7 +118,10 @@ public partial class Player : Moby {
 
     public void GeneratePlayerColor() {
         // Generate player color based on username
-        string username = _client.GetUsername();
+        if (_client.GetUsername() is not { } username) {
+            return;
+        }
+        
         int hash = 0;
         
         for (int i = 0; i < username.Length; i++) {
@@ -169,7 +172,13 @@ partial class Player {
 #region Gameplay related function
 partial class Player {
     public void LoadLevel(string level) {
-        _level = Universe().GetLevelByName(level);
+        if (Universe()?.GetLevelByName(level) is not { } l) {
+            Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Could not find level {level}");
+            return;
+        }
+
+        _level = l;
+        
         _level.Add(this);
 
         SendPacket(Packet.MakeGoToLevelPacket(_level.GameID()));
@@ -186,12 +195,17 @@ partial class Player {
                 return;
             }
 
-            if (planet != Level().GameID()) {
+            if (planet != _level.GameID()) {
                 Level lastLevel = _level;
                 
                 _level.Remove(this, false);
                 
-                _level = Universe().GetLevelByGameID((ushort)planet);
+                _level = Universe()?.GetLevelByGameID((ushort)planet);
+                if (_level == null) {
+                    Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Could not find level with game ID {planet}");
+                    return;
+                }
+                
                 _level.Add(this);
                 Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
                 
@@ -201,7 +215,7 @@ partial class Player {
     }
 
     public void RegisterHybridMobys() {
-        foreach (Moby moby in Level().GetHybridMobys()) {
+        foreach (Moby moby in Level()?.GetHybridMobys() ?? []) {
             SendPacket(Packet.MakeRegisterHybridMobyPacket(moby));
         }
     }
@@ -274,22 +288,26 @@ partial class Player {
     /// Sets the level flags for the current level.
     /// </summary>
     public void SetCurrentLevelFlags() {
+        if (Level() is not { } level) {
+            return;
+        }
+        
         List<uint> levelFlags1 = new();
         List<uint> levelFlags2 = new();
         
-        foreach (var flag in Level().LevelFlags1) {
+        foreach (var flag in level.LevelFlags1) {
             levelFlags1.Add(flag);
         }
         
-        foreach (var flag in Level().LevelFlags2) {
+        foreach (var flag in level.LevelFlags2) {
             levelFlags2.Add(flag);
         }
         
-        SetLevelFlags(1, (byte)Level().GameID(), 0, levelFlags1.ToArray());
-        SetLevelFlags(2, (byte)Level().GameID(), 0, levelFlags2.ToArray());
+        SetLevelFlags(1, (byte)level.GameID(), 0, levelFlags1.ToArray());
+        SetLevelFlags(2, (byte)level.GameID(), 0, levelFlags2.ToArray());
     }
 
-    public void MonitorAddress(uint address, byte size, bool isFloat = false, Action<object> callback = null) {
+    public void MonitorAddress(uint address, byte size, bool isFloat = false, Action<object>? callback = null) {
         _monitoredAddresses.Add(new MonitoredAddress {
             Address = address,
             Size = size,
@@ -369,12 +387,12 @@ partial class Player {
                 break;
             }
 
-            if (visibilityGroup.Parent() == null) {
+            if (visibilityGroup.Parent() is not {} parent) {
                 visibilityGroup = _level;
                 break;
             }
 
-            visibilityGroup = visibilityGroup.Parent();
+            visibilityGroup = parent;
         } while (!visibilityGroup.MasksVisibility());
 
         foreach (Moby moby in visibilityGroup.Find<Moby>()) {
@@ -433,8 +451,12 @@ partial class Player {
     /// This override must not call its base function. That could cause an infinite loop. 
     /// </important>
     /// <param name="packet"></param>
-    public override void SendPacket(Packet packet)
+    public override void SendPacket(Packet? packet)
     {
+        if (packet == null) {
+            return;
+        }
+        
         _client.SendPacket(packet);
     }
 
@@ -560,7 +582,7 @@ partial class Player : IClientHandler
         Logger.Log($"Player [{Username()}]: Created moby with oClass {oClass} and spawn ID {spawnId}");
 
         Add(moby);
-        Level().Add(moby, false);
+        Level()?.Add(moby, false);
 
         return moby;
     }
@@ -593,7 +615,7 @@ partial class Player : IClientHandler
             AnimationDuration = mobyUpdate.AnimationDuration;
         } else {
             // Update child moby 
-            Moby child = _client.GetMobyByInternalId(mobyUpdate.Uuid);
+            var child = _client.GetMobyByInternalId(mobyUpdate.Uuid);
             
             if (child == null) {
                 Logger.Error($"Player [{Username()}]: Could not find child moby with UUID {mobyUpdate.Uuid}");
@@ -690,7 +712,7 @@ partial class Player : IClientHandler
     }
 
     public void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue) {
-        foreach (var moby in Level().GetHybridMobys()) {
+        foreach (var moby in Level()?.GetHybridMobys() ?? []) {
             if (moby.UID == uid) {
                 moby.OnHybridValueChanged(this, type, offset, size, oldValue, newValue);
             }
@@ -722,12 +744,12 @@ partial class Player : IClientHandler
     }
 
     public void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value) {
-        if (Level().GameID() != level) {
-            Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level().GameID()}");
+        if (Level()?.GameID() != level) {
+            Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level()?.GameID()}");
             return;
         }
         
-        Level().OnFlagChanged(this, type, size, index, value);
+        Level()?.OnFlagChanged(this, type, size, index, value);
         
         CallLuaFunction("OnLevelFlagChanged", LuaEntity(), type, level, size, index, value);
     }
@@ -785,10 +807,10 @@ partial class Player {
     /// Tuple where first item is the Label object, and the second is the hash we registered last tick. We use the hash
     ///     to only send updates to the user when we know something about the Label has updated. 
     /// </summary>
-    private List<Label> _labels = new ();
+    private List<Label?> _labels = new ();
 
     private List<ViewElement> _viewElements = new ();
-    private View _activeView = null;
+    private View? _activeView = null;
 
     public void ShowView(View view) {
         _activeView = view;
@@ -865,7 +887,7 @@ partial class Player {
     /// Removes all the labels from the player's screen.
     /// </summary>
     public void RemoveAllLabels() {
-        _labels = new List<Label>();
+        _labels = new List<Label?>();
         
         for (int i = 0; i < _labels.Count; i++) {
             RemoveLabel(_labels[i]);
@@ -876,7 +898,7 @@ partial class Player {
     /// Removes the given label from the player's screen.
     /// </summary>
     /// <param name="label">Label to remove</param>
-    public override void RemoveLabel(Label label) {
+    public override void RemoveLabel(Label? label) {
         for (int i = 0; i < _labels.Count; i++) {
             if (_labels[i] == null) {
                 continue;
@@ -895,7 +917,7 @@ partial class Player {
     /// </summary>
     private void UpdateLabels() {
         for (int i = 0; i < _labels.Count; i++) {
-            Label label = _labels[i];
+            var label = _labels[i];
 
             if (label == null) {
                 continue;

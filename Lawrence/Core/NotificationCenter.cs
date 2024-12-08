@@ -23,7 +23,7 @@ public class PlayerJoinedNotification : Notification {
     public Entity Entity { get; }
 
     // Constructor for the PlayerConnectedNotification class
-    public PlayerJoinedNotification(int id, string username, Entity entity)
+    public PlayerJoinedNotification(int id, string? username, Entity entity)
         : base("PlayerJoined") {
         Entity = entity;
     }

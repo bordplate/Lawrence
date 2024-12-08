@@ -612,7 +612,7 @@ public partial class Packet {
         return packet;
     }
 
-    public static Packet MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color, uint states) {
+    public static Packet? MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color, uint states) {
         if (text.Length >= 50) {
             Logger.Error("Text is too long to fit in a single packet.");
             return null;
@@ -661,11 +661,11 @@ public partial class Packet {
                     Id = element.Id,
                     Operations = flags,
                     Attribute = (ushort)attribute.ElementAttribute,
-                    DataLength = (ushort)dataPacket.GetSize()
+                    DataLength = (ushort)(dataPacket?.GetSize() ?? 0)
                 };
 
                 attributes.Add(attributePacket);
-                attributes.Add(dataPacket);
+                if (dataPacket != null) attributes.Add(dataPacket);
             }
         }
         
@@ -1242,8 +1242,7 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         return packet;
     }
 
-    public static MPPacketHeader MakeHeader(byte[] bytes, Endianness endianness = Endianness.BigEndian)
-    {
+    public static MPPacketHeader? MakeHeader(byte[] bytes, Endianness endianness = Endianness.BigEndian) {
         return BytesToStruct<MPPacketHeader>(bytes, endianness);
     }
 
@@ -1295,9 +1294,9 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         }
     }
 
-    internal static T BytesToStruct<T>(byte[] rawData, Endianness endianness) where T : struct
+    internal static T? BytesToStruct<T>(byte[] rawData, Endianness endianness) where T : struct
     {
-        T result = default(T);
+        T? result = default(T);
 
         MaybeAdjustEndianness(typeof(T), rawData, endianness);
 
@@ -1306,7 +1305,7 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         try
         {
             IntPtr rawDataPtr = handle.AddrOfPinnedObject();
-            result = (T)Marshal.PtrToStructure(rawDataPtr, typeof(T));
+            result = (T?)Marshal.PtrToStructure(rawDataPtr, typeof(T));
         }
         finally
         {

@@ -10,7 +10,7 @@ public class Mod
 {
     private readonly Settings _modSettings;
 
-    private readonly string _modPath;
+    private readonly string? _modPath;
     
     private string _canonicalName;
 
@@ -26,7 +26,7 @@ public class Mod
     }
 
     public string Name() {
-        return Settings().Get("General.name", "Unnamed mod", true);
+        return Settings().Get("General.name", "Unnamed mod", true)!;
     }
 
     public string CanonicalName() {
@@ -37,7 +37,7 @@ public class Mod
         return _modSettings;
     }
 
-    public string Path() {
+    public string? Path() {
         return _modPath;
     }
 }

@@ -22,10 +22,14 @@ public class CommandField: TextField {
     }
 
     public override bool OnKeyUp(KeyEvent keyEvent) {
+        if (Text == null) {
+            return false;
+        }
+        
         if (keyEvent.Key == Key.Enter) {
             Logger.Raw($"> {Text}", false);
 
-            var prompt = Text.ToString().Trim();
+            var prompt = Text.ToString()?.Trim() ?? "";
 
             _history.Insert(0, prompt);
             _historyIndex = 0;

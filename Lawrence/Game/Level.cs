@@ -16,7 +16,7 @@ public class Level : Entity {
 
     public bool ShouldPropagateLevelFlags = true;
 
-    public Level(int gameId, string name, LuaTable luaTable = null) : base(luaTable) {
+    public Level(int gameId, string name, LuaTable? luaTable = null) : base(luaTable) {
         _gameId = gameId;
         _name = name;
         
@@ -63,7 +63,7 @@ public class Level : Entity {
         return _gameId;
     }
 
-    public LuaTable SpawnMoby(object param) {
+    public LuaTable? SpawnMoby(object param) {
         Moby moby = new Moby();
         moby.SetLevel(this);
         
@@ -101,7 +101,7 @@ public class Level : Entity {
         return null;
     }
 
-    public LuaTable GetGameMobyByUID(ushort uid) {
+    public LuaTable? GetGameMobyByUID(ushort uid) {
         Moby moby = new Moby();
         moby.MakeHybrid(uid);
         moby.SetLevel(this);

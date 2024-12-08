@@ -55,7 +55,7 @@ public class Moby : Entity
     /// The current level this moby is on. Levels are tied to universes such that mobys (incl. users) on the same
     /// level in different universes won't be able to see or interact with each other. 
     /// </summary>
-    protected Level _level;
+    protected Level? _level;
     
     static ushort COLLIDE_TICKS = 10;
     
@@ -64,7 +64,7 @@ public class Moby : Entity
     /// <summary>
     /// This is used when a moby is attached to a bone of another moby, like helmets, gear, backpack, etc. 
     /// </summary>
-    public Moby AttachedTo;
+    public Moby? AttachedTo;
     
     /// <summary>
     /// Which bone we are attached to that decides the position on the body.
@@ -93,7 +93,7 @@ public class Moby : Entity
     /// <summary>
     /// Synced mobys come from a game and is fully controlled by the game.
     /// </summary>
-    public Moby SyncOwner {
+    public Moby? SyncOwner {
         get; 
         private set;
     }
@@ -160,7 +160,7 @@ public class Moby : Entity
 
     private Dictionary<Moby, ushort> _colliders = new();
 
-    public Moby(LuaTable luaTable = null) : base(luaTable) {
+    public Moby(LuaTable? luaTable = null) : base(luaTable) {
         Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);
     }
 
@@ -179,9 +179,9 @@ public class Moby : Entity
         SyncOwner = moby;
     }
     
-    public Level Level() {
+    public Level? Level() {
         if (_level == null) {
-            _level = Universe().GetLevelByGameID(0);
+            _level = Universe()?.GetLevelByGameID(0);
         }
         
         return _level;
@@ -240,8 +240,8 @@ public class Moby : Entity
 
     public void OnHybridValueChanged(Player player, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue,
         byte[] newValue) {
-        object oldV = null;
-        object newV = null;
+        object? oldV = null;
+        object? newV = null;
         
         // Find data type
         foreach (MonitoredValue value in type == MonitoredValueType.Attribute ? MonitoredAttributes : MonitoredPVars) {
@@ -267,8 +267,8 @@ public class Moby : Entity
         }
     }
     
-    public Universe Universe() {
-        Entity parent = Parent();
+    public Universe? Universe() {
+        var parent = Parent();
         
         while (!(parent is Universe)) {
             if (parent == null) {

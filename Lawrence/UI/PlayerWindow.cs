@@ -8,7 +8,7 @@ public class PlayerWindow: Window {
 
         var player = Game.Game.Shared().FindPlayerByUsername(playerName);
 
-        var playerInfo = new Label() {
+        var playerInfo = new Label {
             X = 2,
             Y = 2,
             Width = Dim.Fill(),
@@ -16,11 +16,11 @@ public class PlayerWindow: Window {
         };
 
         playerInfo.Text = $"""
-                           Level: {player.Level().GetName()}
+                           Level: {player?.Level()?.GetName()}
 
-                           X: {player.x}
-                           Y: {player.y}
-                           Z: {player.z}
+                           X: {player?.x}
+                           Y: {player?.y}
+                           Z: {player?.z}
                            """;
        
         // Close button at bottom center
