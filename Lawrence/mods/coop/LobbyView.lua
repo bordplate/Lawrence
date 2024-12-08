@@ -1,81 +1,106 @@
 LobbyView = class("LobbyView", View)
 
-function LobbyView:initialize(host, password)
-    View.initialize(self)
+function LobbyView:initialize(player, lobby)
+    View.initialize(self, player)
     
-    self.host = host
-    self.password = password
-    
-    self.options = {
-        {
-            name = "Password",
-            description = "Password for the lobby. Leave blank for public.",
-            handler = function(item) self.passwordInput:Activate() end,
-            default_on = null,
-            default_accessory_text = self.password == "" and "Not set" or "Set"
-        },
-        {
-            name = "Friendly fire", 
-            description = "When enabled lets players hurt each other with weapons and the wrench.",
-            handler = function(item) end,
-            default_on = true,
-        },
-        {
-            name = "Infinite ammo",
-            description = "When enabled gives players infinite ammo for all weapons.",
-            handler = function(item) end,
-            default_on = false,
-        }
-    }
+    self.lobby = lobby
     
     self.passwordInput = InputElement()
     self.passwordInput.Prompt = "Enter password"
-    self.passwordInput.InputCallback = function(player, input)
-        if player:GUID() == self.host:GUID() then
-            self.password = input
+    self.passwordInput.InputCallback = function(input)
+        if self.PlayerTable:GUID() == self.lobby.host:GUID() then
+            self.lobby.password = input
             
             if input == "" then
                 self.optionsListMenu:GetItem(0).Accessory = "Not set"
             else
-                self.optionsListMenu:GetItem(0).Accessory = "Set"
+                self.optionsListMenu:GetItem(0).Accessory = "Change"
             end
         end
     end
 
-    self.lobbyTextElement = TextElement(30, 10, "Players")
+    self.lobbyTextElement = TextElement(40, 10, "Players")
     self.optionsTextElement = TextElement(250, 10, "Options")
     
     self.playersList = ListMenuElement(0, 30, 200, 330)
-    self.playersList:AddItem(self.host:Username(), "Host")
+    for i, player in ipairs(self.lobby.players) do
+        self:AddPlayerToList(player)
+    end
+    self.lobby.players:AddObserver(function(list, action, item)
+        if action == ObservableList.ADDED then
+            self:AddPlayerToList(item)
+        end
+        if action == ObservableList.REMOVED then
+            print("Removing player " .. item:Username())
+            
+            for i, listItem in ipairs(self.playersList:GetItems()) do
+                if listItem.Title == item:Username() then
+                    self.playersList:RemoveItem(i-1)
+                    break
+                end
+            end
+        end
+    end)
     
     self.optionsListMenu = ListMenuElement(210, 30, 250, 215)
     self.descriptionTextArea = TextAreaElement(210, 250, 250, 110)
     
-    for i, option in ipairs(self.options) do
-        local accessory_text = ""
-        if option.default_on ~= null then
-            accessory_text = option.default_on and "On" or "Off"
+    for i, option in ipairs(self.lobby.optionsList) do
+        local accessory = ""
+        
+        if option.accessory ~= nil then
+            if type(option.value) == "boolean" then
+                accessory = option.accessory[option.value and 1 or 2]
+            elseif type(option.value) == "number" then
+                accessory = option.accessory[option.value+1]
+            end
         end
         
-        if option.default_accessory_text ~= nil then
-            accessory_text = option.default_accessory_text
-        end
-        
-        self.optionsListMenu:AddItem(option.name, "", accessory_text)
+        self.optionsListMenu:AddItem(option.name, "", accessory)
     end
     
+    self.lobby.options:AddObserver(function(list, key, value)
+        for k, option in ipairs(self.lobby.optionsList) do
+            if option.name == list[key].name then
+                if type(value) == "boolean" then
+                    self.optionsListMenu:GetItem(k-1).Accessory = value and option.accessory[1] or option.accessory[2]
+                elseif type(value) == "number" then
+                    self.optionsListMenu:GetItem(k-1).Accessory = option.accessory[value+1]
+                end
+
+                break
+            end
+        end
+    end)
+    
     self.optionsListMenu.ItemSelected = function(index)
-        self.descriptionTextArea.Text = self.options[index+1].description
+        self.descriptionTextArea.Text = self.lobby.optionsList[index+1].description
     end
     
     self.optionsListMenu.ItemActivated = function(index)
-        self.options[index+1].handler(self.optionsListMenu:GetItem(index))
+        if (self.lobby.host:GUID() == self.PlayerTable:GUID()) then
+            self.lobby.optionsList[index+1](self, self.optionsListMenu:GetItem(index))
+        end
     end
-
-    self.descriptionTextArea.Text = self.options[1].description
+    
+    self.descriptionTextArea.Text = self.lobby.optionsList[1].description
     
     self.backButtonText = TextElement(120, 390, "\x12 Exit")
     self.startButtonText = TextElement(380, 390, "\x11 Start")
+
+    if self.lobby.password == "" then
+        self.optionsListMenu:GetItem(0).Accessory = "Not set"
+    else
+        self.optionsListMenu:GetItem(0).Accessory = "Change"
+    end
+    
+    self.lobby:AddReadyCallback(function(player)
+        for i, item in ipairs(self.playersList:GetItems()) do
+            if item.Title == player:Username() then
+                item.Accessory = player.ready and "Ready" or "Not Ready"
+            end
+        end
+    end)
     
     self:AddElement(self.lobbyTextElement)
     self:AddElement(self.optionsTextElement)
@@ -89,15 +114,57 @@ function LobbyView:initialize(host, password)
 end
 
 function LobbyView:OnPresent()
+    if (self.lobby.host:GUID() == self.PlayerTable:GUID()) then
+        self.startButtonText.Text = "\x11 Start"
+    else
+        self.startButtonText.Text = "\x11 Ready"
+    end
+    
     self.optionsListMenu:Focus()
 end
 
-function LobbyView:OnControllerInputPressed(player, input)
+function LobbyView:OnControllerInputPressed(input)
     if IsButton(input, Gamepad.Circle) then
-        player:LoadLevel("Kerwan")
+        if self.PlayerTable:GUID() ~= self.lobby.host:GUID() then
+            self.lobby:PlayerReady(self.PlayerTable)
+
+            if self.PlayerTable.ready then
+                self.startButtonText.Text = "\x11 Unready"
+            else
+                self.startButtonText.Text = "\x11 Ready"
+            end
+        elseif self.lobby:AllPlayersReady() then
+            self.lobby:Start()
+        end
     end
 
     if IsButton(input, Gamepad.Triangle) then
-        player:ShowView(LobbyListView())
+        self.lobby:Leave(self.PlayerTable)
+    end
+end
+
+function LobbyView:AddPlayerToList(player)
+    local details = ""
+    local accessory = player.ready and "Ready" or "Not Ready"
+
+    if player:GUID() == self.PlayerTable:GUID() then
+        details = "You"
+    end
+
+    if player:GUID() == self.lobby.host:GUID() then
+        details = "Host"
+        accessory = ""
+    end
+
+    self.playersList:AddItem(player:Username(), details, accessory)
+end
+
+function LobbyView:OnTick()
+    if self.PlayerTable:GUID() == self.lobby.host:GUID() then
+        if not self.lobby:AllPlayersReady() then
+            self.startButtonText.TextColor = RGBA(0xA0, 0xA0, 0xA0, 0xc0)
+        else
+            self.startButtonText.TextColor = RGBA(0x88, 0xa8, 0xff, 0xc0)
+        end
     end
 end

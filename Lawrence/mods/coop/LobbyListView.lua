@@ -1,37 +1,83 @@
+require 'Lobby'
 require 'LobbyView'
 
 LobbyListView = class("LobbyListView", View)
 
-function LobbyListView:initialize()
-    View.initialize(self)
+function LobbyListView:initialize(player, lobbyUniverse)
+    View.initialize(self, player)
+    
+    self.lobbyUniverse = lobbyUniverse
 
     self.lobbyTextElement = TextElement(250, 10, "Co-op Lobbies")
+    
     self.lobbyListMenu = ListMenuElement(0, 30, 250, 330)
+    self.lobbyListMenu.ItemActivated = function(index)
+        local lobby = self.lobbyUniverse.lobbies[index+1]
+
+        if lobby.password == "" then
+            lobby:Join(self.PlayerTable)
+        else
+            self.selectedLobby = lobby
+            self.lobbyPasswordInputElement:Activate()
+        end
+    end
+    self.lobbyListMenu.ItemSelected = function(index)
+        local lobby = self.lobbyUniverse.lobbies[index+1]
+        self:SelectedLobby(lobby)
+    end
+    
+    for i, lobby in ipairs(self.lobbyUniverse.lobbies) do
+        self.lobbyListMenu:AddItem(lobby.host:Username(), lobby.password == "" and "Open" or "Password protected")
+    end
+    
     self.textArea = TextAreaElement(260, 30, 200, 150)
+    self.textArea.Text = "Select a lobby."
+    
     self.gamemodeTextArea = TextAreaElement(260, 195, 200, 165)
     
     self.createLobbyButtonText = TextElement(380, 380, "\x11 Create lobby")
     
-    self.lobbyListMenu.ItemSelected = function(index) end
-
-    self.lobbyListMenu.ItemActivated = function(index) end
+    self.passwordInputElement = InputElement()
+    self.passwordInputElement.Prompt = "Enter password (blank for public)"
+    self.passwordInputElement.InputCallback = function(input)
+        self.lobbyUniverse:NewLobby(self.PlayerTable, input)
+    end
     
+    self.selectedLobby = null
+    
+    self.lobbyPasswordInputElement = InputElement()
+    self.lobbyPasswordInputElement.Prompt = "Enter lobby password"
+    self.lobbyPasswordInputElement.InputCallback = function(input)
+        if self.selectedLobby ~= null then
+            if self.selectedLobby.password == input then
+                self.selectedLobby:Join(self.PlayerTable)
+            else
+                self.PlayerTable:ShowErrorMessage("Incorrect password.")
+            end
+        end
+    end
+    
+    self.lobbyUniverse.lobbies:AddObserver(function(list, action, item) 
+        if action == ObservableList.ADDED then
+            self.lobbyListMenu:AddItem(item.host:Username(), item.password == "" and "Open" or "Password protected")
+        end
+        if action == ObservableList.REMOVED then
+            for i, listItem in ipairs(self.lobbyListMenu:GetItems()) do
+                if listItem.Title == item.host:Username() then
+                    self.lobbyListMenu:RemoveItem(i-1)
+                    break
+                end
+            end
+        end
+    end)
+
     self:AddElement(self.lobbyTextElement)
     self:AddElement(self.textArea)
     self:AddElement(self.lobbyListMenu)
     self:AddElement(self.gamemodeTextArea)
     self:AddElement(self.createLobbyButtonText)
-    
-    self.passwordInputElement = InputElement()
-    self.passwordInputElement.Prompt = "Enter password (blank for public)"
-    self.passwordInputElement.InputCallback = function(player, input)
-        local lobby = LobbyView(player, input)
-        player:ShowView(lobby)
-    end
-    
     self:AddElement(self.passwordInputElement)
-
-    self.textArea.Text = "Select a lobby."
+    self:AddElement(self.lobbyPasswordInputElement)
 end
 
 function LobbyListView:OnPresent()
@@ -42,7 +88,12 @@ function LobbyListView:OnTick()
     
 end
 
-function LobbyListView:OnControllerInputPressed(player, input)
+function LobbyListView:SelectedLobby(lobby)
+    self.textArea.Text = "Host: " .. lobby.host:Username()
+    self.gamemodeTextArea.Text = "Friendly fire: " .. (lobby.options.friendlyFire and "On" or "Off")
+end
+
+function LobbyListView:OnControllerInputPressed(input)
     if IsButton(input, Gamepad.Circle) then
         self.passwordInputElement:Activate()
     end

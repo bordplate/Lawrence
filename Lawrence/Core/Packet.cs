@@ -643,32 +643,30 @@ public partial class Packet {
         return packet;
     }
 
-    public static Packet? MakeUIItemPacket(ViewElement element, MPUIOperationFlag flags) {
-        if (element.View == null) {
-            return null;
-        }
-
+    public static Packet? MakeUIItemPacket(ViewElement? element, MPUIOperationFlag flags) { 
         var packet = new Packet(MPPacketType.MP_PACKET_UI);
         
         var attributes = new List<MPPacket>();
 
-        foreach (var attribute in element.GetAttributes()) {
-            if (!attribute.Dirty && (flags & MPUIOperationFlag.Create) == 0) {
-                continue;
+        if (element != null) {
+            foreach (var attribute in element.GetAttributes()) {
+                if (!attribute.Dirty && (flags & MPUIOperationFlag.Create) == 0) {
+                    continue;
+                }
+
+                attribute.Dirty = false;
+
+                var dataPacket = attribute.GetPacket();
+                var attributePacket = new MPPacketUIItem {
+                    Id = element.Id,
+                    Operations = flags,
+                    Attribute = (ushort)attribute.ElementAttribute,
+                    DataLength = (ushort)dataPacket.GetSize()
+                };
+
+                attributes.Add(attributePacket);
+                attributes.Add(dataPacket);
             }
-
-            attribute.Dirty = false;
-
-            var dataPacket = attribute.GetPacket();
-            var attributePacket = new MPPacketUIItem {
-                Id = element.Id,
-                Operations = flags,
-                Attribute = (ushort)attribute.ElementAttribute,
-                DataLength = (ushort)dataPacket.GetSize()
-            };
-            
-            attributes.Add(attributePacket);
-            attributes.Add(dataPacket);
         }
         
         MPUIElementType elementType = MPUIElementType.None;
@@ -686,15 +684,15 @@ public partial class Packet {
                 elementType = MPUIElementType.Input;
                 break;
         }
-        
+
         packet.AddBodyPart(new MPPacketUI {
-            Id = element.Id,
+            Id = element?.Id ?? (ushort)0,
             ElementType = elementType,
             Operations = flags,
             Items = (byte)(attributes.Count / 2)
         });
 
-        if (attributes.Count == 0) {
+        if (attributes.Count == 0 && (flags & MPUIOperationFlag.ClearAll) == 0) {
             return null;
         }
         

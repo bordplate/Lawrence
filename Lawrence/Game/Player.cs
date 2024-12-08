@@ -540,7 +540,7 @@ partial class Player : IClientHandler
     public void ControllerInputTapped(ControllerInput input)
     {
         if (_activeView != null) {
-            _activeView.OnControllerInputPresset(this, input);
+            _activeView.OnControllerInputPresset(input);
         }
         
         CallLuaFunction("OnControllerInputTapped", LuaEntity(), (int)input);
@@ -685,6 +685,8 @@ partial class Player : IClientHandler
     public void OnDisconnect() {
         Logger.Log($"{Username()} disconnected.");
         Game.Shared().NotificationCenter().Post(new PlayerDisconnectedNotification(0, Username(), this));
+        
+        CallLuaFunction("OnDisconnect", LuaEntity());
     }
 
     public void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue) {
@@ -759,7 +761,7 @@ partial class Player : IClientHandler
                             var text = System.Text.Encoding.UTF8.GetString(extraData);
                             
                             deferredCalls.Add(() => {
-                                inputElement.OnInputCallback(this, text);
+                                inputElement.OnInputCallback(text);
                             });
                         }
 
@@ -826,6 +828,8 @@ partial class Player {
         if (_activeView == null) {
             return;
         }
+
+        _activeView = null;
         
         SendPacket(Packet.MakeUIItemPacket(null, MPUIOperationFlag.ClearAll));
     }

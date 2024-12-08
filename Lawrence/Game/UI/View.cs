@@ -1,12 +1,15 @@
 using System.Collections.Generic;
+using NLua;
 
 namespace Lawrence.Game.UI;
 
-public class View() : Entity(null) {
+public class View(LuaTable playerTable) : Entity(null) {
     private List<ViewElement> _elements = new ();
 
     private ushort _nextElementId = 0;
 
+    public LuaTable PlayerTable { get; private set; } = playerTable;
+    
     public delegate void OnActivate();
     public event OnActivate Activate;
 
@@ -25,7 +28,7 @@ public class View() : Entity(null) {
         CallLuaFunction("OnPresent", LuaEntity());
     }
 
-    public void OnControllerInputPresset(Player player, ControllerInput input) {
-        CallLuaFunction("OnControllerInputPressed", LuaEntity(), player.LuaEntity(), (uint)input);
+    public void OnControllerInputPresset(ControllerInput input) {
+        CallLuaFunction("OnControllerInputPressed", LuaEntity(), (uint)input);
     }
 }

@@ -48,3 +48,7 @@ function Player:Unstuck()
         self:ToastMessage("Unstuck is not allowed in this universe!", 100)
     end
 end
+
+function Player:OnDisconnect()
+    
+end

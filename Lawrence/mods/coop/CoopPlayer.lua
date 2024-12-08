@@ -5,6 +5,9 @@ CoopPlayer = class("CoopPlayer", Player)
 function CoopPlayer:Made()
     self.damageCooldown = 0
     self.goldBoltCount = 0
+    self.ready = false
+    
+    self.lobby = null
     
     self.clanky = null
     
@@ -23,6 +26,30 @@ function CoopPlayer:Made()
     for _, counter in ipairs(self.skillpointCounters) do
         self:MonitorAddress(counter, 4)
     end
+end
+
+function CoopPlayer:Start()
+    self:GiveItem(Item.GetByName("Heli-pack").id)
+    self:GiveItem(Item.GetByName("Thruster-pack").id)
+    self:GiveItem(Item.GetByName("Hydro-pack").id)
+    self:GiveItem(Item.GetByName("O2 Mask").id)
+    self:GiveItem(Item.GetByName("Pilot's Helmet").id)
+    self:GiveItem(Item.GetByName("PDA").id)
+    self:GiveItem(Item.GetByName("Magneboots").id)
+    self:GiveItem(Item.GetByName("Grindboots").id)
+    self:GiveItem(Item.GetByName("Drone Device").id)
+    self:GiveItem(Item.GetByName("Decoy Glove").id)
+    self:GiveItem(Item.GetByName("Swingshot").id)
+    self:GiveItem(Item.GetByName("Devastator").id)
+    self:GiveItem(Item.GetByName("Sonic Summoner").id)
+    self:GiveItem(Item.GetByName("Visibomb").id)
+    self:GiveItem(Item.GetByName("Hologuise").id)
+    self:GiveItem(Item.GetByName("R.Y.N.O.").id)
+    self:GiveItem(Item.GetByName("Blaster").id)
+
+    self:SetBolts(150000)
+    
+    self:LoadLevel("Kerwan")
 end
 
 function CoopPlayer:OnCollectedGoldBolt(planet, number)
@@ -57,6 +84,10 @@ function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
 end
 
 function CoopPlayer:OnAttack(moby, sourceOClass, damage)
+    if self.lobby.options.friendlyFire.value then
+        return
+    end
+    
     if self.damageCooldown <= 0 then
         moby:Damage(1)
         self.damageCooldown = 40
@@ -184,5 +215,11 @@ function CoopPlayer:OnGiveBolts(boltDiff, totalBolts)
             print("Giving " .. boltDiff .. " bolts to " .. player:Username())
             player:GiveBolts(boltDiff)
         end
+    end
+end
+
+function CoopPlayer:OnDisconnect()
+    if self.lobby ~= null then
+        self.lobby:Leave(self)
     end
 end

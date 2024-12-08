@@ -111,6 +111,7 @@ public class ViewAttribute<T> : IViewAttribute {
                     var accessory = System.Text.Encoding.UTF8.GetBytes(menuItem.Accessory);
                     
                     packet.Write([i]);
+                    packet.Write([menuItem.ShouldDelete ? (byte)1 : (byte)0]);
                     packet.Write(title);
                     packet.Write([0x0]);
                     packet.Write(details);
@@ -118,8 +119,13 @@ public class ViewAttribute<T> : IViewAttribute {
                     packet.Write(accessory);
                     packet.Write([0x0]);
 
-                    i++;
+                    if (!menuItem.ShouldDelete) {
+                        i++;
+                    }
                 }
+                
+                listMenuItemAttribute.Value.RemoveAll(menuItem => menuItem.ShouldDelete);
+                
                 break;
             }
             default:

@@ -339,7 +339,7 @@ public class Game {
             _state.LoadCLRPackage();
             _state["Game"] = this;
             
-            _state["NativeView"] = () => new View();
+            _state["NativeView"] = (LuaTable playerTable) => new View(playerTable);
             _state["NativeListMenuElement"] = () => new ListMenuElement();
             _state["NativeTextAreaElement"] = () => new TextAreaElement();
             _state["NativeTextElement"] = () => new TextElement();

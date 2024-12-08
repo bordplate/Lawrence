@@ -3,6 +3,7 @@ package.path = package.path .. ';./runtime/lib/?.lua'
 
 require 'middleclass'
 require 'bit'
+require 'ObservableList'
 
 require 'Entity'
 require 'Universe'

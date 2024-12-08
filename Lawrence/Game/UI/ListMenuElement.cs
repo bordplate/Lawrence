@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Lawrence.Core;
+using NLua;
 
 namespace Lawrence.Game.UI;
 
@@ -31,6 +32,13 @@ public class ListMenuItem {
         }
     }
 
+    public bool ShouldDelete = false;
+
+    public void Remove() {
+        Dirty = true;
+        ShouldDelete = true;
+    }
+
     public bool Dirty = true;
 }
 
@@ -53,8 +61,24 @@ public class ListMenuElement: ViewElement {
         Items.Value.Add(new ListMenuItem { Title = title, Details = details, Accessory = accessory});
     }
     
+    public void RemoveItem(int index) {
+        Items.Value[index].Remove();
+    }
+    
     public ListMenuItem GetItem(int index) {
         return Items.Value[index];
+    }
+    
+    public LuaTable GetItems() {
+        var lua = LuaEntity();
+        var table = Game.Shared().State().DoString("return {}")[0] as LuaTable;
+        for (var i = 0; i < Items.Value.Count; i++) {
+            var item = Items.Value[i];
+
+            table[i + 1] = item;
+        }
+        
+        return table;
     }
 
     public void Focus() {

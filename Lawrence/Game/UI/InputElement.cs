@@ -12,7 +12,7 @@ public class InputElement : ViewElement {
         ActivateDelegate?.Invoke();
     }
 
-    public void OnInputCallback(Player player, string text) {
-        CallLuaFunction("OnInputCallback", LuaEntity(), player.LuaEntity(), text);
+    public void OnInputCallback(string text) {
+        CallLuaFunction("OnInputCallback", LuaEntity(), text);
     }
 }

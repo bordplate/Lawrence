@@ -1,42 +1,34 @@
 require 'CoopPlayer'
 require 'LobbyListView'
 
-local CoopUniverse = class("CoopUniverse", Universe)
-function CoopUniverse:initialize()
+local LobbyUniverse = class("LobbyUniverse", Universe)
+function LobbyUniverse:initialize()
     Universe.initialize(self)
+    
+    self.lobbies = ObservableList({})
 end
  
-function CoopUniverse:OnPlayerJoin(player)
-    player = player:Make(CoopPlayer)
-    
-    local lobby = LobbyListView()
-    
+function LobbyUniverse:OnPlayerJoin(player)
+    local lobby = LobbyListView(player, self)
     player:ShowView(lobby)
-    
-    player:GiveItem(Item.GetByName("Heli-pack").id)
-    player:GiveItem(Item.GetByName("Thruster-pack").id)
-    player:GiveItem(Item.GetByName("Hydro-pack").id)
-    player:GiveItem(Item.GetByName("O2 Mask").id)
-    player:GiveItem(Item.GetByName("Pilot's Helmet").id)
-    player:GiveItem(Item.GetByName("PDA").id)
-    player:GiveItem(Item.GetByName("Magneboots").id)
-    player:GiveItem(Item.GetByName("Grindboots").id)
-    player:GiveItem(Item.GetByName("Drone Device").id)
-    player:GiveItem(Item.GetByName("Decoy Glove").id)
-    player:GiveItem(Item.GetByName("Swingshot").id)
-    player:GiveItem(Item.GetByName("Devastator").id)
-    player:GiveItem(Item.GetByName("Sonic Summoner").id)
-    player:GiveItem(Item.GetByName("Visibomb").id)
-    player:GiveItem(Item.GetByName("Hologuise").id)
-    player:GiveItem(Item.GetByName("R.Y.N.O.").id)
-    player:GiveItem(Item.GetByName("Blaster").id)
-    
-    player:SetBolts(150000)
 end
 
-function CoopUniverse:OnTick()
+function LobbyUniverse:NewLobby(host, password)
+    local lobby = Lobby(host, password)
+    self.lobbies:Add(lobby)
+    
+    lobby:Join(host)
+    
+    return lobby
+end
+
+function LobbyUniverse:RemoveLobby(lobby)
+    self.lobbies:Remove(lobby)
+end
+
+function LobbyUniverse:OnTick()
     
 end
 
-local universe = CoopUniverse:new()
-universe:Start(true)
+lobbyUniverse = LobbyUniverse:new()
+lobbyUniverse:Start(true)
