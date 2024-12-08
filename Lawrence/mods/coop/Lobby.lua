@@ -7,6 +7,8 @@ function Lobby:initialize(host, password)
     self.host = host
     self.password = password
     
+    self.started = false
+    
     self.players = ObservableList({})
 
     self.options = CoopOptions({
@@ -37,6 +39,8 @@ function Lobby:AddReadyCallback(callback)
 end
 
 function Lobby:Start()
+    self.started = true
+    
     for i, player in ipairs(self.players) do
         player:CloseView()
         player:Start()

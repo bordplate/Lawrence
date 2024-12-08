@@ -27,7 +27,7 @@ function LobbyListView:initialize(player, lobbyUniverse)
     end
     
     for i, lobby in ipairs(self.lobbyUniverse.lobbies) do
-        self.lobbyListMenu:AddItem(lobby.host:Username(), lobby.password == "" and "Open" or "Password protected")
+        self:AddToLobbyList(lobby)
     end
     
     self.textArea = TextAreaElement(260, 30, 200, 150)
@@ -59,7 +59,7 @@ function LobbyListView:initialize(player, lobbyUniverse)
     
     self.lobbyUniverse.lobbies:AddObserver(function(list, action, item) 
         if action == ObservableList.ADDED then
-            self.lobbyListMenu:AddItem(item.host:Username(), item.password == "" and "Open" or "Password protected")
+            self:AddToLobbyList(item)
         end
         if action == ObservableList.REMOVED then
             for i, listItem in ipairs(self.lobbyListMenu:GetItems()) do
@@ -78,6 +78,13 @@ function LobbyListView:initialize(player, lobbyUniverse)
     self:AddElement(self.createLobbyButtonText)
     self:AddElement(self.passwordInputElement)
     self:AddElement(self.lobbyPasswordInputElement)
+end
+
+function LobbyListView:AddToLobbyList(lobby)
+    local accessory = (lobby.started and "In game" or "In lobby") .. " - " ..
+            (lobby.password == "" and "Open" or "Password protected")
+    
+    self.lobbyListMenu:AddItem(lobby.host:Username(), accessory)
 end
 
 function LobbyListView:OnPresent()

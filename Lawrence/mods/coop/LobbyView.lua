@@ -125,6 +125,12 @@ end
 
 function LobbyView:OnControllerInputPressed(input)
     if IsButton(input, Gamepad.Circle) then
+        if self.lobby.started then
+            self.PlayerTable:CloseView()
+            self.PlayerTable:Start()
+            return
+        end
+        
         if self.PlayerTable:GUID() ~= self.lobby.host:GUID() then
             self.lobby:PlayerReady(self.PlayerTable)
 
@@ -154,6 +160,10 @@ function LobbyView:AddPlayerToList(player)
     if player:GUID() == self.lobby.host:GUID() then
         details = "Host"
         accessory = ""
+    end
+    
+    if player.ingame then
+        accessory = "In Game"
     end
 
     self.playersList:AddItem(player:Username(), details, accessory)

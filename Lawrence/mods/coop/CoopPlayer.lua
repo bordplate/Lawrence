@@ -6,6 +6,7 @@ function CoopPlayer:Made()
     self.damageCooldown = 0
     self.goldBoltCount = 0
     self.ready = false
+    self.ingame = false
     
     self.lobby = null
     
@@ -29,6 +30,8 @@ function CoopPlayer:Made()
 end
 
 function CoopPlayer:Start()
+    self.ingame = true
+    
     self:GiveItem(Item.GetByName("Heli-pack").id)
     self:GiveItem(Item.GetByName("Thruster-pack").id)
     self:GiveItem(Item.GetByName("Hydro-pack").id)
