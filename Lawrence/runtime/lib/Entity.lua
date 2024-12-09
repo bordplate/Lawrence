@@ -20,18 +20,19 @@ function Entity:__index(key)
         return value
     end
     
-    if self._internalEntity[key] ~= nil then
+    local internal = rawget(self, "_internalEntity")[key]
+    if internal ~= nil then
         -- If the key does not exist, redirect the call to internal C# object.
-        if type(self._internalEntity[key]) ~= 'userdata' then
-            return self._internalEntity[key]
+        if type(internal) ~= 'userdata' then
+            return internal
         end
         
-        if (GetTypeName(self._internalEntity[key]) == "ViewAttribute`1") then
-            return self._internalEntity[key].Value
+        if (GetTypeName(internal) == "ViewAttribute`1") then
+            return internal.Value
         end
 
         return function(self, ...)
-            return self._internalEntity[key](self._internalEntity, ...)
+            return rawget(self, "_internalEntity")[key](self._internalEntity, ...)
         end
     end
 end

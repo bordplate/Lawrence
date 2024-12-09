@@ -200,6 +200,12 @@ partial class Entity {
 }
 
 partial class Entity {
+    private LuaTable? _luaClass;
+    private Dictionary<string, LuaFunction>? _declaredMethods;
+    private List<LuaTable> _superClasses = new();
+    private Dictionary<LuaTable, Dictionary<string, LuaFunction>> _superDeclaredMethods = new();
+
+    private LuaFunction? _onTickFunction;
 
     /// <summary>
     /// Gets a Lua function in the Lua entity reflecting this class and caches it. 
@@ -214,37 +220,99 @@ partial class Entity {
             return luaFunction;
         }
 
-        if (!(_luaEntity["class"] is LuaTable)) {
+        if (GetDeclaredMethods() is not {} declaredMethods) {
             return null;
         }
 
-        LuaTable classTable = (LuaTable)_luaEntity["class"];
+        if (GetDeclaredMethod(functionName) is { } func) {
+            _luaFunctions.Add(functionName, func);
 
-        if (!(classTable["__declaredMethods"] is LuaTable)) {
-            return null;
+            return func;
         }
 
-        LuaTable declaredMethods = (LuaTable)classTable["__declaredMethods"];
-
-        if (declaredMethods[functionName] != null && declaredMethods[functionName] is LuaFunction) {
-            LuaFunction function = (LuaFunction)declaredMethods[functionName];
-
-            _luaFunctions.Add(functionName, function);
-
-            return function;
-        }
-
-        while ((LuaTable)classTable["super"] is LuaTable) {
-            classTable = (LuaTable)classTable["super"];
-
-            declaredMethods = (LuaTable)classTable["__declaredMethods"];
-
-            if (declaredMethods[functionName] != null && declaredMethods[functionName] is LuaFunction) {
-                LuaFunction function = (LuaFunction)declaredMethods[functionName];
-
+        foreach (var superTable in GetSuperClasses()) {
+            if (GetSuperDeclaredMethod(superTable, functionName) is { } function) {
                 _luaFunctions.Add(functionName, function);
 
                 return function;
+            }
+        }
+
+        return null;
+    }
+    
+    public LuaTable? GetLuaClass() {
+        if (_luaClass == null && _luaEntity != null) {
+            _luaClass = (LuaTable)_luaEntity["class"];
+        }
+
+        return _luaClass;
+    }
+    
+    public Dictionary<string, LuaFunction>? GetDeclaredMethods() {
+        if (_declaredMethods == null && GetLuaClass() is {} luaClass && luaClass["__declaredMethods"] is LuaTable declaredMethods) {
+            _declaredMethods = new Dictionary<string, LuaFunction>();
+
+            foreach (var key in declaredMethods.Keys) {
+                if (declaredMethods[key] is LuaFunction func && key is string key_) {
+                    _declaredMethods.Add(key_, func);
+                }
+            }
+        }
+
+        return _declaredMethods;
+    }
+    
+    public LuaFunction? GetDeclaredMethod(string methodName) {
+        if (GetDeclaredMethods() is {} declaredMethods) {
+            if (declaredMethods.TryGetValue(methodName, out var func)) {
+                return func;
+            }
+        }
+
+        return null;
+    }
+    
+    public List<LuaTable> GetSuperClasses() {
+        if (_superClasses.Count == 0 && _luaEntity != null) {
+            if (GetLuaClass() is {} classTable) {
+                while (classTable["super"] is LuaTable superTable) {
+                    _superClasses.Add(superTable);
+
+                    classTable = superTable;
+                }
+            }
+        }
+
+        return _superClasses;
+    }
+    
+    public Dictionary<string, LuaFunction>? GetSuperDeclaredMethods(LuaTable superTable) {
+        if (_superDeclaredMethods.TryGetValue(superTable, out var declared)) {
+            return declared;
+        }
+        
+        if (superTable["__declaredMethods"] is LuaTable superDeclaredMethods) {
+            var methods = new Dictionary<string, LuaFunction>();
+
+            foreach (var key in superDeclaredMethods.Keys) {
+                if (superDeclaredMethods[key] is LuaFunction func && key is string key_) {
+                    methods.Add(key_, func);
+                }
+            }
+
+            _superDeclaredMethods.Add(superTable, methods);
+
+            return methods;
+        }
+        
+        return null;
+    }
+    
+    public LuaFunction? GetSuperDeclaredMethod(LuaTable superTable, string methodName) {
+        if (GetSuperDeclaredMethods(superTable) is {} declaredMethods) {
+            if (declaredMethods.TryGetValue(methodName, out var func)) {
+                return func;
             }
         }
 
@@ -286,8 +354,14 @@ partial class Entity {
         if (!_active || _luaEntity == null) {
             return;
         }
+        
+        if (_onTickFunction == null) {
+            _onTickFunction = GetLuaFunction("OnTick");
+        }
 
-        CallLuaFunction("OnTick", _luaEntity);
+        if (_onTickFunction is { } tickFunction) {
+            tickFunction.Call(_luaEntity);
+        }
     }
 }
 

@@ -420,15 +420,9 @@ public class Game {
         
         _ticks += 1;
         
-        GC.AddMemoryPressure(1024 * 1024 * 1024);
-
         NotificationCenter().Post(new PreTickNotification());
         NotificationCenter().Post(new TickNotification());
         NotificationCenter().Post(new PostTickNotification());
-        
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
     }
 
     /// <summary>
