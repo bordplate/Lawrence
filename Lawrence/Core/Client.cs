@@ -313,7 +313,7 @@ public partial class Client {
             switch (packetHeader.PacketType) {
                 case MPPacketType.MP_PACKET_CONNECT: {
                     if (!WaitingToConnect) {
-                        Console.Error.WriteLine("Player tried to connect twice.");
+                        Logger.Error("Player tried to connect twice.");
                         return;
                     }
                     

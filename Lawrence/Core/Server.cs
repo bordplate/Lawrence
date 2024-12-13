@@ -223,7 +223,7 @@ public class Server {
             _udpServer.Client.SendTo(bytes, endpoint);
         } catch (Exception e)
         {
-            Console.WriteLine($"Error sending packet: {e.Message}");
+            Logger.Error($"Error sending packet: {e.Message}");
         }
     }
 

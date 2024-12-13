@@ -173,7 +173,7 @@ partial class Player {
 partial class Player {
     public void LoadLevel(string level) {
         if (Universe()?.GetLevelByName(level) is not { } l) {
-            Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Could not find level {level}");
+            Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level {level}");
             return;
         }
 
@@ -202,7 +202,7 @@ partial class Player {
                 
                 _level = Universe()?.GetLevelByGameID((ushort)planet);
                 if (_level == null) {
-                    Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Could not find level with game ID {planet}");
+                    Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level with game ID {planet}");
                     return;
                 }
                 
@@ -745,7 +745,7 @@ partial class Player : IClientHandler
 
     public void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value) {
         if (Level()?.GameID() != level) {
-            Console.Error.WriteLine($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level()?.GameID()}");
+            Logger.Log($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level()?.GameID()}");
             return;
         }
         
@@ -851,6 +851,7 @@ partial class Player {
             return;
         }
 
+        _activeView.Delete();
         _activeView = null;
         
         SendPacket(Packet.MakeUIItemPacket(null, MPUIOperationFlag.ClearAll));

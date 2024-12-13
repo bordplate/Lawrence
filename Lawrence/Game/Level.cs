@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Lawrence.Core;
 
 namespace Lawrence.Game;
 
@@ -160,7 +161,7 @@ public class Level : Entity {
         switch(type) {
             case 1:
                 if (index >= LevelFlags1.Length) {
-                    Console.Error.WriteLine($"Level flag index for type 1 out of bounds: {index}");
+                    Logger.Error($"Level flag index for type 1 out of bounds: {index}");
                     return;
                 }
                 
@@ -168,13 +169,13 @@ public class Level : Entity {
                 break;
             case 2:
                 if (index >= LevelFlags2.Length) {
-                    Console.Error.WriteLine($"Level flag index for type 2 out of bounds: {index}");
+                    Logger.Error($"Level flag index for type 2 out of bounds: {index}");
                     return;
                 }
                 LevelFlags2[index] = (byte)value;
                 break;
             default:
-                Console.Error.WriteLine($"Unknown level flag type: {type}");
+                Logger.Error($"Unknown level flag type: {type}");
                 break;
         }
 
