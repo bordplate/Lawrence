@@ -394,9 +394,11 @@ partial class Player {
 
             visibilityGroup = parent;
         } while (!visibilityGroup.MasksVisibility());
+        
+        List<Guid> updateMobys = new();
 
         foreach (Moby moby in visibilityGroup.Find<Moby>()) {
-            if (!moby.HasChanged || (moby.IsInstanced() && !moby.HasParent(this)) || (!moby.IsInstanced() && moby.HasParent(this))) {
+            if (!moby.HasChanged || (moby.IsInstanced() && !moby.HasParent(this)) || (!moby.IsInstanced() && moby.HasParent(this)) || updateMobys.Contains(moby.GUID())) {
                 continue;
             }
 
@@ -407,8 +409,8 @@ partial class Player {
                 }
             }
             
-            
             Update(moby);
+            updateMobys.Add(moby.GUID());
         }
     }
 
@@ -615,7 +617,7 @@ partial class Player : IClientHandler
             AnimationDuration = mobyUpdate.AnimationDuration;
         } else {
             // Update child moby 
-            var child = _client.GetMobyByInternalId(mobyUpdate.Uuid);
+            var child = _client.GetSyncMobyByInternalId(mobyUpdate.Uuid);
             
             if (child == null) {
                 Logger.Error($"Player [{Username()}]: Could not find child moby with UUID {mobyUpdate.Uuid}");
@@ -663,7 +665,7 @@ partial class Player : IClientHandler
     public void PlayerRespawned(byte spawnId) {
         var mobys = Find<Moby>().ToArray();
         foreach (var moby in mobys) {
-            if (moby.SyncOwner == this && (moby.SyncSpawnId <= _respawns || moby.SyncSpawnId > spawnId)) {
+            if (moby.SyncOwner == this && moby.SyncSpawnId != _respawns) {
                 moby.Delete();
             }
         }
@@ -745,7 +747,7 @@ partial class Player : IClientHandler
 
     public void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value) {
         if (Level()?.GameID() != level) {
-            Logger.Log($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level()?.GameID()}");
+            Logger.Trace($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level()?.GameID()}");
             return;
         }
         

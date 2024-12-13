@@ -493,7 +493,7 @@ public partial class Client {
                     if (create.Flags.HasFlag(MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO)) {
                         var parent = create.ParentUuid == 0 ?
                             _clientHandler?.Moby() :
-                            GetMobyByInternalId(create.ParentUuid);
+                            GetSyncMobyByInternalId(create.ParentUuid);
                         
                         if (parent != null) {
                             newMoby.AttachedTo = parent;
@@ -513,7 +513,7 @@ public partial class Client {
                         newMoby.MakeSynced(moby);
                     }
 
-                    var internalId = AssignInternalId(newMoby);
+                    var internalId = CreateSyncMoby(newMoby);
                     
                     SendPacket(Packet.MakeMobyCreateResponsePacket(internalId, packetHeader.RequiresAck, packetHeader.AckCycle));
                     
@@ -549,7 +549,7 @@ public partial class Client {
                         throw new NetworkParsingException("Failed to parse moby delete packet.");
                     }
 
-                    var moby = GetMobyByInternalId((ushort)delete.Uuid);
+                    var moby = GetSyncMobyByInternalId((ushort)delete.Uuid);
                     if (moby != null) {
                         _clientHandler?.DeleteMoby(moby);
                     } else {
@@ -914,6 +914,44 @@ partial class Client {
 
     private readonly ConcurrentDictionary<Guid, ushort> _mobysTable = new();
     private readonly ConcurrentDictionary<ushort, MobyData> _mobys = new();
+    
+    private readonly ConcurrentDictionary<ushort, MobyData> _syncMobys = new();
+
+    public ushort CreateSyncMoby(Moby moby) {
+        // Find next available ID
+        for (ushort i = 1; i <= 4096; i++) {
+            if (!_syncMobys.ContainsKey(i)) {
+                _syncMobys[i] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+                
+                return i;
+            }
+        }
+
+        return 0;
+    }
+    
+    public Moby? GetSyncMobyByInternalId(ushort internalId) {
+        if (_syncMobys.TryGetValue((ushort)internalId, out var mobyData)) {
+            return mobyData.MobyRef;
+        }
+
+        return null;
+    }
+    
+    public void DeleteSyncMoby(ushort internalId) {
+        if (_syncMobys.TryRemove(internalId, out var mobyData)) {
+            mobyData.MobyRef.Delete();
+        }
+    }
+
+    public void DeleteSyncMoby(Moby moby) {
+        foreach (var pair in _syncMobys) {
+            if (pair.Value.MobyRef == moby) {
+                _syncMobys.TryRemove(pair.Key, out _);
+                return;
+            }
+        }
+    }
 
     public void UpdateMoby(Moby moby) {
         if (moby.SyncOwner == _clientHandler?.Moby()) {
@@ -1011,7 +1049,9 @@ partial class Client {
     public void CleanupStaleMobys() {
         long currentTicks = Game.Game.Shared().Ticks();
         foreach (var pair in _mobys) {
-            if (pair.Value.LastUpdate < currentTicks - 60) {
+            if (pair.Value.LastUpdate < currentTicks - 300) {
+                Logger.Log($"Cleaning up stale moby with internal ID {pair.Key}.");
+                
                 if (pair.Value.MobyRef.SyncOwner != _clientHandler?.Moby()) {
                     SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
                 }
