@@ -60,6 +60,7 @@ function Entity:Make(entityType)
     self = newEntity
 
     self:SetLuaEntity(newEntity)
+    self:ClearLuaCaches()
 
     self:Made()
 

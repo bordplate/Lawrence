@@ -206,6 +206,15 @@ partial class Entity {
     private Dictionary<LuaTable, Dictionary<string, LuaFunction>> _superDeclaredMethods = new();
 
     private LuaFunction? _onTickFunction;
+    
+    public void ClearLuaCaches() {
+        _luaClass = null;
+        _declaredMethods = null;
+        _onTickFunction = null;
+        _superClasses.Clear();
+        _superDeclaredMethods.Clear();
+        _luaFunctions.Clear();
+    }
 
     /// <summary>
     /// Gets a Lua function in the Lua entity reflecting this class and caches it. 
