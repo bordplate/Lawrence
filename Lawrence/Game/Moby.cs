@@ -146,6 +146,16 @@ public class Moby : Entity
     };
     
     public virtual Color Color { get => _color; set { if (_color.ToUInt() != value.ToUInt()) { _color = value; HasChanged = true; } } }
+    
+    protected bool _visible = true;
+    public bool Visible {
+        get => _visible && (AttachedTo?.Visible ?? true);
+        protected set {
+            if (_visible == value) return;
+            _visible = value;
+            HasChanged = true;
+        }
+    }
 
     public bool HasChanged { get; protected set; }
 
@@ -153,7 +163,6 @@ public class Moby : Entity
     {
         HasChanged = false;
     }
-
 
     public readonly bool MpUpdateFunc = true;
     public readonly bool CollisionEnabled = true;

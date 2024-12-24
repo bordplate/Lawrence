@@ -1109,8 +1109,6 @@ partial class Client {
             _mobys.TryRemove(internalId, out _);
             _mobysTable.TryRemove(moby.GUID(), out _);
             _lastDeletedId = internalId;
-        } else {
-            Logger.Error($"Trying to delete a moby that does not exist: {moby.GUID()}");
         }
     }
 

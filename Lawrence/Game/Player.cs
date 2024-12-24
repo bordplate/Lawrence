@@ -411,6 +411,11 @@ partial class Player {
         List<Guid> updateMobys = new();
 
         foreach (Moby moby in visibilityGroup.Find<Moby>()) {
+            if (!moby.Visible) {
+                _client.DeleteMoby(moby);
+                continue;
+            }
+            
             if (!moby.HasChanged || (moby.IsInstanced() && !moby.HasParent(this)) || (!moby.IsInstanced() && moby.HasParent(this)) || updateMobys.Contains(moby.GUID())) {
                 continue;
             }
@@ -708,7 +713,10 @@ partial class Player : IClientHandler
         GameState = gameState;
 
         if (gameState == GameState.Loading) {
+            Visible = false;
             _client.ClearInternalMobyCache();
+        } else if (gameState == GameState.PlayerControl) {
+            Visible = true;
         }
         
         CallLuaFunction("OnGameStateChanged", LuaEntity(), (int)gameState);
