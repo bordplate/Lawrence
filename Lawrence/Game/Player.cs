@@ -171,12 +171,25 @@ partial class Player {
 
 #region Gameplay related function
 partial class Player {
+    public void LoadLevel(ushort levelId) {
+        if (Universe()?.GetLevelByGameID(levelId) is not { } l) {
+            Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level with game ID {levelId}");
+            return;
+        }
+        
+        LoadLevel(l);
+    }
+
     public void LoadLevel(string level) {
         if (Universe()?.GetLevelByName(level) is not { } l) {
             Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level {level}");
             return;
         }
+        
+        LoadLevel(l);
+    }
 
+    public void LoadLevel(Level l) {
         _level = l;
         
         _level.Add(this);
