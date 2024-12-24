@@ -19,6 +19,7 @@ public struct AckedMetadata {
     public byte[] Packet;
     public int ResendTimer;
     public long Timestamp;
+    public Action? AckCallback;
 }
 
 public interface IClientHandler {
@@ -152,7 +153,7 @@ public partial class Client {
     private readonly List<byte> _buffer = new();
     private const int BufferSize = 1024;
 
-    public void SendPacket(MPPacketHeader packetHeader, byte[]? packetBody) {
+    public void SendPacket(MPPacketHeader packetHeader, byte[]? packetBody, Action? ackCallback = null) {
         packetHeader.TimeSent = (long)Game.Game.Shared().Time();
 
         var bodyLen = 0;
@@ -190,7 +191,14 @@ public partial class Client {
                 _unacked.Clear();
             }
 
-            _unacked.Add(new AckedMetadata { Packet = packet, AckIndex = packetHeader.RequiresAck, AckCycle = packetHeader.AckCycle, ResendTimer = 30, Timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds() });
+            _unacked.Add(new AckedMetadata {
+                Packet = packet, 
+                AckIndex = packetHeader.RequiresAck, 
+                AckCycle = packetHeader.AckCycle, 
+                ResendTimer = 30, 
+                Timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds(),
+                AckCallback = ackCallback
+            });
         }
 
         // Add packet to buffer
@@ -216,6 +224,12 @@ public partial class Client {
         SendPacket(header, body);
     }
 
+    public void SendPacket(Packet packet, Action ackCallback) {
+        (MPPacketHeader header, byte[] body) = packet.GetBytes(_endianness);
+        
+        SendPacket(header, body, ackCallback);
+    }
+
     private long _lastTimeSent = 0;
 
     // Parse and process a packet
@@ -235,8 +249,7 @@ public partial class Client {
                 // Try to read in other endianness
                 if (_endianness == Packet.Endianness.BigEndian) {
                     _endianness = Packet.Endianness.LittleEndian;
-                }
-                else {
+                } else {
                     _endianness = Packet.Endianness.BigEndian;
                 }
                 
@@ -295,8 +308,7 @@ public partial class Client {
                 if ((packetHeader.Flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 &&
                     _acked[packetHeader.RequiresAck].AckCycle == packetHeader.AckCycle) {
                     _server.SendTo(_acked[packetHeader.RequiresAck].Packet, _endpoint);
-                }
-                else if ((packetHeader.Flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) {
+                } else if ((packetHeader.Flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) {
                     // If it's not RPC, we just ack the packet and process the packet
                     MPPacketHeader ack = new MPPacketHeader {
                         PacketType = MPPacketType.MP_PACKET_ACK,
@@ -446,6 +458,7 @@ public partial class Client {
                         if (unacked.AckCycle == packetHeader.AckCycle &&
                             unacked.AckIndex == packetHeader.RequiresAck) {
                             _unacked.Remove(unacked);
+                            unacked.AckCallback?.Invoke();
                             break;
                         }
                     }
