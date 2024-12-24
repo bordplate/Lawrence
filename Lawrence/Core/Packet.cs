@@ -96,7 +96,9 @@ public enum MPMobyCreateFailureReason : byte
     NOT_READY = 1,
     ALREADY_EXISTS = 2,
     INVALID_PARENT = 3,
-    MAX_MOBYS = 4
+    MAX_MOBYS = 4,
+    UPDATE_NON_EXISTENT = 5,
+    SUCCESS = 6,
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

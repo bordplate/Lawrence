@@ -431,6 +431,11 @@ partial class Player {
 #region Networking
 partial class Player {
     public void Update(Moby moby) {
+        if (GameState == GameState.Loading) {
+            // Don't update mobys while loading levels
+            return;
+        }
+        
         // We don't update ourselves.
         if (moby == this || moby.SyncOwner == this) {
             Logger.Log($"Player [{Username()}]: Tried to update itself or its own moby.");
@@ -493,7 +498,7 @@ partial class Player {
     }
 
     public void DeleteMoby(Moby moby) {
-        if (!moby.IsInstanced() && moby.HasParent(this)) {
+        if (moby.SyncOwner == this) {
             moby.Delete();
         } else {
             Logger.Error($"Player [{Username()}] tried to delete a moby they don't control.");
@@ -665,8 +670,9 @@ partial class Player : IClientHandler
     public void PlayerRespawned(byte spawnId) {
         var mobys = Find<Moby>().ToArray();
         foreach (var moby in mobys) {
-            if (moby.SyncOwner == this && moby.SyncSpawnId != _respawns) {
+            if (moby.SyncOwner == this && moby.SyncSpawnId != spawnId) {
                 moby.Delete();
+                _client.DeleteSyncMoby(moby);
             }
         }
         _client.CleanupStaleMobys();
@@ -687,6 +693,11 @@ partial class Player : IClientHandler
     /// <param name="gameState">Game state this Player's client has changed to</param>
     public void GameStateChanged(GameState gameState) {
         GameState = gameState;
+
+        if (gameState == GameState.Loading) {
+            _client.ClearInternalMobyCache();
+        }
+        
         CallLuaFunction("OnGameStateChanged", LuaEntity(), (int)gameState);
     }
 

@@ -543,14 +543,19 @@ public partial class Client {
                         case MPMobyCreateFailureReason.UNKNOWN:
                             Logger.Error($"Couldn't create moby for Player({ID}): unknown error.");
                             break;
-                        case MPMobyCreateFailureReason.NOT_READY:
-                            break;
+                        case MPMobyCreateFailureReason.NOT_READY: return;
                         case MPMobyCreateFailureReason.ALREADY_EXISTS:
                             Logger.Error($"Couldn't create moby for Player({ID}): already exists.");
                             break;
                         case MPMobyCreateFailureReason.MAX_MOBYS:
                             Logger.Error($"Couldn't create moby for Player({ID}): out of moby space.");
                             break;
+                        case MPMobyCreateFailureReason.UPDATE_NON_EXISTENT:
+                            Logger.Error($"Couldn't create moby for Player({ID}): tried to update a moby that doesn't exist.");
+                            break;
+                        case MPMobyCreateFailureReason.SUCCESS:
+                            SetMobyCreated(createFailure.Uuid);
+                            return;
                     }
                     
                     ClearMoby(createFailure.Uuid);
@@ -923,6 +928,7 @@ partial class Client {
         public Guid Id;
         public long LastUpdate;
         public Moby MobyRef;
+        public bool ClientCreated;
     }
 
     private readonly ConcurrentDictionary<Guid, ushort> _mobysTable = new();
@@ -977,8 +983,25 @@ partial class Client {
         if (internalId == 0) {
             return;
         }
+        
+        if (!_mobys[internalId].ClientCreated) {
+            if (Game.Game.Shared().Ticks() > _mobys[internalId].LastUpdate + 120) {
+                ushort parentInternalId = 0;
+                if (moby.AttachedTo != null) {
+                    parentInternalId = GetOrCreateInternalId(moby.AttachedTo);
+                    if (parentInternalId == 0) {
+                        Logger.Error($"Player({_clientHandler?.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
+                    }
+                }
+                
+                SendPacket(Packet.MakeCreateMobyPacket(internalId, moby, parentInternalId));
+                _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby, ClientCreated = false };
+            }
+            
+            return;
+        }
 
-        _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+        _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby, ClientCreated = true };
         SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
         SendPacket(Packet.MakeMobyUpdateExtended(internalId, [new Packet.UpdateMobyValue(0x38, moby.Color.ToUInt())]));
     }
@@ -1065,7 +1088,7 @@ partial class Client {
             if (pair.Value.LastUpdate < currentTicks - 300) {
                 Logger.Log($"Cleaning up stale moby with internal ID {pair.Key}.");
                 
-                if (pair.Value.MobyRef.SyncOwner != _clientHandler?.Moby()) {
+                if (pair.Value.MobyRef.SyncOwner != _clientHandler?.Moby() && pair.Value.ClientCreated) {
                     SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
                 }
 
@@ -1078,7 +1101,7 @@ partial class Client {
     public void DeleteMoby(Moby moby) {
         if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
             // If found, delete it from the game if our client is not the sync owner
-            if (moby.SyncOwner != _clientHandler?.Moby()) {
+            if (moby.SyncOwner != _clientHandler?.Moby() && _mobys[internalId].ClientCreated) {
                 SendPacket(Packet.MakeDeleteMobyPacket(internalId));
             }
 
@@ -1088,6 +1111,12 @@ partial class Client {
             _lastDeletedId = internalId;
         } else {
             Logger.Error($"Trying to delete a moby that does not exist: {moby.GUID()}");
+        }
+    }
+
+    public void SetMobyCreated(ushort id) {
+        if (_mobys.TryGetValue(id, out var mobyData)) {
+            _mobys[id] = mobyData with { LastUpdate = Game.Game.Shared().Ticks(), ClientCreated = true };
         }
     }
 
