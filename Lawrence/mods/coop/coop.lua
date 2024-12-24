@@ -6,9 +6,18 @@ function LobbyUniverse:initialize()
     Universe.initialize(self)
     
     self.lobbies = ObservableList({})
+    
+    self.firstPlayer = false
 end
  
 function LobbyUniverse:OnPlayerJoin(player)
+    if not self.firstPlayer then
+        self.firstPlayer = true
+        
+        self:NewLobby(player, "")
+        return
+    end
+    
     local lobby = LobbyListView(player, self)
     player:ShowView(lobby)
 end
