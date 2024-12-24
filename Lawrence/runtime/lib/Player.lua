@@ -11,6 +11,7 @@ Player.offset = {
     hovenShipsKilled = 0x96c9ec,
     oltanisShipsKilled = 0x96c9f0,
     veldin2CommandosKilled = 0x96c9f8,
+    gildedItems = 0x969ca8,
 }
 
 function Player:initialize(internalEntity)
