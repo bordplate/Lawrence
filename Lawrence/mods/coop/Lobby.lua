@@ -107,7 +107,7 @@ function Lobby:Leave(player)
     if player:GUID() == self.host:GUID() then
         if #self.players > 0 then
             self.host = self.players[1]
-            self.host:ToastMessage("You are now the host.", 120)
+            self.host:ToastMessage("You are now the host.", 300)
         else
             lobbyUniverse:RemoveLobby(self)
         end
