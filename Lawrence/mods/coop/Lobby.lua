@@ -66,7 +66,7 @@ function Lobby:initialize(host, password)
     self.readyCallbacks = {}
     
     self.bolts = 0
-    self.unlockedInfobots = {0}
+    self.unlockedInfobots = {}
     self.unlockedSkillpoints = {}
     self.unlockedItems = {}
     
@@ -78,6 +78,8 @@ function Lobby:AddReadyCallback(callback)
 end
 
 function Lobby:Start()
+    self.unlockedInfobots = {self.options.startPlanet.value}
+    
     print("Starting lobby for: ")
     for i, player in ipairs(self.players) do
         print("  " .. player:Username())
@@ -105,7 +107,7 @@ function Lobby:Leave(player)
     if player:GUID() == self.host:GUID() then
         if #self.players > 0 then
             self.host = self.players[1]
-            self.host:ToastMessage("You are now the host.")
+            self.host:ToastMessage("You are now the host.", 120)
         else
             lobbyUniverse:RemoveLobby(self)
         end
