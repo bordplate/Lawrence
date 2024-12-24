@@ -771,7 +771,6 @@ partial class Player : IClientHandler
 
     public void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value) {
         if (Level()?.GameID() != level) {
-            Logger.Trace($"Player [{_client.GetEndpoint()}]: Received level flag change for level {level} but is in level {Level()?.GameID()}");
             return;
         }
         
