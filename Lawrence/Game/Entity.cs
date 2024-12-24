@@ -5,6 +5,7 @@ using NLua;
 
 using Lawrence.Core;
 using Lawrence.Game.UI;
+using NLua.Exceptions;
 
 namespace Lawrence.Game;
 
@@ -89,7 +90,7 @@ partial class Entity {
     }
 
     public void AddEntity(LuaTable entityTable) {
-        object internalEntity = entityTable["_internalEntity"];
+        var internalEntity = entityTable["_internalEntity"];
 
         if (internalEntity is Entity entity) {
             Add(entity);
@@ -98,9 +99,7 @@ partial class Entity {
 
     public virtual void Add(Entity entity, bool reparent = true) {
         if (reparent) {
-            if (entity._parent != null) {
-                entity._parent.Remove(entity);
-            }
+            entity._parent?.Remove(entity);
 
             entity._parent = this;
         }
@@ -334,10 +333,27 @@ partial class Entity {
     /// <param name="functionName">Name of the function to call</param>
     /// <param name="args">Args to pass to the function</param>
     /// <returns>null if not found or whatever the called function returns (often null).</returns>
-    protected object? CallLuaFunction(string functionName, params object?[] args) {
+    protected void CallLuaFunction(string functionName, params object?[] args) {
+        if (GetLuaFunction(functionName) is { } function) {
+            function.Call(args);
+            Game.Shared().State().State.Pop(1);
+        }
+    }
+    
+    protected object? CallLuaFunctionWithResult(string functionName, params object?[] args) {
+        var classNamespace = ((LuaTable)_luaEntity!["class"])["name"] as string;
+        
+        Logger.Log($"{classNamespace}:{functionName}() PreGet: {Game.Shared().State().State.GetTop()}");
+        
         var function = GetLuaFunction(functionName);
-
-        return function?.Call(args);
+        
+        Logger.Log($"{classNamespace}:{functionName}() PreCall: {Game.Shared().State().State.GetTop()}");
+        
+        var result = function?.Call(args);
+        
+        Logger.Log($"{classNamespace}:{functionName}() PostCall: {Game.Shared().State().State.GetTop()}");
+        
+        return result;
     }
 
     /// <summary>
@@ -364,12 +380,17 @@ partial class Entity {
             return;
         }
         
-        if (_onTickFunction == null) {
-            _onTickFunction = GetLuaFunction("OnTick");
-        }
+        try {
+            if (_onTickFunction == null) {
+                _onTickFunction = GetLuaFunction("OnTick");
+            }
 
-        if (_onTickFunction is { } tickFunction) {
-            tickFunction.Call(_luaEntity);
+            if (_onTickFunction is { } tickFunction) {
+                tickFunction.Call(_luaEntity);
+                Game.Shared().State().State.Pop(1);
+            }
+        } catch (LuaScriptException e) {
+            Logger.Error($"Error in OnTick for entity: {e.Message}");
         }
     }
 }

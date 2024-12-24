@@ -87,3 +87,7 @@ function Entity:FindChildren(type)
     
     return children
 end 
+
+function Entity:OnTick()
+    
+end

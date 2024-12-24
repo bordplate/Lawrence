@@ -335,6 +335,10 @@ public class Game {
         if (_state == null) {
             _state = new Lua();
             _state.UseTraceback = true;
+            // MaximumRecursion decides how deep we register global values.
+            // Such that MaximumRecursion of default 2 with _state["Game"] will register Game.NewEntity, Game.NewLabel, etc.,
+            //   not just Game. MaximumRecursion of 1 will only register Game. While 3 would register Game.Levels[].Name(), etc.
+            _state.MaximumRecursion = 1;
 
             _state.LoadCLRPackage();
             _state["Game"] = this;
