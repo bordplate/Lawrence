@@ -24,13 +24,13 @@ function RandoPlayer:Made()
         Player.offset.veldin2CommandosKilled,
     }
     
-    for _, counter in ipairs(self.skillpointCounters) do
-        self:MonitorAddress(counter, 4)
-    end
-
-    for i = 2, 26 do
-        self:MonitorAddress(Player.offset.gildedItems + i, 1)
-    end
+--     for _, counter in ipairs(self.skillpointCounters) do
+--         self:MonitorAddress(counter, 4) 
+--     end
+-- 
+--     for i = 2, 26 do
+--         self:MonitorAddress(Player.offset.gildedItems + i, 1)
+--     end
 end
 
 function RandoPlayer:Start()
