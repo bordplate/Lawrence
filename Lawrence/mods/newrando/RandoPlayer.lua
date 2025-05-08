@@ -116,6 +116,8 @@ end
 function RandoPlayer:OnCollectedGoldBolt(planet, number)
     print("Player collected gold bolt on " .. planet .. " number: " .. number);
     
+    self.lobby.universe:OnPlayerGetGoldBolt(self, planet, number)
+    
     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
         if player:GUID() ~= self:GUID() then
             player:SetAddressValue(Player.offset.goldBolts + planet * 4 + number, 1, 1)
@@ -231,70 +233,74 @@ function RandoPlayer:OnUnlockItem(item_id, equip)
     item = Item.GetById(item_id)
     
     print("Unlocking item " .. item.name)
-
-    self:GiveItem(item.id, equip)
     
-    self.lobby:AddUnlockedItem(item.id)
+    self.lobby.universe:OnPlayerGetItem(self, item_id)
 
-    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-        if player:Username() ~= self:Username() then
-            if item.isWeapon then
-                player:ToastMessage("You've purchased a \x0c" .. item.name .. "\x08!", 60*5)
-            end
-            
-            print("Giving " .. item.name .. " to player " .. player:Username())
-            player:GiveItem(item.id, false)
-
-            if player:Level() == self:Level() then
-                if item.name == "Swingshot" then
-                    --player:DeleteAllChildrenWithOClass(890)  -- Delete Helga
-                end
-                if item.name == "Grindboots" then
-                    player:DeleteAllChildrenWithOClass(1190)  -- Delete Fred
-                end
-                if item.name == "Hydrodisplacer" then
-                    player:DeleteAllChildrenWithOClass(1016)  -- Delete Hydrodisplacer
-                end
-                if item.name == "Metal Detector" then
-                    player:DeleteAllChildrenWithOClass(1283)  -- Delete Plumber
-                end
-            end
-        end
-    end
+--     self:GiveItem(item.id, equip)
+--     
+--     self.lobby:AddUnlockedItem(item.id)
+-- 
+--     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+--         if player:Username() ~= self:Username() then
+--             if item.isWeapon then
+--                 player:ToastMessage("You've purchased a \x0c" .. item.name .. "\x08!", 60*5)
+--             end
+--             
+--             print("Giving " .. item.name .. " to player " .. player:Username())
+--             player:GiveItem(item.id, false)
+-- 
+--             if player:Level() == self:Level() then
+--                 if item.name == "Swingshot" then
+--                     --player:DeleteAllChildrenWithOClass(890)  -- Delete Helga
+--                 end
+--                 if item.name == "Grindboots" then
+--                     player:DeleteAllChildrenWithOClass(1190)  -- Delete Fred
+--                 end
+--                 if item.name == "Hydrodisplacer" then
+--                     player:DeleteAllChildrenWithOClass(1016)  -- Delete Hydrodisplacer
+--                 end
+--                 if item.name == "Metal Detector" then
+--                     player:DeleteAllChildrenWithOClass(1283)  -- Delete Plumber
+--                 end
+--             end
+--         end
+--     end
 end
 
 function RandoPlayer:OnUnlockLevel(level)
-    Player.OnUnlockLevel(self, level)
+    -- Player.OnUnlockLevel(self, level)
+    print("OnUnlockLevel: " .. tostring(level))
+    self.lobby.universe:OnPlayerGetPlanet(self, level)
     
-    self.lobby:AddUnlockedInfobot(level)
-    
-    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-        player:UnlockLevel(level)
-
-        if player:Level() == self:Level() then
-            if level == 2 then  -- Aridia
-                player:DeleteAllChildrenWithOClass(774)  -- Delete Plumber
-            end
-            if level == 6 then  -- Blarg
-                player:DeleteAllChildrenWithOClass(1190)  -- Delete Lietuenant
-            end
-            if level == 5 then  -- Rilgar
-                player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
-            end
-            if level == 7 then  -- Umbris
-                player:DeleteAllChildrenWithOClass(919)  -- Delete Bouncer
-            end
-            if level == 8 then  -- Batalia
-                player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
-            end
-            if level == 9 then  -- Gaspar
-                player:DeleteAllChildrenWithOClass(1144)  -- Delete Deserter
-            end
-            if level == 10 then  -- Orxon
-                player:DeleteAllChildrenWithOClass(1130)  -- Delete Commando
-            end
-        end
-    end
+--     self.lobby:AddUnlockedInfobot(level)
+--    
+--     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+--         player:UnlockLevel(level)
+-- 
+--         if player:Level() == self:Level() then
+--             if level == 2 then  -- Aridia
+--                 player:DeleteAllChildrenWithOClass(774)  -- Delete Plumber
+--             end
+--             if level == 6 then  -- Blarg
+--                 player:DeleteAllChildrenWithOClass(1190)  -- Delete Lietuenant
+--             end
+--             if level == 5 then  -- Rilgar
+--                 player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
+--             end
+--             if level == 7 then  -- Umbris
+--                 player:DeleteAllChildrenWithOClass(919)  -- Delete Bouncer
+--             end
+--             if level == 8 then  -- Batalia
+--                 player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
+--             end
+--             if level == 9 then  -- Gaspar
+--                 player:DeleteAllChildrenWithOClass(1144)  -- Delete Deserter
+--             end
+--             if level == 10 then  -- Orxon
+--                 player:DeleteAllChildrenWithOClass(1130)  -- Delete Commando
+--             end
+--         end
+--     end
 end
 
 function RandoPlayer:OnUnlockSkillpoint(skillpoint)
@@ -319,8 +325,11 @@ end
 function RandoPlayer:OnRespawned()
     if self:Level():GetName() == "Kerwan" then
         self:DeleteAllChildrenWithUID(158)
-    end
-    
+    end 
+end
+
+function RandoPlayer:NotifyLocationCollected(location_id)
+    print(string.format("player %s got location: %d", self.username, location_id))
 end
 
 function RandoPlayer:OnDisconnect()
