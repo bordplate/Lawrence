@@ -28,14 +28,14 @@ jobs:
       - name: Publish for Linux x64
         working-directory: ./Lawrence
         run: >
-          dotnet publish -c Release -f net7.0 -r linux-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/linux-x64 &&
+          dotnet publish -c Release -f net8.0 -r linux-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/linux-x64 &&
           cd bin/publish/linux-x64 &&
           zip Lawrence-linux-x64.zip -r .
 
       - name: Publish for Windows x64
         working-directory: ./Lawrence
         run: >
-          dotnet publish -c Release -f net7.0 -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/win-x64 &&
+          dotnet publish -c Release -f net8.0 -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/win-x64 &&
           cd bin/publish/win-x64 &&
           zip Lawrence-windows-x64.zip -r .
         
