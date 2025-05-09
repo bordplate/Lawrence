@@ -133,15 +133,3 @@ function Lobby:AllPlayersReady()
     
     return true
 end
-
-function Lobby:AddUnlockedItem(item_id)
-    table.insert(self.unlockedItems, item_id)
-end
-
-function Lobby:AddUnlockedInfobot(infobot_id)
-    table.insert(self.unlockedInfobots, infobot_id)
-end
-
-function Lobby:AddUnlockedSkillpoint(skillpoint_id)
-    table.insert(self.unlockedSkillpoints, skillpoint_id)
-end

@@ -34,6 +34,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item)
             player:UnlockLevel(APItemToPlanet(ap_item))
         else
             APItemToGoldBolt(ap_item)
+            player:GiveBolts(15000)
             -- do stuff for gold bolt (give money?)
         end
     end
@@ -41,10 +42,10 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    player:GiveBolts(2500)
-    player:GiveItem(6)
-    player:GiveItem(4)
-    player:GiveItem(10)
+--     player:GiveBolts(150000)
+--     player:GiveItem(6)
+--     player:GiveItem(4)
+--     player:GiveItem(10)
     if self.ap_client == nil then
         local uuid = "5"
         self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)
@@ -57,6 +58,7 @@ end
 
 function RandoUniverse:OnPlayerGetItem(player, item_id)
     if item_id == 10 then -- bomb glove
+        player:GiveItem(10)
         return
     end
     location_id = ItemToLocation(item_id)
@@ -66,6 +68,10 @@ end
 
 function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     print("OnPlayerGetPlanet: " .. tostring(planet_id))
+    if not PlanetGotFromCorrectLocation(player:Level():GameID(), planet_id) then
+       print("Planet " .. planet_id .. " unlock_level not called from infobot. (ignoring)") 
+       return
+    end
     location_id = PlanetToLocation(planet_id)
     self:OnPlayerGetLocation(player, location_id)
     self:NotifyPlayersLocationCollected(location_id, player)

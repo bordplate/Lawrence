@@ -99,7 +99,7 @@ local planetLocations = {
     -- Gaspar
     
     -- Orxon
-    [10]=51, -- pokitaru
+    [11]=51, -- pokitaru
     [12]=52, -- hoven
     
     -- Pokitaru
@@ -128,15 +128,15 @@ local boltLocation = {
     ["1-1"]=6,
     
     -- Aridia
-    ["2-0"]=10,
+    ["2-0"]=13,
     ["2-1"]=11,
     ["2-2"]=12,
-    ["2-3"]=13,
+    ["2-3"]=10,
     
     -- Kerwan
     ["3-0"]=18,
-    ["3-1"]=19,
-    ["3-2"]=20,
+    ["3-1"]=20,
+    ["3-2"]=19,
     
     -- Eudora
     ["4-0"]=24,
@@ -150,16 +150,16 @@ local boltLocation = {
     ["6-1"]=36,
         
     -- Umbris
-    ["7-0"]=38,
-    ["7-1"]=39,
+    ["7-0"]=39,
+    ["7-1"]=38,
     
     -- Batalia
     ["8-0"]=44,
     ["8-1"]=45,
     
     -- Gaspar
-    ["9-0"]=48,
-    ["9-1"]=49,
+    ["9-0"]=49,
+    ["9-1"]=48,
     
     -- Orxon
     ["10-0"]=56,
@@ -169,25 +169,25 @@ local boltLocation = {
     ["11-0"]=62,
     
     -- Hoven
-    ["12-0"]=67,
-    ["12-1"]=68,
+    ["12-0"]=68,
+    ["12-1"]=67,
     
     -- Gemlik
     ["13-0"]=70,
     
     -- Oltanis
-    ["14-0"]=75,
-    ["14-1"]=76,
-    ["14-2"]=77,
-    ["14-3"]=78,
+    ["14-0"]=78,
+    ["14-1"]=75,
+    ["14-2"]=76,
+    ["14-3"]=77,
     
     -- Quartu
     ["15-0"]=82,
     ["15-1"]=83,
     
     -- Kalebo III
-    ["16-0"]=86,
-    ["16-1"]=87,
+    ["16-0"]=87,
+    ["16-1"]=86,
     
     -- Drek's Fleet
     ["17-0"]=90,
@@ -197,6 +197,55 @@ local boltLocation = {
     ["18-0"]=92,
     ["18-1"]=93,
     ["18-2"]=94,
+}
+
+infobot_pickup_planets = { -- maps a planet's id to the id of the planet you find the infobot on
+    -- Novalis
+    [2]=1, -- aridia
+    [3]=1, -- kerwan
+    
+    -- Kerwan
+    [4]=3, -- eudora
+        
+    -- Eudora
+    [6]=4, -- blarg
+    
+    -- Rilgar
+    [7]=5, -- umbris
+    
+    -- Blarg
+    [5]=6, -- rilgar
+    
+    -- Umbris
+    [8]=7, -- batalia
+    
+    -- Batalia
+    [9]=8, -- gaspar
+    [10]=8, -- orxon
+    
+    -- Gaspar
+    
+    -- Orxon
+    [11]=10, -- pokitaru
+    [12]=10, -- hoven
+    
+    -- Pokitaru
+    
+    -- Hoven
+    [13]=12, -- gemlik
+    
+    -- Gemlik
+    [14]=13, -- oltanis
+    
+    -- Oltanis
+    [15]=14, -- quartu
+    
+    -- Quartu
+    [16]=15, -- kalebo III
+    [17]=15, -- Drek's Fleet
+    
+    -- Drek's Fleet
+    [18]=17, -- veldin 2
 }
 
 function ItemToLocation(item_id)
@@ -223,4 +272,8 @@ function GoldBoltToLocation(planet, number)
     end
     print(string.format("bolt_id: %s not found", bolt_id))
     return 0
+end
+
+function PlanetGotFromCorrectLocation(current_level, unlocked_level)
+    return (infobot_pickup_planets[unlocked_level] == current_level)
 end

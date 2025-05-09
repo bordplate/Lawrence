@@ -24,6 +24,20 @@ function RandoPlayer:Made()
         Player.offset.veldin2CommandosKilled,
     }
     
+    self.vendorItems = {
+        [0]=0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+    }
+    
 --     for _, counter in ipairs(self.skillpointCounters) do
 --         self:MonitorAddress(counter, 4) 
 --     end
@@ -31,6 +45,10 @@ function RandoPlayer:Made()
 --     for i = 2, 26 do
 --         self:MonitorAddress(Player.offset.gildedItems + i, 1)
 --     end
+
+       for i = 0, 11 do
+           self:MonitorAddress(Player.offset.vendorItems + i, 1)
+       end
 end
 
 function RandoPlayer:Start()
@@ -44,7 +62,7 @@ function RandoPlayer:Start()
         self:GiveItem(Item.GetByName("Sonic Summoner").id)
         self:GiveItem(Item.GetByName("O2 Mask").id)
         self:GiveItem(Item.GetByName("Pilot's Helmet").id)
-        --self:GiveItem(Item.GetByName("Swingshot").id)
+        self:GiveItem(Item.GetByName("Swingshot").id)
         self:GiveItem(Item.GetByName("Hydrodisplacer").id)
         self:GiveItem(Item.GetByName("Trespasser").id)
         self:GiveItem(Item.GetByName("Metal Detector").id)
@@ -88,7 +106,6 @@ function RandoPlayer:Start()
         self:UnlockLevel(16)
         self:UnlockLevel(17)
         self:UnlockLevel(18)
-        self:UnlockAllGoldBolts()
     end
 
     if not self.lobby.started then
@@ -122,47 +139,6 @@ function RandoPlayer:OnCollectedGoldBolt(planet, number)
         if player:GUID() ~= self:GUID() then
             player:SetAddressValue(Player.offset.goldBolts + planet * 4 + number, 1, 1)
             player:ToastMessage("\x0cGold Bolt\x08 acquired", 60*5)
-        end
-    end
-end
-
-function RandoPlayer:UnlockAllGoldBolts()
-    for i = 0, 17 do
-        for j = 0, 3 do
-            self:SetAddressValue(Player.offset.goldBolts + i * 4 + j, 1, 1)
-        end
-    end
-end
-
-function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
-    print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
-    
-    local addressIsSkillpointCounter = false
-    for _, counter in ipairs(self.skillpointCounters) do
-        if address == counter then
-            addressIsSkillpointCounter = true
-            break
-        end
-    end
-    
-    if addressIsSkillpointCounter and newValue > oldValue then
-        for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-            if player:GUID() ~= self:GUID() then
-                player:SetAddressValue(address, newValue, 4)
-            end
-        end
-    end
-    
-    if address >= Player.offset.gildedItems and address <= Player.offset.gildedItems + 35 then
-        local itemIndex = address - Player.offset.gildedItems + 2
-        print("Item " .. itemIndex .. " changed to " .. newValue)
-        
-        if newValue ~= 0 then
-            for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-                if player:GUID() ~= self:GUID() then
-                    player:SetAddressValue(address, 1, 1)
-                end
-            end
         end
     end
 end
@@ -232,85 +208,34 @@ end
 function RandoPlayer:OnUnlockItem(item_id, equip)
     item = Item.GetById(item_id)
     
+    self:RemoveItemFromVendor(item_id)
+    
     print("Unlocking item " .. item.name)
     
     self.lobby.universe:OnPlayerGetItem(self, item_id)
-
---     self:GiveItem(item.id, equip)
---     
---     self.lobby:AddUnlockedItem(item.id)
--- 
---     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
---         if player:Username() ~= self:Username() then
---             if item.isWeapon then
---                 player:ToastMessage("You've purchased a \x0c" .. item.name .. "\x08!", 60*5)
---             end
---             
---             print("Giving " .. item.name .. " to player " .. player:Username())
---             player:GiveItem(item.id, false)
--- 
---             if player:Level() == self:Level() then
---                 if item.name == "Swingshot" then
---                     --player:DeleteAllChildrenWithOClass(890)  -- Delete Helga
---                 end
---                 if item.name == "Grindboots" then
---                     player:DeleteAllChildrenWithOClass(1190)  -- Delete Fred
---                 end
---                 if item.name == "Hydrodisplacer" then
---                     player:DeleteAllChildrenWithOClass(1016)  -- Delete Hydrodisplacer
---                 end
---                 if item.name == "Metal Detector" then
---                     player:DeleteAllChildrenWithOClass(1283)  -- Delete Plumber
---                 end
---             end
---         end
---     end
 end
 
 function RandoPlayer:OnUnlockLevel(level)
-    -- Player.OnUnlockLevel(self, level)
     print("OnUnlockLevel: " .. tostring(level))
     self.lobby.universe:OnPlayerGetPlanet(self, level)
-    
---     self.lobby:AddUnlockedInfobot(level)
---    
---     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
---         player:UnlockLevel(level)
--- 
---         if player:Level() == self:Level() then
---             if level == 2 then  -- Aridia
---                 player:DeleteAllChildrenWithOClass(774)  -- Delete Plumber
---             end
---             if level == 6 then  -- Blarg
---                 player:DeleteAllChildrenWithOClass(1190)  -- Delete Lietuenant
---             end
---             if level == 5 then  -- Rilgar
---                 player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
---             end
---             if level == 7 then  -- Umbris
---                 player:DeleteAllChildrenWithOClass(919)  -- Delete Bouncer
---             end
---             if level == 8 then  -- Batalia
---                 player:DeleteAllChildrenWithOClass(750)  -- Delete infobot
---             end
---             if level == 9 then  -- Gaspar
---                 player:DeleteAllChildrenWithOClass(1144)  -- Delete Deserter
---             end
---             if level == 10 then  -- Orxon
---                 player:DeleteAllChildrenWithOClass(1130)  -- Delete Commando
---             end
---         end
---     end
 end
 
-function RandoPlayer:OnUnlockSkillpoint(skillpoint)
-    self.lobby:AddUnlockedSkillpoint(skillpoint)
-    
-    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-        player:UnlockSkillpoint(skillpoint)
+-- function RandoPlayer:OnUnlockSkillpoint(skillpoint)
+-- --     self.lobby:AddUnlockedSkillpoint(skillpoint)
+--     
+--     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+--         player:UnlockSkillpoint(skillpoint)
+--     end
+-- end
+
+function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
+    print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
+       
+    if address >= Player.offset.vendorItems and address <= Player.offset.vendorItems + 11 then
+        self.vendorItems[address - Player.offset.vendorItems] = newValue
+        print(tostring(self.vendorItems[0]) .. ", " .. table.concat(self.vendorItems, ", "))
     end
 end
-
 
 function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
     self.totalBolts = totalBolts
@@ -330,6 +255,18 @@ end
 
 function RandoPlayer:NotifyLocationCollected(location_id)
     print(string.format("player %s got location: %d", self.username, location_id))
+end
+
+function RandoPlayer:RemoveItemFromVendor(item_id)
+    for i = 0, #self.vendorItems do
+        if self.vendorItems[i] == item_id then
+            -- remove and shift all the items after it one to the left
+            for j = i, (#self.vendorItems - 1) do
+                self.vendorItems[j] = self.vendorItems[j+1]
+                self:SetAddressValue(Player.offset.vendorItems + j, self.vendorItems[j+1], 1)
+            end
+        end
+    end
 end
 
 function RandoPlayer:OnDisconnect()

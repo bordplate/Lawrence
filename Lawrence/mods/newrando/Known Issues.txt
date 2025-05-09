@@ -1,0 +1,2 @@
+receiving an item buyable from the vendor makes it unbuyable in the vendor. this can lock out items
+archipelago sometimes seems to fail. archipelago restart needed to reconnect
