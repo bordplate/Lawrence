@@ -303,6 +303,10 @@ partial class Player {
         _changedLevelFlags[type].Add((index, value));
     }
 
+    public void setCommunicationFlags(UInt32 bitmap) {
+        SendPacket(Packet.MakeSetCommunicationFlagsPacket(bitmap));
+    }
+
     public void ShowErrorMessage(string message) {
         _client.ShowErrorMessage(message);
     }
