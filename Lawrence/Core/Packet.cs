@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using Lawrence.Game;
+using Lawrence.Game.UI;
 
 namespace Lawrence.Core;
 
@@ -23,7 +24,7 @@ public enum MPPacketType : ushort
     MP_PACKET_MOBY_CREATE = 6,
     MP_PACKET_DISCONNECTED = 7,
     MP_PACKET_MOBY_DELETE = 8,
-    MP_PACKET_MOBY_COLLISION = 9,
+    MP_PACKET_MOBY_DAMAGE = 9,
     MP_PACKET_SET_STATE = 10,
     MP_PACKET_SET_HUD_TEXT = 11,
     MP_PACKET_QUERY_GAME_SERVERS = 12,
@@ -32,10 +33,19 @@ public enum MPPacketType : ushort
     MP_PACKET_PLAYER_RESPAWNED = 15,
     MP_PACKET_REGISTER_SERVER = 16,
     MP_PACKET_TOAST_MESSAGE = 17,
-    MP_PACKET_ERROR_MESSAGE = 21
+    MP_PACKET_ERROR_MESSAGE = 21,
+    MP_PACKET_REGISTER_HYBRID_MOBY = 22,
+    MP_PACKET_MONITORED_VALUE_CHANGED = 23,
+    MP_PACKET_CHANGE_MOBY_VALUE = 24,
+    MP_PACKET_LEVEL_FLAG_CHANGED = 25,
+    MP_PACKET_MONITOR_ADDRESS = 26,
+    MP_PACKET_MONITORED_ADDRESS_CHANGED = 27,
+    MP_PACKET_MOBY_CREATE_FAILURE = 28,
+    MP_PACKET_UI = 29,
+    MP_PACKET_UI_EVENT = 30,
 }
 
-public enum MPStateType : uint
+public enum MPStateType : ushort
 {
     MP_STATE_TYPE_DAMAGE = 1,
     MP_STATE_TYPE_PLAYER =  2,
@@ -50,7 +60,15 @@ public enum MPStateType : uint
     MP_STATE_TYPE_ARBITRARY = 11,
     MP_STATE_TYPE_UNLOCK_ITEM = 12,
     MP_STATE_TYPE_GIVE_BOLTS = 13,
-    MP_STATE_TYPE_UNLOCK_LEVEL = 14
+    MP_STATE_TYPE_UNLOCK_LEVEL = 14,
+    MP_STATE_TYPE_LEVEL_FLAG = 15,
+    MP_STATE_TYPE_UNLOCK_SKILLPOINT = 16,
+    MP_STATE_SET_COMMUNICATION_FLAGS = 17,
+}
+
+public enum MPDamageFlags : uint {
+    Aggressive = 1,
+    GameMoby = 2,
 }
 
 public enum MPPacketFlags : ushort
@@ -59,11 +77,12 @@ public enum MPPacketFlags : ushort
 }
 
 [Flags]
-public enum MPMobyFlags : ushort
+public enum MPMobyFlags : byte
 {
     MP_MOBY_FLAG_ACTIVE = 0x1,
     MP_MOBY_NO_COLLISION = 0x2,
     MP_MOBY_FLAG_ORIG_UDPATE_FUNC = 0x4,
+    MP_MOBY_FLAG_ATTACHED_TO = 0x8,
 }
 
 public enum MPControllerInputFlags : ushort
@@ -72,30 +91,41 @@ public enum MPControllerInputFlags : ushort
     MP_CONTROLLER_FLAGS_HELD = 0x2,
 }
 
+public enum MPMobyCreateFailureReason : byte
+{
+    UNKNOWN = 0,
+    NOT_READY = 1,
+    ALREADY_EXISTS = 2,
+    INVALID_PARENT = 3,
+    MAX_MOBYS = 4,
+    UPDATE_NON_EXISTENT = 5,
+    SUCCESS = 6,
+}
+
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketHeader
 {
-    public MPPacketType ptype;
-    public MPPacketFlags flags;
-    public UInt32 size;
-    public long timeSent;
-    public byte requiresAck;
-    public byte ackCycle;
+    public MPPacketType PacketType;
+    public MPPacketFlags Flags;
+    public UInt32 Size;
+    public long TimeSent;
+    public byte RequiresAck;
+    public byte AckCycle;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketConnect : MPPacket {
-    public Int32 userid;
-    public UInt32 version;
-    public byte passcode1;
-    public byte passcode2;
-    public byte passcode3;
-    public byte passcode4;
-    public byte passcode5;
-    public byte passcode6;
-    public byte passcode7;
-    public byte passcode8;
-    public UInt16 nickLength;
+    public Int32 UserId;
+    public UInt32 Version;
+    public byte Passcode1;
+    public byte Passcode2;
+    public byte Passcode3;
+    public byte Passcode4;
+    public byte Passcode5;
+    public byte Passcode6;
+    public byte Passcode7;
+    public byte Passcode8;
+    public UInt16 NickLength;
 
     public string GetUsername(byte[] packetBody) {
         byte[] usernameBytes = packetBody.Skip(Marshal.SizeOf(this)).ToArray();
@@ -115,10 +145,20 @@ public enum MPPacketConnectResponseStatus : Int32 {
 
 public interface MPPacket {
     public long GetSize() {
+        if (this is MPPacketData data) {
+            return data.GetData().Length;
+        }
+        
         return Marshal.SizeOf(this);
     }
 
     public byte[] GetBytes(Packet.Endianness endianness) {
+        // If we're MPPacketData, we take the _data field and return it
+        if (this is MPPacketData data) {
+            return data.GetData();
+        }
+        
+        // Otherwise, we marshal the struct to bytes
         return Packet.MPStructToBytes(this, endianness);
     }
 
@@ -132,154 +172,362 @@ public struct MPPacketConnectResponse: MPPacket {
     public MPPacketConnectResponseStatus status;
 }
 
-[StructLayout(LayoutKind.Explicit)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketMobyUpdate : MPPacket
 {
-    [FieldOffset(0x0)] public ushort uuid;
-    [FieldOffset(0x2)] public ushort parent;
-    [FieldOffset(0x4)] public MPMobyFlags mpFlags;
-    [FieldOffset(0x6)] public ushort oClass;
-    [FieldOffset(0x8)] public ushort level;
-    [FieldOffset(0xa)] public Int32 animationID;
-    [FieldOffset(0xe)] public Int32 animationDuration;
-    [FieldOffset(0x12)] public float x;
-    [FieldOffset(0x16)] public float y;
-    [FieldOffset(0x1a)] public float z;
-    [FieldOffset(0x1e)] public float rotX;
-    [FieldOffset(0x22)] public float rotY;
-    [FieldOffset(0x26)] public float rotZ;
-    [FieldOffset(0x2a)] public float scale;
-    [FieldOffset(0x2e)] public byte alpha;
-    [FieldOffset(0x2f)] public sbyte padding;
-    [FieldOffset(0x30)] public ushort modeBits;
-    [FieldOffset(0x32)] public ushort state;
+    public ushort Uuid;
+    public ushort OClass;
+    public byte AnimationID;
+    public byte AnimationDuration;
+    public float X;
+    public float Y;
+    public float Z;
+    public float RotX;
+    public float RotY;
+    public float RotZ;
+    public float Scale;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketMobyExtended : MPPacket {
-    public UInt16 uuid;
-    public UInt16 numValues;
+    public UInt16 Uuid;
+    public UInt16 NumValues;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketMobyExtendedPayload : MPPacket {
-    public UInt16 offset;
-    public UInt32 value;
+    public UInt16 Offset;
+    public UInt32 Value;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketMobyCreate : MPPacket
 {
-    public UInt32 uuid;
-    public UInt32 flags;
+    public ushort Uuid;
+    public ushort ParentUuid;
+    public byte SpawnId;
+    public MPMobyFlags Flags;
+    public ushort OClass;
+    public ushort ModeBits;
+    public byte PositionBone;
+    public byte TransformBone;
 }
 
-[StructLayout(LayoutKind.Explicit)]
-public struct MPPacketMobyCollision : MPPacket
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyCreateResponse : MPPacket {
+    public ushort Uuid;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyDelete : MPPacket {
+    public uint Uuid;
+    public uint Flags;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyCreateFailure : MPPacket {
+    public ushort Uuid;
+    public MPMobyCreateFailureReason Reason;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMobyDamage : MPPacket
 {
-    [FieldOffset(0x0)] public uint flags;
-    [FieldOffset(0x4)] public ushort uuid;
-    [FieldOffset(0x6)] public ushort collidedWith;
-    [FieldOffset(0x8)] public float x;
-    [FieldOffset(0xc)] public float y;
-    [FieldOffset(0x10)] public float z;
+    public ushort Uuid;
+    public ushort CollidedWithUuid;
+    public MPDamageFlags Flags;
+    public ushort DamagedOClass;
+    public ushort SourceOClass;
+    public float X;
+    public float Y;
+    public float Z;
+    public float Damage;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketSetState : MPPacket
 {
-    public MPStateType stateType;
-    public uint offset;
-    public uint value;
+    public ushort Flags;
+    public MPStateType StateType;
+    public uint Offset;
+    public uint Value;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct MPPacketSetStateFloat : MPPacket
-{
-    public MPStateType stateType;
-    public uint offset;
-    public float value;
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct MPPacketBolts : MPPacket
-{
-    public MPStateType stateType;
-    public uint value;
+public struct MPPacketSetStateFloat : MPPacket {
+    public ushort Flags;
+    public MPStateType StateType;
+    public uint Offset;
+    public float Value;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketSetHUDText : MPPacket
 {
-    public ushort id;
-    public ushort x;
-    public ushort y;
-    public ushort flags;
-    public uint color;
-    public ushort box_height;
-    public ushort box_width;
-    public float size;
+    public ushort Id;
+    public ushort X;
+    public ushort Y;
+    public ushort Flags;
+    public uint Color;
+    public ushort BoxHeight;
+    public ushort BoxWidth;
+    public float Size;
 }
 
-[StructLayout(LayoutKind.Explicit)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketQueryGameServers : MPPacket {
+    public byte Version;
+    public uint Page;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketQueryResponseServer : MPPacket
 {
-    [FieldOffset(0x0)] public uint ip;
-    [FieldOffset(0x4)] public ushort port;
-    [FieldOffset(0x6)] public ushort maxPlayers;
-    [FieldOffset(0x8)] public ushort playerCount;
-    [FieldOffset(0xa)] public ushort nameLength;
+    public uint Ip;
+    public ushort Port;
+    public ushort MaxPlayers;
+    public ushort PlayerCount;
+    public ushort NameLength;
+    public ushort DescriptionLength;
+    public ushort OwnerLength;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketErrorMessage : MPPacket {
-    public UInt16 messageLength;
+    public UInt16 MessageLength;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct MPPacketRegisterServer : MPPacket {
-    public uint ip;
-    public ushort port;
-    public ushort maxPlayers;
-    public ushort playerCount;
-    public ushort nameLength;
+    public uint Ip;
+    public ushort Port;
+    public ushort MaxPlayers;
+    public ushort PlayerCount;
+    public ushort NameLength;
+    public ushort DescriptionLength;
+    public ushort OwnerNameLength;
     
     public string GetName(byte[] packetBody) {
-        byte[] nameBytes = packetBody.Skip(Marshal.SizeOf(this)).ToArray();
+        byte[] nameBytes = packetBody.Skip(Marshal.SizeOf(this)).Take(NameLength).ToArray();
         
         return Encoding.UTF8.GetString(nameBytes);
+    }
+    
+    public string GetDescription(byte[] packetBody) {
+        byte[] descriptionBytes = packetBody.Skip(Marshal.SizeOf(this) + NameLength).Take(DescriptionLength).ToArray();
+        
+        return Encoding.UTF8.GetString(descriptionBytes);
+    }
+    
+    public string GetOwner(byte[] packetBody) {
+        byte[] ownerBytes = packetBody.Skip(Marshal.SizeOf(this) + NameLength + DescriptionLength).Take(OwnerNameLength).ToArray();
+        
+        return Encoding.UTF8.GetString(ownerBytes);
     }
 }
 
 [StructLayout(LayoutKind.Explicit)]
 public struct MPPacketControllerInput : MPPacket
 {
-    [FieldOffset(0x0)] public ushort input;
-    [FieldOffset(0x2)] public MPControllerInputFlags flags;
+    [FieldOffset(0x0)] public ushort Input;
+    [FieldOffset(0x2)] public MPControllerInputFlags Flags;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack =  1)]
 public struct MPPacketTimeResponse : MPPacket {
-    public ulong clientSendTime;
-    public ulong serverSendTime;
+    public ulong ClientSendTime;
+    public ulong ServerSendTime;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketToastMessage : MPPacket {
-    public UInt32 messageType;
-    public UInt32 duration;
+    public UInt32 MessageType;
+    public UInt32 Duration;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketRegisterHybridMoby : MPPacket {
+    public ushort MobyUid;
+    public ushort MonitoredAttributesCount;
+    public ushort MonitoredPVarsCount;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitorValue : MPPacket {
+    public ushort Offset;
+    public ushort Size;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitoredValueChanged : MPPacket {
+    public ushort Uid;
+    public ushort Offset;
+    public byte Flags;
+    public byte Size;
+    public uint OldValue;
+    public uint NewValue;
+}
+
+public enum MPPacketChangeMobyValueFlags : ushort {
+    MP_MOBY_FLAG_FIND_BY_UUID = 1 << 0,
+    MP_MOBY_FLAG_FIND_BY_UID = 1 << 1,
+    MP_MOBY_FLAG_CHANGE_ATTR = 1 << 8,
+    MP_MOBY_FLAG_CHANGE_PVAR = 1 << 9
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketChangeMobyValue : MPPacket {
+    public ushort Id;
+    public ushort Flags;
+    public ushort NumValues;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketChangeMobyValuePayload : MPPacket {
+    public ushort Offset;
+    public ushort Size;
+    public uint Value;
 }
 
 public struct MPPacketStringData : MPPacket {
-    public string data;
+    public string Data;
     
     public long GetSize() {
-        return Encoding.UTF8.GetBytes(data).Length;
+        return Encoding.UTF8.GetBytes(Data).Length;
     }
     
     public byte[] GetBytes(Packet.Endianness endianness) {
-        return Encoding.UTF8.GetBytes(data);
+        return Encoding.UTF8.GetBytes(Data);
     }
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketLevelFlagsChanged : MPPacket {
+    public ushort Type;
+    public byte Level;
+    public byte Flags;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketLevelFlag : MPPacket {
+    public byte Size;
+    public ushort Index;
+    public uint Value;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitorAddress : MPPacket {
+    public byte Flags;
+    public byte Size;
+    public uint Address;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketMonitoredAddressChanged : MPPacket {
+    public uint Address;
+    public ushort Size;
+    public uint OldValue;
+    public uint NewValue;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketSpawned : MPPacket {
+    public byte SpawnId;
+    public ushort LevelId;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketUI : MPPacket {
+    public ushort Id;
+    public MPUIElementType ElementType;
+    public MPUIOperationFlag Operations;
+    public byte Items;
+}
+    
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketUIItem : MPPacket {
+    public ushort Id;
+    public MPUIOperationFlag Operations;
+    public byte Pad;
+    public ushort Attribute;
+    public ushort DataLength;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketUIEvent : MPPacket {
+    public MPUIElementEventType EventType;
+    public ushort ElementId;
+    public uint Data;
+    public ushort ExtraLength;
+    
+    public byte[] GetExtraData(byte[] packetBody) {
+        return packetBody.Skip(Marshal.SizeOf(this)).Take(ExtraLength).ToArray();
+    }
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketData () : MPPacket {
+    private List<byte> _data = new();
+    
+    public byte[] GetData() {
+        return _data.ToArray();
+    }
+
+    public void Write(byte[] data) {
+        _data.AddRange(data);
+    }
+}
+
+[Flags]
+public enum MPUIOperationFlag : byte {
+    Create = 1,
+    Update = 2,
+    Delete = 4,
+    ClearAll = 8
+}
+
+public enum MPUIElementType : ushort {
+    None = 0,
+    Text = 1, 
+    TextArea = 2,
+    ListMenu = 3,
+    Input = 4,
+}
+
+public enum MPUIElementAttribute : ushort {
+    None,
+    Position,
+    Size,
+    Margins,
+    Visible,
+    States,
+    LineSpacing,
+    ElementSpacing,
+    DrawsBackground,
+    Text,
+    TitleText,
+    DetailsText,
+    TextSize,
+    TextColor,
+    TitleTextSize,
+    TitleTextColor,
+    DetailsTextSize,
+    DetailsTextColor,
+    MenuDefaultColor,
+    MenuSelectedColor,
+    MenuSelectedItem,
+    MenuItems,
+    Shadow,
+    InputPrompt,
+}
+    
+public enum MPUIElementEventType: ushort {
+    MPUIElementEventTypeNone,
+    MPUIElementEventTypeItemActivated,
+    MPUIElementEventTypeItemSelected,
+    MPUIElementEventTypeMakeFocused,
+    MPUIElementEventTypeActivate,
+    MPUIElementEventTypeInputCallback,
 }
 
 public struct PacketBodyPart<T> where T : MPPacket {
@@ -301,9 +549,9 @@ public partial class Packet {
 
     public Packet(MPPacketType packetType, byte requiresAck = 255, byte ackCycle = 255) {
         Header = new MPPacketHeader {
-            ptype = packetType,
-            requiresAck = requiresAck,
-            ackCycle = ackCycle
+            PacketType = packetType,
+            RequiresAck = requiresAck,
+            AckCycle = ackCycle
         };
     }
     
@@ -335,14 +583,13 @@ public partial class Packet {
             offset += bodyPart.Size;
         }
 
-        Header.size = (uint)_size;
+        Header.Size = (uint)_size;
 
         return (Header, buffer);
     } 
 }
 
-public partial class Packet
-{
+public partial class Packet {
     public static Packet MakeAckPacket() {
         var packet = new Packet(MPPacketType.MP_PACKET_ACK, 0, 0);
 
@@ -359,22 +606,22 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
 
         MPPacketSetState bonkState = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_PLAYER,
-            value = 0x16
+            StateType = MPStateType.MP_STATE_TYPE_PLAYER,
+            Value = 0x16
         };
 
         MPPacketSetState damageState = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_DAMAGE,
-            value = damage
+            StateType = MPStateType.MP_STATE_TYPE_DAMAGE,
+            Value = damage
         };
-        
+
         packet.AddBodyPart(bonkState);
         packet.AddBodyPart(damageState);
 
         return packet;
     }
 
-    public static Packet MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color, uint states) {
+    public static Packet? MakeSetHUDTextPacket(ushort id, string text, ushort x, ushort y, uint color, uint states) {
         if (text.Length >= 50) {
             Logger.Error("Text is too long to fit in a single packet.");
             return null;
@@ -388,22 +635,98 @@ public partial class Packet
         uint gameStateFlags = states << 3; // <8 bits>
 
         MPPacketSetHUDText hudText = new MPPacketSetHUDText {
-            x = x,
-            y = y,
-            color = color,
-            flags = (ushort)(textElementFlag | gameStateFlags | flagsSetFlag),
-            id = id
+            X = x,
+            Y = y,
+            Color = color,
+            Flags = (ushort)(textElementFlag | gameStateFlags | flagsSetFlag),
+            Id = id
         };
-        
+
         MPPacketStringData data = new MPPacketStringData {
-            data = text
+            Data = text
         };
-        
+
         packet.AddBodyPart(hudText);
         packet.AddBodyPart(data, 50);
+
+        return packet;
+    }
+
+    public static Packet? MakeUIItemPacket(ViewElement? element, MPUIOperationFlag flags) { 
+        var packet = new Packet(MPPacketType.MP_PACKET_UI);
+        
+        var attributes = new List<MPPacket>();
+
+        if (element != null) {
+            foreach (var attribute in element.GetAttributes()) {
+                if (!attribute.Dirty && (flags & MPUIOperationFlag.Create) == 0) {
+                    continue;
+                }
+
+                attribute.Dirty = false;
+
+                var dataPacket = attribute.GetPacket();
+                var attributePacket = new MPPacketUIItem {
+                    Id = element.Id,
+                    Operations = flags,
+                    Attribute = (ushort)attribute.ElementAttribute,
+                    DataLength = (ushort)(dataPacket?.GetSize() ?? 0)
+                };
+
+                attributes.Add(attributePacket);
+                if (dataPacket != null) attributes.Add(dataPacket);
+            }
+        }
+        
+        MPUIElementType elementType = MPUIElementType.None;
+        switch (element) {
+            case TextElement text:
+                elementType = MPUIElementType.Text;
+                break;
+            case TextAreaElement textArea:
+                elementType = MPUIElementType.TextArea;
+                break;
+            case ListMenuElement listMenu:
+                elementType = MPUIElementType.ListMenu;
+                break;
+            case InputElement input:
+                elementType = MPUIElementType.Input;
+                break;
+        }
+
+        packet.AddBodyPart(new MPPacketUI {
+            Id = element?.Id ?? (ushort)0,
+            ElementType = elementType,
+            Operations = flags,
+            Items = (byte)(attributes.Count / 2)
+        });
+
+        if (attributes.Count == 0 && (flags & MPUIOperationFlag.ClearAll) == 0) {
+            return null;
+        }
+        
+        foreach (var attribute in attributes) {
+            packet.AddBodyPart(attribute);
+        }
+
+        return packet;
+    }
+
+    public static Packet MakeUIEventPacket(MPUIElementEventType eventType, ViewElement element) {
+        var packet = new Packet(MPPacketType.MP_PACKET_UI_EVENT);
+        
+        var uiEvent = new MPPacketUIEvent {
+            EventType = eventType,
+            ElementId = element.Id,
+            Data = 0,
+            ExtraLength = 0
+        };
+        
+        packet.AddBodyPart(uiEvent);
         
         return packet;
     }
+
     // TODO: change flag settings to reserve 2 bits for the current drop_shadow/delete options (since they are 1 and 2).
     // TODO: change flag settings to then reserve 3 bits for game state.
     // TODO: add game state argument for make to say on which gamestate it should be shown/should be moved to. maybe default it to something
@@ -411,11 +734,11 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_HUD_TEXT);
 
         MPPacketSetHUDText hudText = new MPPacketSetHUDText {
-            id = id,
-            flags = 2 // Delete
+            Id = id,
+            Flags = 2 // Delete
         };
         MPPacketStringData data = new MPPacketStringData {
-            data = ""
+            Data = ""
         };
 
         packet.AddBodyPart(hudText);
@@ -427,67 +750,81 @@ public partial class Packet
     public static Packet MakeDeleteMobyPacket(ushort mobyUUID) {
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_DELETE);
 
-        MPPacketMobyCreate body = new MPPacketMobyCreate {
-            uuid = mobyUUID,
-            flags = 1
+        MPPacketMobyDelete body = new MPPacketMobyDelete {
+            Uuid = mobyUUID,
+            Flags = 1
         };
 
         packet.AddBodyPart(body);
-        
+
         return packet;
     }
-    
+
     public static Packet MakeDeleteAllMobysPacket(ushort oClass) {
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_DELETE);
 
-        MPPacketMobyCreate body = new MPPacketMobyCreate {
-            uuid = oClass,
-            flags = 2
+        MPPacketMobyDelete body = new MPPacketMobyDelete {
+            Uuid = oClass,
+            Flags = 2
         };
 
         packet.AddBodyPart(body);
-        
+
+        return packet;
+    }
+
+    public static Packet MakeDeleteAllMobysUIDPacket(ushort uid) {
+        var packet = new Packet(MPPacketType.MP_PACKET_MOBY_DELETE);
+
+        MPPacketMobyDelete body = new MPPacketMobyDelete {
+            Uuid = uid,
+            Flags = 8
+        };
+
+        packet.AddBodyPart(body);
+
+        return packet;
+    }
+
+    public static Packet MakeCreateMobyPacket(ushort id, Moby moby, ushort parentId = 0) {
+        var packet = new Packet(MPPacketType.MP_PACKET_MOBY_CREATE);
+
+        var flags = MPMobyFlags.MP_MOBY_FLAG_ACTIVE;
+        flags |= moby.CollisionEnabled ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
+        flags |= moby.MpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
+        flags |= moby.AttachedTo != null ? MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO : 0;
+
+        MPPacketMobyCreate mobyCreate = new MPPacketMobyCreate {
+            Uuid = id,
+            ParentUuid = parentId,
+            Flags = flags,
+            OClass = (ushort)moby.oClass,
+            ModeBits = moby.modeBits,
+            PositionBone = moby.PositionBone,
+            TransformBone = moby.TransformBone,
+        };
+
+        packet.AddBodyPart(mobyCreate);
+
         return packet;
     }
     
-    public static Packet MakeDeleteAllMobysUIDPacket(ushort uid) {
-        var packet = new Packet(MPPacketType.MP_PACKET_MOBY_DELETE);
-        
-        MPPacketMobyCreate body = new MPPacketMobyCreate {
-            uuid = uid,
-            flags = 8
-        };
-
-        packet.AddBodyPart(body);
-
-        return packet;
-    }
-
-    public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
+public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_UPDATE, 0, 0);
 
         MPPacketMobyUpdate mobyUpdate = new MPPacketMobyUpdate {
-            uuid = id
+            Uuid = id
         };
-
-        mobyUpdate.mpFlags |= moby.IsActive() ? MPMobyFlags.MP_MOBY_FLAG_ACTIVE : 0;
-        mobyUpdate.mpFlags |= moby.CollisionEnabled ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
-        mobyUpdate.mpFlags |= moby.MpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
         
-        mobyUpdate.parent = (ushort)0; // Parent isn't really used
-        mobyUpdate.oClass = (ushort)moby.oClass;
-        mobyUpdate.level = moby.Level() != null ? (ushort)moby.Level().GameID() : (ushort)0;
-        mobyUpdate.x = moby.x;
-        mobyUpdate.y = moby.y;
-        mobyUpdate.z = moby.z;
-        mobyUpdate.rotX = (float)(Math.PI / 180) * moby.rotX;
-        mobyUpdate.rotY = (float)(Math.PI / 180) * moby.rotY;
-        mobyUpdate.rotZ = (float)(Math.PI / 180) * moby.rotZ;
-        mobyUpdate.animationID = moby.AnimationId;
-        mobyUpdate.scale = moby.scale;
-        mobyUpdate.alpha = Math.Min((byte)(moby.alpha * 128), (byte)128);
-        
-        mobyUpdate.modeBits = moby.modeBits;
+        mobyUpdate.OClass = (ushort)moby.oClass;
+        mobyUpdate.X = moby.x;
+        mobyUpdate.Y = moby.y;
+        mobyUpdate.Z = moby.z;
+        mobyUpdate.RotX = (float)(moby.rotX * (Math.PI/180));
+        mobyUpdate.RotY = (float)(moby.rotY * (Math.PI/180));
+        mobyUpdate.RotZ = (float)(moby.rotZ * (Math.PI/180));
+        mobyUpdate.AnimationID = (byte)moby.AnimationId;
+        mobyUpdate.Scale = moby.scale;
         
         packet.AddBodyPart(mobyUpdate);
 
@@ -505,16 +842,16 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_MOBY_EXTENDED, 0, 0);
         
         MPPacketMobyExtended mobyExtended = new MPPacketMobyExtended {
-            uuid = uuid,
-            numValues = (ushort)values.Length
+            Uuid = uuid,
+            NumValues = (ushort)values.Length
         };
         
         packet.AddBodyPart(mobyExtended);
         
         foreach (UpdateMobyValue value in values) {
             MPPacketMobyExtendedPayload payload = new MPPacketMobyExtendedPayload();
-            payload.offset = value.Offset;
-            payload.value = value.Value;
+            payload.Offset = value.Offset;
+            payload.Value = value.Value;
             
             packet.AddBodyPart(payload);
         }
@@ -526,12 +863,24 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
 
         MPPacketSetState destinationLevelState = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_PLANET,
-            value = (uint)level
+            StateType = MPStateType.MP_STATE_TYPE_PLANET,
+            Value = (uint)level
         };
 
         packet.AddBodyPart(destinationLevelState);
 
+        return packet;
+    }
+
+    public static Packet MakeMobyCreateResponsePacket(ushort uuid, byte ackId, byte ackCycle) {
+        var packet = new Packet(MPPacketType.MP_PACKET_ACK, ackId, ackCycle);
+        
+        MPPacketMobyCreateResponse mobyCreateResponse = new MPPacketMobyCreateResponse {
+            Uuid = uuid
+        };
+        
+        packet.AddBodyPart(mobyCreateResponse);
+        
         return packet;
     }
 
@@ -546,19 +895,28 @@ public partial class Packet
                 uint addr = SwapEndianness((uint)ipAddress.Address);
 
                 MPPacketQueryResponseServer response = new MPPacketQueryResponseServer {
-                    ip = addr,
-                    port = (ushort)server.Port,
-                    maxPlayers = (ushort)server.MaxPlayers,
-                    playerCount = (ushort)server.PlayerCount,
-                    nameLength = (ushort)Encoding.UTF8.GetBytes(server.Name).Length
-                };
-                
-                MPPacketStringData data = new MPPacketStringData {
-                    data = server.Name
+                    Ip = addr,
+                    Port = (ushort)server.Port,
+                    MaxPlayers = (ushort)server.MaxPlayers,
+                    PlayerCount = (ushort)server.PlayerCount,
+                    NameLength = (ushort)Encoding.UTF8.GetBytes(server.Name).Length,
+                    DescriptionLength = (ushort)Encoding.UTF8.GetBytes(server.Description).Length,
+                    OwnerLength = (ushort)Encoding.UTF8.GetBytes(server.Owner).Length
                 };
 
                 packet.AddBodyPart(response);
-                packet.AddBodyPart(data);
+                
+                packet.AddBodyPart(new MPPacketStringData {
+                    Data = server.Name
+                });
+                
+                packet.AddBodyPart(new MPPacketStringData {
+                    Data = server.Description
+                });
+                
+                packet.AddBodyPart(new MPPacketStringData {
+                    Data = server.Owner
+                });
             }
         }
 
@@ -566,7 +924,7 @@ public partial class Packet
     }
 
     public static Packet MakeRegisterServerPacket(string ip, ushort port, ushort maxPlayers,
-        ushort playerCount, string name) {
+        ushort playerCount, string name, string description = "", string owner = "") {
         var packet = new Packet(MPPacketType.MP_PACKET_REGISTER_SERVER, 0, 0);
 
         if (!IPAddress.TryParse(ip, out var address)) {
@@ -574,19 +932,28 @@ public partial class Packet
         }
 
         MPPacketRegisterServer response = new MPPacketRegisterServer {
-            ip = (uint)address.MapToIPv4().Address,
-            port = port,
-            maxPlayers = maxPlayers,
-            playerCount = playerCount,
-            nameLength = (ushort)name.Length
-        };
-
-        MPPacketStringData data = new MPPacketStringData {
-            data = name
+            Ip = (uint)address.MapToIPv4().Address,
+            Port = port,
+            MaxPlayers = maxPlayers,
+            PlayerCount = playerCount,
+            NameLength = (ushort)name.Length,
+            DescriptionLength = (ushort)description.Length,
+            OwnerNameLength = (ushort)owner.Length
         };
 
         packet.AddBodyPart(response);
-        packet.AddBodyPart(data);
+        
+        packet.AddBodyPart(new MPPacketStringData {
+            Data = name
+        });
+        
+        packet.AddBodyPart(new MPPacketStringData {
+            Data = description
+        });
+        
+        packet.AddBodyPart(new MPPacketStringData {
+            Data = owner
+        });
         
         return packet;
     }
@@ -599,8 +966,8 @@ public partial class Packet
         flags |= equip ? (uint)2 : (uint)0;  // FLAG_ITEM_EQUIP
 
         MPPacketSetState setItemState = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_ITEM,
-            value = (flags << 16) | (uint)item
+            StateType = MPStateType.MP_STATE_TYPE_ITEM,
+            Value = (flags << 16) | (uint)item
         };
 
         packet.AddBodyPart(setItemState);
@@ -612,12 +979,25 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
         MPPacketSetState setItemState = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL,
-            value = (uint)level
+            StateType = MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL,
+            Value = (uint)level
         };
 
         packet.AddBodyPart(setItemState);
         
+        return packet;
+    }
+
+    public static Packet MakeUnlockSkillpointPacket(byte skillpoint) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+        
+        MPPacketSetState setItemState = new MPPacketSetState {
+            StateType = MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT,
+            Value = skillpoint
+        };
+        
+        packet.AddBodyPart(setItemState);
+
         return packet;
     }
     
@@ -625,8 +1005,8 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
 
         MPPacketSetState setPlayerState = new MPPacketSetState();
-        setPlayerState.stateType = MPStateType.MP_STATE_TYPE_PLAYER;
-        setPlayerState.value = state;
+        setPlayerState.StateType = MPStateType.MP_STATE_TYPE_PLAYER;
+        setPlayerState.Value = state;
 
         packet.AddBodyPart(setPlayerState);
 
@@ -637,8 +1017,8 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
 
         MPPacketSetState setPlayerState = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_PLAYER_INPUT,
-            value = state
+            StateType = MPStateType.MP_STATE_TYPE_PLAYER_INPUT,
+            Value = state
         };
         
         packet.AddBodyPart(setPlayerState);
@@ -646,13 +1026,14 @@ public partial class Packet
         return packet;
     }
     
-    public static Packet MakeSetAddressValuePacket(uint address, uint value) {
+    public static Packet MakeSetAddressValuePacket(uint address, uint value, ushort size = 4) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
         MPPacketSetState setPlayerState = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
-            offset = address,
-            value = value
+            StateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
+            Flags = size,
+            Offset = address,
+            Value = value
         };
         
         packet.AddBodyPart(setPlayerState);
@@ -662,24 +1043,25 @@ public partial class Packet
     
     public static Packet MakeSetAddressFloatPacket(uint address, float value) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
-
+    
         MPPacketSetStateFloat setPlayerState = new MPPacketSetStateFloat {
-            stateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
-            offset = address,
-            value = value
+            StateType = MPStateType.MP_STATE_TYPE_ARBITRARY,
+            Offset = address,
+            Value = value
         };
         
         packet.AddBodyPart(setPlayerState);
-
+    
         return packet;
     }
 
-    public static Packet MakeGiveBoltsPacket(uint bolts) {
+    public static Packet MakeGiveBoltsPacket(int bolts, bool setBolts = false) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
-        MPPacketBolts giveBolts = new MPPacketBolts {
-            stateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS,
-            value = bolts
+        MPPacketSetState giveBolts = new MPPacketSetState {
+            StateType = MPStateType.MP_STATE_TYPE_GIVE_BOLTS,
+            Value = (uint)bolts,
+            Offset = setBolts ? (uint)1 : 0
         };
 
         packet.AddBodyPart(giveBolts);
@@ -691,9 +1073,9 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
 
         MPPacketSetStateFloat setPositionState = new MPPacketSetStateFloat {
-            stateType = MPStateType.MP_STATE_TYPE_POSITION,
-            offset = property,
-            value = position
+            StateType = MPStateType.MP_STATE_TYPE_POSITION,
+            Offset = property,
+            Value = position
         };
 
         packet.AddBodyPart(setPositionState);
@@ -705,27 +1087,27 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
 
         MPPacketSetStateFloat setRespawnX = new MPPacketSetStateFloat {
-            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
-            offset = 0,
-            value = x
+            StateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            Offset = 0,
+            Value = x
         };
 
         MPPacketSetStateFloat setRespawnY = new MPPacketSetStateFloat {
-            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
-            offset = 1,
-            value = y
+            StateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            Offset = 1,
+            Value = y
         };
 
         MPPacketSetStateFloat setRespawnZ = new MPPacketSetStateFloat {
-            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
-            offset = 2,
-            value = z
+            StateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            Offset = 2,
+            Value = z
         };
 
         MPPacketSetStateFloat setRespawnRotZ = new MPPacketSetStateFloat {
-            stateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
-            offset = 5,
-            value = rotationZ
+            StateType = MPStateType.MP_STATE_TYPE_SET_RESPAWN,
+            Offset = 5,
+            Value = rotationZ
         };
         
         packet.AddBodyPart(setRespawnX);
@@ -736,16 +1118,64 @@ public partial class Packet
         return packet;
     }
 
+    public static Packet MakeSetLevelFlagPacket(byte type, byte level, ushort index, uint[] value) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+
+        var i = index;
+        foreach (uint val in value) {
+            MPPacketSetState setLevelFlag = new MPPacketSetState {
+                StateType = MPStateType.MP_STATE_TYPE_LEVEL_FLAG,
+                Offset = ((uint)level << 24) | ((uint)type << 16) | i,
+                Value = val
+            };
+            i += 1;
+            
+            packet.AddBodyPart(setLevelFlag);
+        }
+
+        return packet;
+    }
+
+    public static Packet MakeSetLevelFlagPacket(byte type, byte level, List<(ushort, uint)> flags) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+
+        foreach ((ushort index, uint value) in flags) {
+            MPPacketSetState setLevelFlag = new MPPacketSetState {
+                StateType = MPStateType.MP_STATE_TYPE_LEVEL_FLAG,
+                Offset = ((uint)level << 24) | ((uint)type << 16) | index,
+                Value = value
+            };
+            
+            packet.AddBodyPart(setLevelFlag);
+        }
+
+        return packet;
+    }
+
+    public static Packet MakeSetCommunicationFlagsPacket(UInt32 bitmap) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+        
+        MPPacketSetState setCommunicationFlags = new MPPacketSetState {
+            StateType = MPStateType.MP_STATE_SET_COMMUNICATION_FLAGS,
+            Value = bitmap
+        };
+        
+        packet.AddBodyPart(setCommunicationFlags);
+        
+        
+        return packet;
+    }
+
     public static Packet MakeToastMessagePacket(string message, uint duration = 20) {
         var packet = new Packet(MPPacketType.MP_PACKET_TOAST_MESSAGE);
 
         MPPacketToastMessage messagePacket = new MPPacketToastMessage {
-            messageType = 0,
-            duration = duration
+            MessageType = 0,
+            Duration = duration
         };
 
         MPPacketStringData data = new MPPacketStringData {
-            data = message
+            Data = message
         };
 
         packet.AddBodyPart(messagePacket);
@@ -758,9 +1188,9 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
 
         MPPacketSetState blockGoldBolt = new MPPacketSetState {
-            stateType = MPStateType.MP_STATE_TYPE_BLOCK_GOLD_BOLT,
-            value = (ushort)number,
-            offset = (ushort)level
+            StateType = MPStateType.MP_STATE_TYPE_BLOCK_GOLD_BOLT,
+            Value = (ushort)number,
+            Offset = (ushort)level
         };
 
         packet.AddBodyPart(blockGoldBolt);
@@ -772,11 +1202,11 @@ public partial class Packet
         var packet = new Packet(MPPacketType.MP_PACKET_ERROR_MESSAGE);
         
         MPPacketErrorMessage errorMessage = new MPPacketErrorMessage {
-            messageLength = (ushort)message.Length
+            MessageLength = (ushort)message.Length
         };
         
         MPPacketStringData data = new MPPacketStringData {
-            data = message
+            Data = message
         };
         
         packet.AddBodyPart(errorMessage);
@@ -785,8 +1215,73 @@ public partial class Packet
         return packet;
     }
 
-    public static MPPacketHeader MakeHeader(byte[] bytes, Endianness endianness = Endianness.BigEndian)
-    {
+    public static Packet MakeRegisterHybridMobyPacket(Moby moby) {
+        if (!moby.IsHybrid) {
+            throw new Exception("Tried to register a hybrid moby that isn't a hybrid moby!");
+        }
+        
+        var packet = new Packet(MPPacketType.MP_PACKET_REGISTER_HYBRID_MOBY);
+        packet.AddBodyPart(new MPPacketRegisterHybridMoby {
+            MobyUid = (ushort)moby.UID,
+            MonitoredAttributesCount = (ushort)moby.MonitoredAttributes.Count,
+            MonitoredPVarsCount = (ushort)moby.MonitoredPVars.Count
+        });
+        
+        foreach (var attribute in moby.MonitoredAttributes) {
+            packet.AddBodyPart(new MPPacketMonitorValue {
+                Offset = attribute.Offset,
+                Size = attribute.Size
+            });
+        }
+        
+        foreach (var pvar in moby.MonitoredPVars) {
+            packet.AddBodyPart(new MPPacketMonitorValue {
+                Offset = pvar.Offset,
+                Size = pvar.Size
+            });
+        }
+        
+        return packet;
+    }
+
+    public static Packet MakeChangeMobyValuePacket(ushort uid, MonitoredValueType type, ushort offset, ushort size,
+        uint value) {
+        var packet = new Packet(MPPacketType.MP_PACKET_CHANGE_MOBY_VALUE);
+        
+        ushort flags = type == MonitoredValueType.Attribute ? 
+            (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_CHANGE_ATTR : 
+            (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_CHANGE_PVAR;
+        
+        packet.AddBodyPart(
+            new MPPacketChangeMobyValue {
+                Id = uid,
+                Flags = (ushort)(flags | (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_FIND_BY_UID),
+                NumValues = 1
+            }
+        );
+        
+        packet.AddBodyPart(new MPPacketChangeMobyValuePayload {
+            Offset = offset,
+            Size = size,
+            Value = value
+        });
+        
+        return packet;
+    }
+    
+    public static Packet MakeMonitorAddressPacket(uint address, byte size, byte flags) {
+        var packet = new Packet(MPPacketType.MP_PACKET_MONITOR_ADDRESS);
+        
+        packet.AddBodyPart(new MPPacketMonitorAddress {
+            Address = address,
+            Size = size,
+            Flags = flags
+        });
+        
+        return packet;
+    }
+
+    public static MPPacketHeader? MakeHeader(byte[] bytes, Endianness endianness = Endianness.BigEndian) {
         return BytesToStruct<MPPacketHeader>(bytes, endianness);
     }
 
@@ -838,9 +1333,9 @@ public partial class Packet
         }
     }
 
-    internal static T BytesToStruct<T>(byte[] rawData, Endianness endianness) where T : struct
+    internal static T? BytesToStruct<T>(byte[] rawData, Endianness endianness) where T : struct
     {
-        T result = default(T);
+        T? result = default(T);
 
         MaybeAdjustEndianness(typeof(T), rawData, endianness);
 
@@ -849,7 +1344,7 @@ public partial class Packet
         try
         {
             IntPtr rawDataPtr = handle.AddrOfPinnedObject();
-            result = (T)Marshal.PtrToStructure(rawDataPtr, typeof(T));
+            result = (T?)Marshal.PtrToStructure(rawDataPtr, typeof(T));
         }
         finally
         {

@@ -32,17 +32,77 @@ public struct Color {
     }
 }
 
+public enum MonitoredValueType: byte {
+    Attribute = 1,
+    PVar = 2
+}
+
+public enum MonitoredValueDataType {
+    Number,
+    Float
+}
+
+public struct MonitoredValue {
+    public ushort Offset;
+    public ushort Size;
+    public MonitoredValueType Flags;
+    public MonitoredValueDataType DataType;
+}
+
 public class Moby : Entity
 {
     /// <summary>
     /// The current level this moby is on. Levels are tied to universes such that mobys (incl. users) on the same
     /// level in different universes won't be able to see or interact with each other. 
     /// </summary>
-    protected Level _level;
+    protected Level? _level;
     
     static ushort COLLIDE_TICKS = 10;
     
     private int _oClass = 0;
+
+    /// <summary>
+    /// This is used when a moby is attached to a bone of another moby, like helmets, gear, backpack, etc. 
+    /// </summary>
+    public Moby? AttachedTo;
+    
+    /// <summary>
+    /// Which bone we are attached to that decides the position on the body.
+    /// </summary>
+    public byte PositionBone;
+    
+    /// <summary>
+    /// We use this to determine which bone we follow the transformation of. This is often the same as PositionBone, but
+    ///   can be different if we want to follow the rotation of one bone, but the position of another.
+    /// </summary>
+    public byte TransformBone;
+    
+    /// <summary>
+    /// UID is only used for hybrid mobys. 
+    /// </summary>
+    public ushort UID { get; private set; }
+
+    /// <summary>
+    /// Hybrid mobys are mobys that are created in the game, but can be controlled by the server.
+    /// </summary>
+    public bool IsHybrid {
+        get;
+        private set;
+    }
+
+    /// <summary>
+    /// Synced mobys come from a game and is fully controlled by the game.
+    /// </summary>
+    public Moby? SyncOwner {
+        get; 
+        private set;
+    }
+    public int SyncSpawnId { get; set; }
+
+    // TODO: Make these HashSets instead?
+    public List<MonitoredValue> MonitoredAttributes { get; private set; } = new();
+    public List<MonitoredValue> MonitoredPVars { get; private set; } = new();
+    
     public int oClass { get => _oClass; set { if (_oClass != value) { _oClass = value; HasChanged = true; } } }
     
     protected float _x = 0.0f;
@@ -86,6 +146,16 @@ public class Moby : Entity
     };
     
     public virtual Color Color { get => _color; set { if (_color.ToUInt() != value.ToUInt()) { _color = value; HasChanged = true; } } }
+    
+    protected bool _visible = true;
+    public bool Visible {
+        get => _visible && (AttachedTo?.Visible ?? true);
+        protected set {
+            if (_visible == value) return;
+            _visible = value;
+            HasChanged = true;
+        }
+    }
 
     public bool HasChanged { get; protected set; }
 
@@ -94,13 +164,12 @@ public class Moby : Entity
         HasChanged = false;
     }
 
-
     public readonly bool MpUpdateFunc = true;
     public readonly bool CollisionEnabled = true;
 
     private Dictionary<Moby, ushort> _colliders = new();
 
-    public Moby(LuaTable luaTable = null) : base(luaTable) {
+    public Moby(LuaTable? luaTable = null) : base(luaTable) {
         Game.Shared().NotificationCenter().Subscribe<PreTickNotification>(OnPreTick);
     }
 
@@ -109,10 +178,19 @@ public class Moby : Entity
         
         Game.Shared().NotificationCenter().Unsubscribe<PreTickNotification>(OnPreTick);
     }
+
+    public void MakeHybrid(ushort uid) {
+        UID = uid;
+        IsHybrid = true;
+    }
     
-    public Level Level() {
+    public void MakeSynced(Moby moby) {
+        SyncOwner = moby;
+    }
+    
+    public Level? Level() {
         if (_level == null) {
-            _level = Universe().GetLevelByGameID(0);
+            _level = Universe()?.GetLevelByGameID(0);
         }
         
         return _level;
@@ -150,9 +228,56 @@ public class Moby : Entity
         this.y = y;
         this.z = z;
     }
+
+    public void MonitorAttribute(ushort offset, ushort size, bool isFloat = false) {
+        MonitoredAttributes.Add(new MonitoredValue {
+            Offset = offset,
+            Size = size,
+            Flags = MonitoredValueType.Attribute,
+            DataType = isFloat ? MonitoredValueDataType.Float : MonitoredValueDataType.Number
+        });
+    }
     
-    public Universe Universe() {
-        Entity parent = Parent();
+    public void MonitorPVar(ushort offset, ushort size, bool isFloat = false) {
+        MonitoredPVars.Add(new MonitoredValue {
+            Offset = offset,
+            Size = size,
+            Flags = MonitoredValueType.PVar,
+            DataType = isFloat ? MonitoredValueDataType.Float : MonitoredValueDataType.Number
+        });
+    }
+
+    public void OnHybridValueChanged(Player player, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue,
+        byte[] newValue) {
+        object? oldV = null;
+        object? newV = null;
+        
+        // Find data type
+        foreach (MonitoredValue value in type == MonitoredValueType.Attribute ? MonitoredAttributes : MonitoredPVars) {
+            if (value.Offset == offset) {
+                if (value.DataType == MonitoredValueDataType.Number) {
+                    oldV = BitConverter.ToUInt32(oldValue);
+                    newV = BitConverter.ToUInt32(newValue);
+                } else {
+                    oldV = BitConverter.ToSingle(oldValue);
+                    newV = BitConverter.ToSingle(newValue);
+                }
+            }
+        }
+        
+        if (oldV == null || newV == null) {
+            throw new Exception("Failed to find data type for monitored value for offset " + offset);
+        }
+        
+        if (type == MonitoredValueType.Attribute) {
+            CallLuaFunction("OnAttributeChange", LuaEntity(), player, offset, oldV, newV);
+        } else {
+            CallLuaFunction("OnPVarChange", LuaEntity(), player, offset, oldV, newV);
+        }
+    }
+    
+    public Universe? Universe() {
+        var parent = Parent();
         
         while (!(parent is Universe)) {
             if (parent == null) {
@@ -255,7 +380,7 @@ public class Moby : Entity
         CallLuaFunction("OnHit", LuaEntity(), attacker.LuaEntity());
     }
 
-    public virtual void OnAttack(Moby attacked) {
-        CallLuaFunction("OnAttack", LuaEntity(), attacked.LuaEntity());
+    public virtual void OnAttack(Moby attacked, ushort sourceOClass, float damage) {
+        CallLuaFunction("OnAttack", LuaEntity(), attacked.LuaEntity(), sourceOClass, damage);
     }
 }

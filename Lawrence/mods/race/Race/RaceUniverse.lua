@@ -35,7 +35,7 @@ function RaceUniverse:initialize()
     self.waitingLabel = Label:new("Starting in ...", 250, 250, 0xC0FFA888)
     self.countdownLabel = Label:new("", 250, 250, 0xC0FFA888)
 
-    self.mode = RACE_MODE_WAITING
+    self.mode = 0
 
     self.startTime = nil
     self.started = false
@@ -70,7 +70,7 @@ function RaceUniverse:OnPlayerJoin(player)
     player = player:Make(RacePlayer)
     player.race = self
     
-    player:SetCourse(self.course)
+    --player:SetCourse(self.course)
 
     -- If waiting time is less than 20, set it to 20 to allow the new player more than enough time to load the level.
     if self.mode == RACE_MODE_WAITING then

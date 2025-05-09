@@ -58,7 +58,7 @@ public class Universe : Entity
         }
     }
 
-    public Level GetLevelByName(string levelName) {
+    public Level? GetLevelByName(string levelName) {
         foreach (Level level in _levels) {
             if (levelName == level.GetName()) {
                 return level;
@@ -68,7 +68,7 @@ public class Universe : Entity
         return null;
     }
 
-    public Level GetLevelByGameID(ushort levelID) {
+    public Level? GetLevelByGameID(ushort levelID) {
         foreach (Level level in _levels) {
             if (levelID == level.GameID()) {
                 return level;

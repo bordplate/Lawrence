@@ -73,13 +73,16 @@ public class MainWindow : Window {
 		if (Lawrence.DirectoryMode()) {
 			return true;
 		}
-		
-		_serverInfoView.Text = 
-$"""
-Players: {Game.Game.Shared().PlayerCount()}
-Ticks per second: {Lawrence.Server().TicksPerSecond()}
 
-""";
+		if (Lawrence.Server() is {} server) {
+			_serverInfoView.Text =
+				$"""
+				 Players: {Game.Game.Shared().PlayerCount()}
+				 Ticks per second: {server.TicksPerSecond()}
+
+				 """;
+		}
+
 		return true;
 	}
 }

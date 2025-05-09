@@ -12,6 +12,8 @@ public struct ServerItem
 	public int MaxPlayers;
 	public int PlayerCount;
 	public DateTime LastPing;
+	public string Description;
+	public string Owner;
 }
 
 public class ServerDirectory
@@ -19,25 +21,39 @@ public class ServerDirectory
 	private readonly List<ServerItem> _servers = new();
 	private DateTime _lastClearStale = DateTime.MinValue;
 
-	public List<ServerItem> Servers()
-	{
+	public List<ServerItem> Servers() { 
 		ClearStale();
-
+		
 		return _servers;
 	}
 
-	public void RegisterServer(string ip, int port, string name, int maxPlayers, int playerCount)
+	public void RegisterServer(string ip, int port, string name, int maxPlayers, int playerCount, string description, string owner)
 	{
 		ClearStale();
 		int index = _servers.FindIndex(s => s.IP == ip && s.Port == port);
 
-		if(index != -1)
-		{
-			_servers[index] = new ServerItem { IP = ip, Port = port, Name = name, MaxPlayers = maxPlayers, PlayerCount = playerCount, LastPing = DateTime.Now };
-		}
-		else
-		{
-			ServerItem serverItem = new ServerItem { IP = ip, Port = port, Name = name, MaxPlayers = maxPlayers, PlayerCount = playerCount, LastPing = DateTime.Now };
+		if(index != -1) {
+			_servers[index] = new ServerItem {
+				IP = ip, 
+				Port = port, 
+				Name = name, 
+				MaxPlayers = maxPlayers, 
+				PlayerCount = playerCount,
+				LastPing = DateTime.Now,
+				Description =  description,
+				Owner = owner
+			};
+		} else {
+			ServerItem serverItem = new ServerItem {
+				IP = ip, 
+				Port = port, 
+				Name = name, 
+				MaxPlayers = maxPlayers, 
+				PlayerCount = playerCount, 
+				LastPing = DateTime.Now,
+				Description =  description,
+				Owner = owner
+			};
 			_servers.Add(serverItem);
 
 			Logger.Log($"New server '{name}' @ {ip}:{port}");

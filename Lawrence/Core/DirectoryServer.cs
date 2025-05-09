@@ -17,7 +17,7 @@ public class DirectoryServer {
         return _directory;
     }
     
-    public string ListenAddress() {
+    public string? ListenAddress() {
         return _server.ListenAddress();
     }
 

@@ -4,6 +4,7 @@ using Terminal.Gui;
 
 using Lawrence.Core;
 using Lawrence.Game;
+using NStack;
 
 namespace Lawrence.UI;
 
@@ -23,6 +24,19 @@ public class PlayerList: FrameView  {
         Add(_playerList);
 
         _playerList.SetSource(_players);
+        
+        _playerList.OpenSelectedItem += args => {
+            var playerName = _players[args.Item];
+
+            var playerWindow = new PlayerWindow(playerName) {
+                X = Pos.Center(),
+                Y = Pos.Center(),
+                Width = Dim.Percent(50),
+                Height = Dim.Percent(90)
+            };
+            
+            Application.Current.Add(playerWindow);
+        };
         
         // Subscribe to player join notifications
         Game.Game.Shared().NotificationCenter().Subscribe<PlayerJoinedNotification>(OnPlayerJoin);
