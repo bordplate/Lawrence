@@ -24,7 +24,7 @@ LEVEL_POOL = {
 
 HAS_COUNTDOWN_TIME = 80 * 60
 
-function HASUniverse:initialize()
+function HASUniverse:initialize(lobby)
     Universe.initialize(self)
     
     self.players = {}
@@ -32,10 +32,10 @@ function HASUniverse:initialize()
     
     self.loaded = false
     
-    self.lobbyUniverse = nil
-    
+    self.lobby = lobby
     self.finishedCountdown = 0
     self.finished = false
+    self.executedFinish = false
 
     self.started = false
     self.startTime = 0
@@ -51,7 +51,7 @@ function HASUniverse:OnPlayerJoin(player)
     player = player:Make(HASPlayer)
     player.seeker = false
     
-    player:LoadLevel(self.selectedLevel)
+    --player:LoadLevel(self.selectedLevel)
     
     print("Player " .. player:Username() .. " joined Hide & Seek")
     
@@ -122,10 +122,12 @@ function HASUniverse:GetIdlePlayers()
     return idlePlayers
 end
 
-function HASUniverse:StartHAS(lobby)
-    self.lobbyUniverse = lobby
-    
+function HASUniverse:StartHAS()
     print("Starting Hide & Seek on " .. self.selectedLevel)
+    
+    for i, player in ipairs(self.players) do
+        player:LoadLevel(self.selectedLevel)
+    end
     
     self.finishedCountdown = 0
     self.finished = false
@@ -210,7 +212,13 @@ function HASUniverse:StartFinish(prompt)
 end
 
 function HASUniverse:OnFinish()
+    if self.executedFinish then
+        return
+    end
+    
     print("Finished Hide & Seek")
+    
+    self.lobby:Reset()
     
     self:RemoveLabel(self.countdownLabel)
     self:RemoveLabel(self.hiderCountLabel)
@@ -222,13 +230,10 @@ function HASUniverse:OnFinish()
     local players = self:FindChildren("Player")
     for i, player in ipairs(players) do
         player:Finished()
-        self.lobbyUniverse:AddEntity(player)
+        self.lobby:ShowLobby(player)
     end
     
-    self.lobbyUniverse:SetPrimary(true)
-    self.lobbyUniverse:Reset()
-    
-    self:Delete()
+    self.executedFinish = true
 end
 
 -- OnTick runs 60 times per second

@@ -11,15 +11,15 @@ public class Logger {
         Trace = 2
     }
 
-    private static Logger _shared;
+    private static Logger? _shared;
     private readonly object _syncLock = new();
 
     private static bool _hooked;
 
-    private string _logFile = Settings.Default().Get("Logger.path", "lawrence.log");
+    private string _logFile = Settings.Default().Get("Logger.path", "lawrence.log")!;
 
-    public static ConsoleOutputCapturer ConsoleOutputCapture;
-    public static ConsoleOutputCapturer ConsoleErrorCapture;
+    public static ConsoleOutputCapturer? ConsoleOutputCapture;
+    public static ConsoleOutputCapturer? ConsoleErrorCapture;
 
     private Logger() {
     }
@@ -30,7 +30,7 @@ public class Logger {
     /// <param name="priority"></param>
     /// <param name="value"></param>
     /// <param name="exception"></param>
-    private void Log(Priority priority, string value, Exception exception = null) {
+    private void Log(Priority priority, string value, Exception? exception = null) {
         string timestamp = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}";
         string logEntry = $"{timestamp} [{priority}] {value}";
 
@@ -48,18 +48,18 @@ public class Logger {
                 }
             }
 
-            TextWriter consoleOut = _hooked ? ConsoleOutputCapture : Console.Out;
-            TextWriter consoleError = _hooked ? ConsoleErrorCapture : Console.Error;
+            var consoleOut = _hooked ? ConsoleOutputCapture : Console.Out;
+            var consoleError = _hooked ? ConsoleErrorCapture : Console.Error;
             
             // Write to console
             // TextWriter consoleWriter = priority == Priority.Error ? Console.Error : Console.Out;
-            TextWriter consoleWriter = priority == Priority.Error ? consoleError : consoleOut;
-            consoleWriter.WriteLine($"{logEntry}");
+            var consoleWriter = priority == Priority.Error ? consoleError : consoleOut;
+            consoleWriter?.WriteLine($"{logEntry}");
 
             if (exception != null) {
-                consoleWriter.WriteLine($"Exception: {exception.GetType().FullName}");
-                consoleWriter.WriteLine($"Message: {exception.Message}");
-                consoleWriter.WriteLine($"StackTrace: {exception.StackTrace}");
+                consoleWriter?.WriteLine($"Exception: {exception.GetType().FullName}");
+                consoleWriter?.WriteLine($"Message: {exception.Message}");
+                consoleWriter?.WriteLine($"StackTrace: {exception.StackTrace}");
             }
         }
     }
@@ -89,7 +89,7 @@ public class Logger {
     /// </summary>
     /// <param name="value"></param>
     /// <param name="exception"></param>
-    public static void Error(string value, Exception exception = null) {
+    public static void Error(string value, Exception? exception = null) {
         Shared().Log(Priority.Error, value, exception);
     }
 
@@ -98,7 +98,7 @@ public class Logger {
     /// </summary>
     /// <param name="value"></param>
     /// <param name="exception"></param>
-    public static void Trace(string value, Exception exception = null) {
+    public static void Trace(string value, Exception? exception = null) {
         Shared().Log(Priority.Trace, value, exception);
     }
 
@@ -151,8 +151,8 @@ public class ConsoleOutputCapturer : TextWriter {
 
     public delegate void CharWritten(char character);
     
-    public event LineWritten OnLineWritten;
-    public event CharWritten OnCharWritten;
+    public event LineWritten? OnLineWritten;
+    public event CharWritten? OnCharWritten;
     
     public override Encoding Encoding => Encoding.UTF8;
 
@@ -164,7 +164,9 @@ public class ConsoleOutputCapturer : TextWriter {
         OnCharWritten?.Invoke(value);
     }
 
-    public override void WriteLine(string value) {
+    public override void WriteLine(string? value) {
+        if (value == null) return;
+        
         // Capture the line output
         _stringBuilder.AppendLine(value);
         

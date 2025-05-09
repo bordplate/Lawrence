@@ -1,0 +1,3 @@
+[General]
+name = "Co-op"
+entry = "coop.lua"

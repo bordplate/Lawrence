@@ -13,10 +13,10 @@ namespace Lawrence;
 class Lawrence {
     public static int CLIENT_INACTIVE_TIMEOUT_SECONDS = 30;
     
-    private static DirectoryClient _directoryClient;
+    private static DirectoryClient? _directoryClient;
     
-    private static Server _server;
-    private static DirectoryServer _directoryServer;
+    private static Server? _server;
+    private static DirectoryServer? _directoryServer;
 
     private static bool _directoryMode;
     
@@ -42,7 +42,7 @@ class Lawrence {
         return _commands;
     }
 
-    public static Command Command(string name) {
+    public static Command? Command(string name) {
         foreach (var section in _commands) {
             foreach (var command in section.Value) {
                 if (command.Name == name) {
@@ -63,13 +63,13 @@ class Lawrence {
         _directoryClient?.ForceDirectorySync();
     }
 
-    public static ServerDirectory Directory()
+    public static ServerDirectory? Directory()
     {
-        return _directoryServer.Directory();
+        return _directoryServer?.Directory();
     }
 
-    public static Server Server() {
-        return _server ??= _directoryServer.Server();
+    public static Server? Server() {
+        return _server ??= _directoryServer?.Server();
     }
 
     public static void ConfigureCommands() {
@@ -229,7 +229,7 @@ class Lawrence {
         {
             Settings.Default().Set("Server.name", serverName.Text.ToString());
             Settings.Default().Set("Server.address", ipAddress.Text.ToString());
-            Settings.Default().Set("Server.port", int.Parse(port.Text.ToString()));
+            Settings.Default().Set("Server.port", int.Parse(port.Text?.ToString() ?? "2407"));
             Settings.Default().Set("Server.advertise", advertise.Checked);
             
             MessageBox.Query("Success", $"Setup complete", "Ok");
@@ -252,15 +252,15 @@ class Lawrence {
         
         // Make space above last entry in log so there's a nice split between last run of the program
         Logger.Raw("\n");
-        string serverName = Settings.Default().Get("Server.name", "");
+        var serverName = Settings.Default().Get("Server.name", "")!;
 
         if (Settings.Default().Get("Server.directory_mode", false, true) || Array.IndexOf(args, "--directory") >= 0) {
             _directoryMode = true;
         }
 
-        int serverPort = _directoryMode ? 2407 : Settings.Default().Get("Server.port", 2407);
-        int maxPlayers = Settings.Default().Get("Server.max_players", 10);
-        string listenAddress = Settings.Default().Get("Server.address", "0.0.0.0");
+        var serverPort = _directoryMode ? 2400 : Settings.Default().Get("Server.port", 2407);
+        var maxPlayers = Settings.Default().Get("Server.max_players", 10);
+        var listenAddress = Settings.Default().Get("Server.address", "0.0.0.0")!;
         
         bool advertise = Settings.Default().Get("Server.advertise", false);
 
@@ -272,7 +272,7 @@ class Lawrence {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Server Name not set, Enter name...");
                 Console.ResetColor();
-                Settings.Default().Set("Server.name", serverName = Console.ReadLine());
+                Settings.Default().Set("Server.name", serverName = Console.ReadLine() ?? "");
             }
         }
 
@@ -317,13 +317,13 @@ class Lawrence {
         Logger.Raw(" .+#*+=++                                                                \n", false);
 
         if (!_directoryMode) {
-            _server = new Server(listenAddress, serverPort, serverName, maxPlayers);
+            _server = new Server(listenAddress, serverPort, serverName!, maxPlayers);
             _server.Start();
             
             Logger.Log($"Started Lawrence on {_server.ListenAddress()}");
             
             if (advertise) {
-                string directoryIP = Settings.Default().Get("Server.directory_server", "172.104.144.15", true);
+                string directoryIP = Settings.Default().Get("Server.directory_server", "172.104.144.15", true)!;
                 Logger.Log($"Registering server with directory @ {directoryIP}");
             
                 _directoryClient = new(directoryIP, _server);

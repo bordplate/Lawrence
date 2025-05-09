@@ -43,8 +43,12 @@ public class LogView: FrameView {
     }
 
     private void Setup() {
-        _textView.Text = Logger.ConsoleOutputCapture.GetCapturedOutput();
-        _textView.Text += Logger.ConsoleErrorCapture.GetCapturedOutput();
+        _textView.Text = Logger.ConsoleOutputCapture?.GetCapturedOutput();
+        _textView.Text += Logger.ConsoleErrorCapture?.GetCapturedOutput();
+        
+        if (Logger.ConsoleOutputCapture == null || Logger.ConsoleErrorCapture == null) {
+            return;
+        }
         
         Logger.ConsoleOutputCapture.OnLineWritten += (line) => {
             AddText(line + "\n");

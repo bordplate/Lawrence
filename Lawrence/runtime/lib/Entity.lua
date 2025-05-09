@@ -19,15 +19,20 @@ function Entity:__index(key)
     if value ~= nil then
         return value
     end
-
-    if self._internalEntity[key] ~= nil then
+    
+    local internal = rawget(self, "_internalEntity")[key]
+    if internal ~= nil then
         -- If the key does not exist, redirect the call to internal C# object.
-        if type(self._internalEntity[key]) ~= 'userdata' then
-            return self._internalEntity[key]
+        if type(internal) ~= 'userdata' then
+            return internal
+        end
+        
+        if (GetTypeName(internal) == "ViewAttribute`1") then
+            return internal.Value
         end
 
         return function(self, ...)
-            return self._internalEntity[key](self._internalEntity, ...)
+            return rawget(self, "_internalEntity")[key](self._internalEntity, ...)
         end
     end
 end
@@ -35,7 +40,12 @@ end
 function Entity:__newindex(key, value)
     -- If the key exists in the internal C# object, set it
     -- We ignore OnTick, because of an unknown error that eventually causes a Lua stack overflow
-    if key ~= "OnTick" and rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
+    if rawget(self, '_internalEntity') ~= nil and rawget(self, '_internalEntity')[key] ~= nil then
+        if GetTypeName(self._internalEntity[key]) == "ViewAttribute`1" then
+            self._internalEntity[key]:Set(value)
+            return
+        end
+        
         self._internalEntity[key] = value
     else
         -- Otherwise, set it in the Entity object
@@ -50,6 +60,7 @@ function Entity:Make(entityType)
     self = newEntity
 
     self:SetLuaEntity(newEntity)
+    self:ClearLuaCaches()
 
     self:Made()
 
@@ -76,3 +87,7 @@ function Entity:FindChildren(type)
     
     return children
 end 
+
+function Entity:OnTick()
+    
+end

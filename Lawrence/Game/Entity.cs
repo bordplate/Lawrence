@@ -5,6 +5,7 @@ using NLua;
 
 using Lawrence.Core;
 using Lawrence.Game.UI;
+using NLua.Exceptions;
 
 namespace Lawrence.Game;
 
@@ -71,12 +72,12 @@ partial class Entity {
 }
 
 partial class Entity { 
-    public Entity Parent() {
+    public Entity? Parent() {
         return _parent;
     }
 
     public bool HasParent(Entity entity) {
-        Entity next = this;
+        Entity? next = this;
         do {
             if (next == entity) {
                 return true;
@@ -89,7 +90,7 @@ partial class Entity {
     }
 
     public void AddEntity(LuaTable entityTable) {
-        object internalEntity = entityTable["_internalEntity"];
+        var internalEntity = entityTable["_internalEntity"];
 
         if (internalEntity is Entity entity) {
             Add(entity);
@@ -98,9 +99,7 @@ partial class Entity {
 
     public virtual void Add(Entity entity, bool reparent = true) {
         if (reparent) {
-            if (entity._parent != null) {
-                entity._parent.Remove(entity);
-            }
+            entity._parent?.Remove(entity);
 
             entity._parent = this;
         }
@@ -154,7 +153,7 @@ partial class Entity {
     }
 
     public List<LuaTable> FindChildrenInternal(string entityType) {
-        Type type = Type.GetType($"Lawrence.Game.{entityType}, Lawrence");
+        Type? type = Type.GetType($"Lawrence.Game.{entityType}, Lawrence");
         List<Entity> removeEntities = new List<Entity>();
         List<LuaTable> entities = new List<LuaTable>();
 
@@ -170,12 +169,12 @@ partial class Entity {
             }
             
             if (entity.GetType() == type) {
-                entities.Add(entity.LuaEntity());
+                if (entity.LuaEntity() != null) entities.Add(entity.LuaEntity()!);
             }
 
             // Recursively search the children
             foreach (var e in entity.FindChildrenInternal(entityType)) {
-                entities.Add(entity.LuaEntity());
+                if (entity.LuaEntity() != null) entities.Add(entity.LuaEntity()!);
             }
         }
         
@@ -200,12 +199,27 @@ partial class Entity {
 }
 
 partial class Entity {
+    private LuaTable? _luaClass;
+    private Dictionary<string, LuaFunction>? _declaredMethods;
+    private List<LuaTable> _superClasses = new();
+    private Dictionary<LuaTable, Dictionary<string, LuaFunction>> _superDeclaredMethods = new();
+
+    private LuaFunction? _onTickFunction;
+    
+    public void ClearLuaCaches() {
+        _luaClass = null;
+        _declaredMethods = null;
+        _onTickFunction = null;
+        _superClasses.Clear();
+        _superDeclaredMethods.Clear();
+        _luaFunctions.Clear();
+    }
 
     /// <summary>
     /// Gets a Lua function in the Lua entity reflecting this class and caches it. 
     /// </summary>
     /// <param name="functionName">Name of the function to get.</param>
-    private LuaFunction GetLuaFunction(string functionName) {
+    private LuaFunction? GetLuaFunction(string functionName) {
         if (_luaEntity == null) {
             return null;
         }
@@ -214,40 +228,101 @@ partial class Entity {
             return luaFunction;
         }
 
-        if (!(_luaEntity["class"] is LuaTable)) {
+        if (GetDeclaredMethods() is not {} declaredMethods) {
             return null;
         }
 
-        LuaTable classTable = (LuaTable)_luaEntity["class"];
+        if (GetDeclaredMethod(functionName) is { } func) {
+            _luaFunctions.Add(functionName, func);
 
-        if (!(classTable["__declaredMethods"] is LuaTable)) {
-            return null;
+            return func;
         }
 
-        LuaTable declaredMethods = (LuaTable)classTable["__declaredMethods"];
-
-        if (declaredMethods[functionName] != null && declaredMethods[functionName] is LuaFunction) {
-            LuaFunction function = (LuaFunction)declaredMethods[functionName];
-
-            _luaFunctions.Add(functionName, function);
-
-            return function;
-        }
-
-        while ((LuaTable)classTable["super"] is LuaTable) {
-            classTable = (LuaTable)classTable["super"];
-
-            declaredMethods = (LuaTable)classTable["__declaredMethods"];
-
-            if (declaredMethods[functionName] != null && declaredMethods[functionName] is LuaFunction) {
-                LuaFunction function = (LuaFunction)declaredMethods[functionName];
-
+        foreach (var superTable in GetSuperClasses()) {
+            if (GetSuperDeclaredMethod(superTable, functionName) is { } function) {
                 _luaFunctions.Add(functionName, function);
 
                 return function;
             }
         }
+
+        return null;
+    }
+    
+    public LuaTable? GetLuaClass() {
+        if (_luaClass == null && _luaEntity != null) {
+            _luaClass = (LuaTable)_luaEntity["class"];
+        }
+
+        return _luaClass;
+    }
+    
+    public Dictionary<string, LuaFunction>? GetDeclaredMethods() {
+        if (_declaredMethods == null && GetLuaClass() is {} luaClass && luaClass["__declaredMethods"] is LuaTable declaredMethods) {
+            _declaredMethods = new Dictionary<string, LuaFunction>();
+
+            foreach (var key in declaredMethods.Keys) {
+                if (declaredMethods[key] is LuaFunction func && key is string key_) {
+                    _declaredMethods.Add(key_, func);
+                }
+            }
+        }
+
+        return _declaredMethods;
+    }
+    
+    public LuaFunction? GetDeclaredMethod(string methodName) {
+        if (GetDeclaredMethods() is {} declaredMethods) {
+            if (declaredMethods.TryGetValue(methodName, out var func)) {
+                return func;
+            }
+        }
+
+        return null;
+    }
+    
+    public List<LuaTable> GetSuperClasses() {
+        if (_superClasses.Count == 0 && _luaEntity != null) {
+            if (GetLuaClass() is {} classTable) {
+                while (classTable["super"] is LuaTable superTable) {
+                    _superClasses.Add(superTable);
+
+                    classTable = superTable;
+                }
+            }
+        }
+
+        return _superClasses;
+    }
+    
+    public Dictionary<string, LuaFunction>? GetSuperDeclaredMethods(LuaTable superTable) {
+        if (_superDeclaredMethods.TryGetValue(superTable, out var declared)) {
+            return declared;
+        }
         
+        if (superTable["__declaredMethods"] is LuaTable superDeclaredMethods) {
+            var methods = new Dictionary<string, LuaFunction>();
+
+            foreach (var key in superDeclaredMethods.Keys) {
+                if (superDeclaredMethods[key] is LuaFunction func && key is string key_) {
+                    methods.Add(key_, func);
+                }
+            }
+
+            _superDeclaredMethods.Add(superTable, methods);
+
+            return methods;
+        }
+        
+        return null;
+    }
+    
+    public LuaFunction? GetSuperDeclaredMethod(LuaTable superTable, string methodName) {
+        if (GetSuperDeclaredMethods(superTable) is {} declaredMethods) {
+            if (declaredMethods.TryGetValue(methodName, out var func)) {
+                return func;
+            }
+        }
 
         return null;
     }
@@ -258,10 +333,27 @@ partial class Entity {
     /// <param name="functionName">Name of the function to call</param>
     /// <param name="args">Args to pass to the function</param>
     /// <returns>null if not found or whatever the called function returns (often null).</returns>
-    protected object CallLuaFunction(string functionName, params object[] args) {
-        LuaFunction function = GetLuaFunction(functionName);
-
-        return function?.Call(args);
+    protected void CallLuaFunction(string functionName, params object?[] args) {
+        if (GetLuaFunction(functionName) is { } function) {
+            function.Call(args);
+            Game.Shared().State().State.Pop(1);
+        }
+    }
+    
+    protected object? CallLuaFunctionWithResult(string functionName, params object?[] args) {
+        var classNamespace = ((LuaTable)_luaEntity!["class"])["name"] as string;
+        
+        Logger.Log($"{classNamespace}:{functionName}() PreGet: {Game.Shared().State().State.GetTop()}");
+        
+        var function = GetLuaFunction(functionName);
+        
+        Logger.Log($"{classNamespace}:{functionName}() PreCall: {Game.Shared().State().State.GetTop()}");
+        
+        var result = function?.Call(args);
+        
+        Logger.Log($"{classNamespace}:{functionName}() PostCall: {Game.Shared().State().State.GetTop()}");
+        
+        return result;
     }
 
     /// <summary>
@@ -274,7 +366,7 @@ partial class Entity {
         _luaFunctions = new Dictionary<string, LuaFunction>();
     }
 
-    public LuaTable LuaEntity() {
+    public LuaTable? LuaEntity() {
         return _luaEntity;
     }
 
@@ -287,8 +379,19 @@ partial class Entity {
         if (!_active || _luaEntity == null) {
             return;
         }
+        
+        try {
+            if (_onTickFunction == null) {
+                _onTickFunction = GetLuaFunction("OnTick");
+            }
 
-        CallLuaFunction("OnTick", _luaEntity);
+            if (_onTickFunction is { } tickFunction) {
+                tickFunction.Call(_luaEntity);
+                Game.Shared().State().State.Pop(1);
+            }
+        } catch (LuaScriptException e) {
+            Logger.Error($"Error in OnTick for entity: {e.Message}");
+        }
     }
 }
 
@@ -303,9 +406,9 @@ public partial class Entity {
     /// <summary>
     /// Lua counterpart of this object. 
     /// </summary>
-    LuaTable _luaEntity;
+    LuaTable? _luaEntity;
 
-    private Entity _parent;
+    private Entity? _parent;
     List<Entity> _children = new();
 
     private bool _maskVisibility;
@@ -327,8 +430,8 @@ public partial class Entity {
     
     private bool _deleted;
 
-    public Entity(LuaTable luaEntity = null) {
-        this._luaEntity = luaEntity;
+    public Entity(LuaTable? luaEntity = null) {
+        _luaEntity = luaEntity;
 
         Game.Shared().NotificationCenter().Subscribe<TickNotification>(OnTick);
         Game.Shared().NotificationCenter().Subscribe<DeleteEntityNotification>(OnDeleteEntity);

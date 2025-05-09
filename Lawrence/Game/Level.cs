@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Lawrence.Core;
 
 namespace Lawrence.Game;
 
@@ -16,7 +17,7 @@ public class Level : Entity {
 
     public bool ShouldPropagateLevelFlags = true;
 
-    public Level(int gameId, string name, LuaTable luaTable = null) : base(luaTable) {
+    public Level(int gameId, string name, LuaTable? luaTable = null) : base(luaTable) {
         _gameId = gameId;
         _name = name;
         
@@ -63,7 +64,7 @@ public class Level : Entity {
         return _gameId;
     }
 
-    public LuaTable SpawnMoby(object param) {
+    public LuaTable? SpawnMoby(object param) {
         Moby moby = new Moby();
         moby.SetLevel(this);
         
@@ -101,7 +102,7 @@ public class Level : Entity {
         return null;
     }
 
-    public LuaTable GetGameMobyByUID(ushort uid) {
+    public LuaTable? GetGameMobyByUID(ushort uid) {
         Moby moby = new Moby();
         moby.MakeHybrid(uid);
         moby.SetLevel(this);
@@ -160,7 +161,7 @@ public class Level : Entity {
         switch(type) {
             case 1:
                 if (index >= LevelFlags1.Length) {
-                    Console.Error.WriteLine($"Level flag index for type 1 out of bounds: {index}");
+                    Logger.Error($"Level flag index for type 1 out of bounds: {index}");
                     return;
                 }
                 
@@ -168,13 +169,13 @@ public class Level : Entity {
                 break;
             case 2:
                 if (index >= LevelFlags2.Length) {
-                    Console.Error.WriteLine($"Level flag index for type 2 out of bounds: {index}");
+                    Logger.Error($"Level flag index for type 2 out of bounds: {index}");
                     return;
                 }
                 LevelFlags2[index] = (byte)value;
                 break;
             default:
-                Console.Error.WriteLine($"Unknown level flag type: {type}");
+                Logger.Error($"Unknown level flag type: {type}");
                 break;
         }
 
@@ -183,7 +184,14 @@ public class Level : Entity {
                 if (player == originatingPlayer) {
                     continue;
                 }
-                player.SetLevelFlags((byte)type, (byte)GameID(), index, [value]);
+
+                if (player.Level() != this) {
+                    Logger.Error("Player level mismatch");
+                    return;
+                }
+                
+                
+                player.ChangedLevelFlag((byte)type, index, value);
             }
         }
     }

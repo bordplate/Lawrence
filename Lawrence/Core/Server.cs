@@ -23,8 +23,8 @@ public class Server {
 
     private readonly UdpClient _udpServer;
 
-    private Thread _clientThread;
-    private Thread _runThread;
+    private Thread? _clientThread;
+    private Thread? _runThread;
 
     private readonly string _serverName;
     private readonly int _maxPlayers;
@@ -43,12 +43,12 @@ public class Server {
         _processTicks = processTicks;
     }
     
-    public string ListenAddress() {
-        return ((IPEndPoint)_udpServer.Client.LocalEndPoint)?.Address.ToString();
+    public string? ListenAddress() {
+        return ((IPEndPoint?)_udpServer.Client.LocalEndPoint)?.Address.ToString();
     }
 
     public int ListenPort() {
-        return ((IPEndPoint)_udpServer.Client.LocalEndPoint)?.Port ?? 0;
+        return ((IPEndPoint?)_udpServer.Client.LocalEndPoint)?.Port ?? 0;
     }
     
     public string ServerName() {
@@ -88,7 +88,7 @@ public class Server {
 
             try
             {
-                IPEndPoint clientEndpoint = null;
+                IPEndPoint? clientEndpoint = null;
                 var data = _udpServer.Receive(ref clientEndpoint);
 
                 if (data.Length <= 0)
@@ -181,7 +181,7 @@ public class Server {
     /// </summary>
     /// <param name="endpoint"></param>
     /// <param name="data"></param>
-    void NewClient(IPEndPoint endpoint, byte[] data = null)
+    void NewClient(IPEndPoint endpoint, byte[]? data = null)
     {
         Logger.Log($"Connection from {endpoint}");
 
@@ -223,11 +223,11 @@ public class Server {
             _udpServer.Client.SendTo(bytes, endpoint);
         } catch (Exception e)
         {
-            Console.WriteLine($"Error sending packet: {e.Message}");
+            Logger.Error($"Error sending packet: {e.Message}");
         }
     }
 
-    public Client GetClient(int id)
+    public Client? GetClient(int id)
     {
         foreach(Client client in _clients)
         {

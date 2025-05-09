@@ -13,9 +13,12 @@ Moby.offset = {
     },
     state = 0x20,
     updateDistance = 0x30,
+    enabled = 0x31,
     modeBits = 0x34,
     animationID = 0x53,
-    animationFrameBlendT = 0x54
+    animationFrameBlendT = 0x54,
+    pManipulator1 = 0x64,
+    pManipulator2 = 0x80,
 }
 
 function Moby:initialize(mobyEntity)

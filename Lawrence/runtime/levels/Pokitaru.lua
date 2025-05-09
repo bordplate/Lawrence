@@ -2,6 +2,7 @@ require 'runtime.levels.Common.Button'
 require 'runtime.levels.Common.ThrusterPackLock'
 require 'runtime.levels.Pokitaru.Puffoid'
 require 'runtime.levels.Pokitaru.Psyctopus'
+require 'runtime.levels.Pokitaru.Fred'
 
 Pokitaru = class("Pokitaru", Level)
 
@@ -120,4 +121,6 @@ function Pokitaru:LoadHybrids()
     self.bridgeButton = Button(self, 185)
     
     self.thruserPackLock = ThrusterPackLock(self, 630)
+    
+    self.fred = Fred(self, 652)
 end

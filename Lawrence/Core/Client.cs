@@ -19,18 +19,19 @@ public struct AckedMetadata {
     public byte[] Packet;
     public int ResendTimer;
     public long Timestamp;
+    public Action? AckCallback;
 }
 
 public interface IClientHandler {
-    uint CreateMoby();
+    Moby CreateMoby(ushort oClass, byte spawnId);
     void UpdateMoby(MPPacketMobyUpdate updatePacket);
-    void Collision(Moby collider, Moby collidee, bool aggressive = false);
+    void OnDamage(Moby source, Moby target, ushort sourceOClass, float damage);
     void ControllerInputTapped(ControllerInput input);
     void ControllerInputHeld(ControllerInput input);
     void ControllerInputReleased(ControllerInput input);
     void Delete();
     Moby Moby();
-    void PlayerRespawned();
+    void PlayerRespawned(byte spawnId, ushort levelId);
     void GameStateChanged(GameState state);
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
@@ -38,7 +39,12 @@ public interface IClientHandler {
     void OnUnlockSkillpoint(byte skillpoint);
     void OnDisconnect();
     void OnHybridMobyValueChange(ushort uid, MonitoredValueType type, ushort offset, ushort size, byte[] oldValue, byte[] newValue);
+    void OnMonitoredAddressChanged(uint address, byte size, byte[] oldValue, byte[] newValue);
     void OnLevelFlagChanged(ushort type, byte level, byte size, ushort index, uint value);
+    void OnGiveBolts(int boltDiff, uint totalBolts);
+    bool HasMoby(Moby moby);
+    void DeleteMoby(Moby moby);
+    void UIEvent(MPUIElementEventType eventType, ushort elementId, uint data, byte[] extraData);
 }
 
 public partial class Client {
@@ -63,9 +69,9 @@ public partial class Client {
     /// </summary>
     public bool WaitingToConnect = true;
 
-    IClientHandler _clientHandler;
+    IClientHandler? _clientHandler;
 
-    private string _username = null;
+    private string? _username = null;
     private int _userid = 0;
 
     readonly IPEndPoint _endpoint;
@@ -106,7 +112,7 @@ public partial class Client {
         return _endpoint;
     }
 
-    public string GetUsername() {
+    public string? GetUsername() {
         return _username;
     }
 
@@ -147,8 +153,8 @@ public partial class Client {
     private readonly List<byte> _buffer = new();
     private const int BufferSize = 1024;
 
-    public void SendPacket(MPPacketHeader packetHeader, byte[] packetBody) {
-        packetHeader.timeSent = (long)Game.Game.Shared().Time();
+    public void SendPacket(MPPacketHeader packetHeader, byte[]? packetBody, Action? ackCallback = null) {
+        packetHeader.TimeSent = (long)Game.Game.Shared().Time();
 
         var bodyLen = 0;
         if (packetBody != null) {
@@ -157,8 +163,8 @@ public partial class Client {
         byte[] packet = new byte[Marshal.SizeOf<MPPacketHeader>() + bodyLen];
 
         // Fill ack fields if necessary
-        if (packetHeader.requiresAck == 255 && packetHeader.ackCycle == 255) {
-            (packetHeader.requiresAck, packetHeader.ackCycle) = NextAck();
+        if (packetHeader.RequiresAck == 255 && packetHeader.AckCycle == 255) {
+            (packetHeader.RequiresAck, packetHeader.AckCycle) = NextAck();
         }
 
         Packet.StructToBytes(packetHeader, _endianness).CopyTo(packet, 0);
@@ -167,25 +173,32 @@ public partial class Client {
         }
 
         // Cache ack response packets
-        if (packetHeader.ptype == MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) {
-            var ack = _acked[packetHeader.requiresAck];
-            if (ack.AckCycle != packetHeader.ackCycle) {
-                ack.AckCycle = packetHeader.ackCycle;
+        if (packetHeader.PacketType == MPPacketType.MP_PACKET_ACK && packetHeader.RequiresAck != 0) {
+            var ack = _acked[packetHeader.RequiresAck];
+            if (ack.AckCycle != packetHeader.AckCycle) {
+                ack.AckCycle = packetHeader.AckCycle;
                 ack.Packet = packet;
                 ack.ResendTimer = 120;
             }
 
-            _acked[packetHeader.requiresAck] = ack;
+            _acked[packetHeader.RequiresAck] = ack;
         }
 
         // Cache unacked request packets
-        if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) {
+        if (packetHeader.PacketType != MPPacketType.MP_PACKET_ACK && packetHeader.RequiresAck != 0) {
             if (_unacked.Count >= 256) {
                 //Console.WriteLine($"Player {ID} has more than 256 unacked packets. We should probably boot this client.");
                 _unacked.Clear();
             }
 
-            _unacked.Add(new AckedMetadata { Packet = packet, AckIndex = packetHeader.requiresAck, AckCycle = packetHeader.ackCycle, ResendTimer = 30, Timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds() });
+            _unacked.Add(new AckedMetadata {
+                Packet = packet, 
+                AckIndex = packetHeader.RequiresAck, 
+                AckCycle = packetHeader.AckCycle, 
+                ResendTimer = 30, 
+                Timestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds(),
+                AckCallback = ackCallback
+            });
         }
 
         // Add packet to buffer
@@ -211,39 +224,61 @@ public partial class Client {
         SendPacket(header, body);
     }
 
+    public void SendPacket(Packet packet, Action ackCallback) {
+        (MPPacketHeader header, byte[] body) = packet.GetBytes(_endianness);
+        
+        SendPacket(header, body, ackCallback);
+    }
+
+    private long _lastTimeSent = 0;
+
     // Parse and process a packet
     public void ParsePacket(byte[] packet) {
         int index = 0;
 
         while (index < packet.Length && packet.Length - index >= Marshal.SizeOf<MPPacketHeader>()) {
             // Start out by reading the header
-            MPPacketHeader packetHeader =
-                Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness);
+            if (Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness)
+                is not { } packetHeader) {
+                throw new Exception("Bad packet");
+            }
+            
             index += Marshal.SizeOf<MPPacketHeader>();
 
-            if (packetHeader.size > packet.Length - index) {
+            if (packetHeader.Size > packet.Length - index) {
                 // Try to read in other endianness
                 if (_endianness == Packet.Endianness.BigEndian) {
                     _endianness = Packet.Endianness.LittleEndian;
-                }
-                else {
+                } else {
                     _endianness = Packet.Endianness.BigEndian;
                 }
                 
                 // Reset index
                 index -= Marshal.SizeOf<MPPacketHeader>();
-                packetHeader = Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness);
+                if (Packet.MakeHeader(packet.Skip(index).Take(Marshal.SizeOf<MPPacketHeader>()).ToArray(), _endianness) is not { } resetPacketHeader) {
+                    throw new Exception("Bad packet");
+                }
+
+                packetHeader = resetPacketHeader;
                 
-                if (packetHeader.size > packet.Length - index) {
+                if (packetHeader.Size > packet.Length - index) {
                     // Still too big, throw exception
                     throw new Exception("Bad packet");
                 }
             }
             
-            byte[] packetBody = packet.Skip(index).Take((int)packetHeader.size)
+            byte[] packetBody = packet.Skip(index).Take((int)packetHeader.Size)
                 .ToArray();
 
-            index += (int)packetHeader.size;
+            index += (int)packetHeader.Size;
+            
+            if (packetHeader.TimeSent < _lastTimeSent) {
+                // This packet is older than the last one we received. We don't want to process it.
+                Logger.Log($"Player({ID}) sent an old packet. Ignoring.");
+                continue;
+            }
+            
+            _lastTimeSent = packetHeader.TimeSent;
 
             // Check if handshake is complete, otherwise start completing it. 
 
@@ -251,52 +286,51 @@ public partial class Client {
             //       Ideally the handshake should start a session that the client can
             //          easily use to identify itself. Ideally without much computational
             //          overhead. 
-            if ((!_handshakeCompleted || WaitingToConnect) && !AllowedAnonymous.Contains(packetHeader.ptype)) {
+            if ((!_handshakeCompleted || WaitingToConnect) && !AllowedAnonymous.Contains(packetHeader.PacketType)) {
                 // Client has sent a packet that is not a handshake packet.
                 // We tell the client we don't know it and it should reset state and
                 // start handshake. 
-                SendPacket(new MPPacketHeader { ptype = MPPacketType.MP_PACKET_IDKU }, null);
+                SendPacket(new MPPacketHeader { PacketType = MPPacketType.MP_PACKET_IDKU }, null);
                 return;
             }
 
             // Get size of packet body 
             var packetSize = 0;
-            if (packetHeader.size > 0 && packetHeader.size < 1024 * 8) {
-                packetSize = (int)packetHeader.size;
+            if (packetHeader.Size > 0 && packetHeader.Size < 1024 * 8) {
+                packetSize = (int)packetHeader.Size;
             }
 
             // If this packet requires ack and is not RPC, we send ack before processing.
             // If this is RPC we only send ack here if a previous ack has been sent and cached.
-            if (packetHeader.ptype != MPPacketType.MP_PACKET_ACK && packetHeader.requiresAck != 0) {
+            if (packetHeader.PacketType != MPPacketType.MP_PACKET_ACK && packetHeader.RequiresAck != 0) {
                 // We don't ack ack messages
                 // If this is an RPC packet and we've already processed and cached it, we use the cached response. 
-                if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 &&
-                    _acked[packetHeader.requiresAck].AckCycle == packetHeader.ackCycle) {
-                    _server.SendTo(_acked[packetHeader.requiresAck].Packet, _endpoint);
-                }
-                else if ((packetHeader.flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) {
+                if ((packetHeader.Flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 &&
+                    _acked[packetHeader.RequiresAck].AckCycle == packetHeader.AckCycle) {
+                    _server.SendTo(_acked[packetHeader.RequiresAck].Packet, _endpoint);
+                } else if ((packetHeader.Flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) {
                     // If it's not RPC, we just ack the packet and process the packet
                     MPPacketHeader ack = new MPPacketHeader {
-                        ptype = MPPacketType.MP_PACKET_ACK,
-                        flags = 0,
-                        size = 0,
-                        requiresAck = packetHeader.requiresAck,
-                        ackCycle = packetHeader.ackCycle
+                        PacketType = MPPacketType.MP_PACKET_ACK,
+                        Flags = 0,
+                        Size = 0,
+                        RequiresAck = packetHeader.RequiresAck,
+                        AckCycle = packetHeader.AckCycle
                     };
 
                     SendPacket(ack, null);
                 }
             }
 
-            switch (packetHeader.ptype) {
+            switch (packetHeader.PacketType) {
                 case MPPacketType.MP_PACKET_CONNECT: {
                     if (!WaitingToConnect) {
-                        Console.Error.WriteLine("Player tried to connect twice.");
+                        Logger.Error("Player tried to connect twice.");
                         return;
                     }
                     
-                    var responsePacket = new Packet(MPPacketType.MP_PACKET_ACK, packetHeader.requiresAck,
-                        packetHeader.ackCycle);
+                    var responsePacket = new Packet(MPPacketType.MP_PACKET_ACK, packetHeader.RequiresAck,
+                        packetHeader.AckCycle);
                     
                     if (packetSize < (uint)Marshal.SizeOf<MPPacketConnect>()) {
                         // Legacy client, we tell it to fuck off with an unknown error code, since it doesn't know about
@@ -316,15 +350,18 @@ public partial class Client {
                     }
 
                     // Decode the packet
-                    MPPacketConnect connectPacket = Packet.BytesToStruct<MPPacketConnect>(packetBody, _endianness);
+                    if (Packet.BytesToStruct<MPPacketConnect>(packetBody, _endianness) is not { } connectPacket) {
+                        throw new NetworkParsingException("Failed to parse connect packet.");
+                    }
+                    
                     string username = connectPacket.GetUsername(packetBody);
                     
                     // Check that the API versions are compatible
-                    if (connectPacket.version < API_VERSION_MIN) {
-                        Logger.Log($"{username} tried to connect with old version {connectPacket.version}. Minimum version: {API_VERSION_MIN}. Latest: {API_VERSION}");
+                    if (connectPacket.Version < API_VERSION_MIN) {
+                        Logger.Log($"{username} tried to connect with old version {connectPacket.Version}. Minimum version: {API_VERSION_MIN}. Latest: {API_VERSION}");
                         // Client is outdated, tell them to update.
                         MPPacketConnectResponse connectResponse = new MPPacketConnectResponse {
-                            status = connectPacket.version == 0 ? 
+                            status = connectPacket.Version == 0 ? 
                                 MPPacketConnectResponseStatus.ERROR_UNKNOWN : // Legacy alpha doesn't support ERROR_OUTDATED
                                 MPPacketConnectResponseStatus.ERROR_OUTDATED
                         };
@@ -340,7 +377,7 @@ public partial class Client {
 
                     foreach (Client c in _server.Clients()) {
                         if (c != this && c.GetUsername() == connectPacket.GetUsername(packetBody)) {
-                            if (c.GetUserid() == connectPacket.userid && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
+                            if (c.GetUserid() == connectPacket.UserId && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
                                 c.Disconnect();
                                 break;
                             }
@@ -366,7 +403,7 @@ public partial class Client {
                     responsePacket.AddBodyPart(responseBody);
 
                     _username = username;
-                    _userid = connectPacket.userid;
+                    _userid = connectPacket.UserId;
                     
                     SendPacket(responsePacket);
                     
@@ -408,8 +445,8 @@ public partial class Client {
                         _handshakeCompleted = true;
                     }
                     else {
-                        response.Header.ackCycle = 0;
-                        response.Header.requiresAck = 0;
+                        response.Header.AckCycle = 0;
+                        response.Header.RequiresAck = 0;
                     }
 
                     SendPacket(response);
@@ -418,9 +455,10 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_ACK:
                     foreach (var unacked in _unacked.ToArray()) {
-                        if (unacked.AckCycle == packetHeader.ackCycle &&
-                            unacked.AckIndex == packetHeader.requiresAck) {
+                        if (unacked.AckCycle == packetHeader.AckCycle &&
+                            unacked.AckIndex == packetHeader.RequiresAck) {
                             _unacked.Remove(unacked);
+                            unacked.AckCallback?.Invoke();
                             break;
                         }
                     }
@@ -428,15 +466,15 @@ public partial class Client {
                     break;
                 case MPPacketType.MP_PACKET_TIME_SYNC: {
                     MPPacketTimeResponse response = new MPPacketTimeResponse() {
-                        clientSendTime = (ulong)packetHeader.timeSent,
-                        serverSendTime = Game.Game.Shared().Time()
+                        ClientSendTime = (ulong)packetHeader.TimeSent,
+                        ServerSendTime = Game.Game.Shared().Time()
                     };
 
                     MPPacketHeader header = new MPPacketHeader {
-                        ptype = MPPacketType.MP_PACKET_ACK,
-                        size = (uint)Marshal.SizeOf<MPPacketTimeResponse>(),
-                        requiresAck = packetHeader.requiresAck,
-                        ackCycle = packetHeader.ackCycle
+                        PacketType = MPPacketType.MP_PACKET_ACK,
+                        Size = (uint)Marshal.SizeOf<MPPacketTimeResponse>(),
+                        RequiresAck = packetHeader.RequiresAck,
+                        AckCycle = packetHeader.AckCycle
                     };
 
                     SendPacket(header,
@@ -445,90 +483,186 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_UPDATE: {
-                    MPPacketMobyUpdate update =
-                        Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, _endianness);
-
-                    _clientHandler.UpdateMoby(update);
+                    if (Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, _endianness) is { } update) {
+                        _clientHandler?.UpdateMoby(update);
+                    }
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_MOBY_CREATE: {
-                    uint createdUUID = _clientHandler.CreateMoby();
+                    if (Packet.BytesToStruct<MPPacketMobyCreate>(packetBody, _endianness) is not { } create) {
+                        throw new NetworkParsingException("Failed to parse moby create packet.");
+                    }
+                    
+                    var newMoby = _clientHandler?.CreateMoby(create.OClass, create.SpawnId);
+                    
+                    if (newMoby == null) {
+                        Logger.Error($"Client({ID}) failed to create moby [oClass:{create.OClass}].");
+                        return;
+                    }
+                    
+                    newMoby.modeBits = create.ModeBits;
 
-                    MPPacketMobyCreate createPacket = new MPPacketMobyCreate {
-                        uuid = createdUUID
-                    };
+                    if (create.Flags.HasFlag(MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO)) {
+                        var parent = create.ParentUuid == 0 ?
+                            _clientHandler?.Moby() :
+                            GetSyncMobyByInternalId(create.ParentUuid);
+                        
+                        if (parent != null) {
+                            newMoby.AttachedTo = parent;
+                            newMoby.PositionBone = create.PositionBone;
+                            newMoby.TransformBone = create.TransformBone;
 
-                    MPPacketHeader header = new MPPacketHeader {
-                        ptype = MPPacketType.MP_PACKET_ACK,
-                        flags = MPPacketFlags.MP_PACKET_FLAG_RPC,
-                        size = (uint)Marshal.SizeOf<MPPacketMobyCreate>(),
-                        requiresAck = packetHeader.requiresAck,
-                        ackCycle = packetHeader.ackCycle
-                    };
+                            if (create.OClass == 173) {
+                                newMoby.PositionBone = (byte)(create.PositionBone == 6 ? 22 : 23);
+                                newMoby.TransformBone = (byte)(create.PositionBone == 6 ? 22 : 23);
+                            }
+                        } else {
+                            Logger.Error($"Player({ID}) tried to attach moby [oClass:{create.OClass}] to a parent [{create.ParentUuid}] that doesn't exist.");
+                        }
+                    }
 
-                    Logger.Log($"Player({this.ID}) created moby (uuid: {createdUUID})");
+                    if (_clientHandler?.Moby() is { } moby) {
+                        newMoby.MakeSynced(moby);
+                    }
 
-                    SendPacket(header,
-                        Packet.StructToBytes(createPacket, _endianness));
+                    var internalId = CreateSyncMoby(newMoby);
+                    
+                    SendPacket(Packet.MakeMobyCreateResponsePacket(internalId, packetHeader.RequiresAck, packetHeader.AckCycle));
+                    
+                    Logger.Log($"Player({ID}) created moby (oClass: {create.OClass}) with internal ID {internalId}.");
 
                     break;
                 }
-                case MPPacketType.MP_PACKET_MOBY_COLLISION: {
-                    MPPacketMobyCollision collision =
-                        Packet.BytesToStruct<MPPacketMobyCollision>(packetBody, _endianness);
+                case MPPacketType.MP_PACKET_MOBY_CREATE_FAILURE: {
+                    if (Packet.BytesToStruct<MPPacketMobyCreateFailure>(packetBody, _endianness) is not {} createFailure) {
+                        throw new NetworkParsingException("Failed to parse moby create failure packet.");
+                    }
 
-                    Moby collider = collision.uuid == 0
-                        ? _clientHandler.Moby()
-                        : GetMobyByInternalId(collision.uuid);
+                    switch (createFailure.Reason) {
+                        case MPMobyCreateFailureReason.UNKNOWN:
+                            Logger.Error($"Couldn't create moby for Player({ID}): unknown error.");
+                            break;
+                        case MPMobyCreateFailureReason.NOT_READY: return;
+                        case MPMobyCreateFailureReason.ALREADY_EXISTS:
+                            Logger.Error($"Couldn't create moby for Player({ID}): already exists.");
+                            break;
+                        case MPMobyCreateFailureReason.MAX_MOBYS:
+                            Logger.Error($"Couldn't create moby for Player({ID}): out of moby space.");
+                            break;
+                        case MPMobyCreateFailureReason.UPDATE_NON_EXISTENT:
+                            Logger.Error($"Couldn't create moby for Player({ID}): tried to update a moby that doesn't exist.");
+                            break;
+                        case MPMobyCreateFailureReason.SUCCESS:
+                            SetMobyCreated(createFailure.Uuid);
+                            return;
+                    }
+                    
+                    ClearMoby(createFailure.Uuid);
+                    
+                    break;
+                }
+                case MPPacketType.MP_PACKET_MOBY_DELETE: {
+                    if (Packet.BytesToStruct<MPPacketMobyDelete>(packetBody, _endianness) is not { } delete) {
+                        throw new NetworkParsingException("Failed to parse moby delete packet.");
+                    }
 
-                    Moby collidee = collision.collidedWith == 0
-                        ? _clientHandler.Moby()
-                        : GetMobyByInternalId(collision.collidedWith);
+                    var moby = GetSyncMobyByInternalId((ushort)delete.Uuid);
+                    if (moby != null) {
+                        _clientHandler?.DeleteMoby(moby);
+                    } else {
+                        Logger.Error($"Player [{ID}] tried to delete a moby that doesn't exist in its moby table.");
+                    }
 
-                    _clientHandler.Collision(collider, collidee, collision.flags > 0);
+                    break;
+                }
+                case MPPacketType.MP_PACKET_MOBY_DAMAGE: {
+                    if (Packet.BytesToStruct<MPPacketMobyDamage>(packetBody, _endianness) is not {} damage) {
+                        throw new NetworkParsingException("Failed to parse moby damage packet.");
+                    }
+
+                    var collider = damage.Uuid == 0
+                        ? _clientHandler?.Moby()
+                        : GetMobyByInternalId(damage.Uuid);
+
+                    var collidee = damage.CollidedWithUuid == 0
+                        ? _clientHandler?.Moby()
+                        : GetMobyByInternalId(damage.CollidedWithUuid);
+
+                    if (!damage.Flags.HasFlag(MPDamageFlags.GameMoby)) {
+                        // This is an attack against a server-spawned moby, like another player or other entity.
+                        if (collider is {} _ && collidee is {} __) {
+                            _clientHandler?.OnDamage(collider, collidee, damage.SourceOClass, damage.Damage);
+                        }
+                    }
+
                     break;
                 }
                 case MPPacketType.MP_PACKET_SET_STATE: {
-                    MPPacketSetState state =
-                        Packet.BytesToStruct<MPPacketSetState>(packetBody, _endianness);
-
-                    if (state.stateType == MPStateType.MP_STATE_TYPE_GAME) {
-                        _clientHandler.GameStateChanged((GameState)state.value);
+                    if (Packet.BytesToStruct<MPPacketSetState>(packetBody, _endianness) is not { } state) {
+                        throw new NetworkParsingException("Failed to parse set state packet.");
                     }
 
-                    if (state.stateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
-                        Logger.Log($"Player got bolt #{state.value}");
-                        _clientHandler.CollectedGoldBolt((int)state.offset, (int)state.value);
+                    if (state.StateType == MPStateType.MP_STATE_TYPE_GAME) {
+                        _clientHandler?.GameStateChanged((GameState)state.Value);
                     }
 
-                    if (state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
+                    if (state.StateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
+                        Logger.Log($"Player got bolt #{state.Value}");
+                        _clientHandler?.CollectedGoldBolt((int)state.Offset, (int)state.Value);
+                    }
+
+                    if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
                         // TODO: Clean up this bitwise magic into readable flags
-                        uint item = state.value & 0xFFFF;
-                        bool equip = (state.value >> 16) == 1;
+                        uint item = state.Value & 0xFFFF;
+                        bool equip = (state.Value >> 16) == 1;
                         
                         Logger.Log($"Player got item #{item}: equip: {equip}");
-                        _clientHandler.UnlockItem((int)item, equip);
+                        _clientHandler?.UnlockItem((int)item, equip);
                     }
 
-                    if (state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
-                        Logger.Log($"Player unlocked level #{state.value}");
-                        _clientHandler.OnUnlockLevel((int)state.value);
+                    if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
+                        Logger.Log($"Player unlocked level #{state.Value}");
+                        _clientHandler?.OnUnlockLevel((int)state.Value);
                     }
 
-                    if (state.stateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
-                        Logger.Log($"Player unlocked skillpoint #{state.value}");
-                        _clientHandler.OnUnlockSkillpoint((byte)state.value);
+                    if (state.StateType == MPStateType.MP_STATE_TYPE_GIVE_BOLTS) {
+                        _clientHandler?.OnGiveBolts((int)state.Value, state.Offset);
+                    }
+                        
+                    if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
+                        Logger.Log($"Player unlocked skillpoint #{state.Value}");
+                        _clientHandler?.OnUnlockSkillpoint((byte)state.Value);
                     }
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_QUERY_GAME_SERVERS: {
                     if (Lawrence.DirectoryMode()) {
-                        List<ServerItem> servers = Lawrence.Directory().Servers();
+                        if (packetHeader.Size < Marshal.SizeOf<MPPacketQueryGameServers>()) {
+                            Logger.Error(
+                                $"(Player {ID}) tried to query us with outdated version.");
 
-                        SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.requiresAck,
-                            packetHeader.ackCycle));
+                            packetHeader.PacketType = MPPacketType.MP_PACKET_ACK;
+                            packetHeader.Size = 0x2d;
+                            packetHeader.TimeSent = (long)Game.Game.Shared().Time();
+                            
+                            // We didn't use to have a version field on the query packet, and also no way to tell a
+                            // querying client that it is outdated. The byte array is a query response with 1 server named
+                            // "Your multiplayer mod is outdated." for the old client. 
+                            SendPacket(packetHeader, [
+                                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x21,0x59,0x6f,0x75,0x72,0x20,
+                                0x6d,0x75,0x6c,0x74,0x69,0x70,0x6c,0x61,0x79,0x65,0x72,0x20,0x6d,0x6f,0x64,0x20,0x69,
+                                0x73,0x20,0x6f,0x75,0x74,0x64,0x61,0x74,0x65,0x64,0x2e
+                            ]);
+                            
+                            return;
+                        }
+
+                        if (Lawrence.Directory()?.Servers() is { } servers) {
+                            SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.RequiresAck,
+                                packetHeader.AckCycle));
+                        }
                     }
                     else {
                         Logger.Error(
@@ -539,68 +673,121 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_REGISTER_SERVER: {
                     if (Lawrence.DirectoryMode()) {
-                        MPPacketRegisterServer serverInfo =
-                            Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, _endianness);
+                        if (Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, _endianness) is not
+                            { } serverInfo) {
+                            throw new NetworkParsingException("Failed to parse register server packet.");
+                        }
 
                         string name = serverInfo.GetName(packetBody);
 
-                        uint ip = serverInfo.ip != 0 ? serverInfo.ip : (uint)GetEndpoint().Address.Address;
+                        uint ip = serverInfo.Ip != 0 ? serverInfo.Ip : (uint)GetEndpoint().Address.Address;
 
                         IPAddress address = new IPAddress(ip);
 
-                        Lawrence.Directory().RegisterServer(address.ToString(), serverInfo.port, name, serverInfo.maxPlayers, serverInfo.playerCount);
+                        Lawrence.Directory()?.RegisterServer(
+                            address.ToString(), 
+                            serverInfo.Port, 
+                            name, 
+                            serverInfo.MaxPlayers, 
+                            serverInfo.PlayerCount, 
+                            serverInfo.GetDescription(packetBody), 
+                            serverInfo.GetOwner(packetBody)
+                        );
                     }
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_CONTROLLER_INPUT: {
-                    // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons. 
-
-                    MPPacketControllerInput input =
-                        Packet.BytesToStruct<MPPacketControllerInput>(packetBody, _endianness);
-                    if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
-                        _clientHandler.ControllerInputHeld((ControllerInput)input.input);
+                    // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons.
+                    if (Packet.BytesToStruct<MPPacketControllerInput>(packetBody, _endianness) is not { } input) {
+                        throw new NetworkParsingException("Failed to parse controller input packet.");
+                    }
+                    
+                    if ((input.Flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
+                        _clientHandler?.ControllerInputHeld((ControllerInput)input.Input);
                     }
 
-                    if ((input.flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0) {
-                        ControllerInput pressedButtons = (ControllerInput)input.input;
+                    if ((input.Flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0) {
+                        ControllerInput pressedButtons = (ControllerInput)input.Input;
 
-                        _clientHandler.ControllerInputTapped(pressedButtons);
+                        _clientHandler?.ControllerInputTapped(pressedButtons);
                     }
 
                     break;
                 }
                 case MPPacketType.MP_PACKET_PLAYER_RESPAWNED: {
-                    _clientHandler.PlayerRespawned();
+                    if (Packet.BytesToStruct<MPPacketSpawned>(packetBody, _endianness) is { } spawned) {
+                        _clientHandler?.PlayerRespawned(spawned.SpawnId, spawned.LevelId);
+                    }
+
                     break;
                 }
                 case MPPacketType.MP_PACKET_MONITORED_VALUE_CHANGED: {
-                    var valueChanged = Packet.BytesToStruct<MPPacketMonitoredValueChanged>(packetBody, _endianness);
-                    _clientHandler.OnHybridMobyValueChange(
-                        valueChanged.uid,
-                        valueChanged.flags == 1 ? MonitoredValueType.Attribute : MonitoredValueType.PVar,
-                        valueChanged.offset,
-                        valueChanged.size,
-                        BitConverter.GetBytes(valueChanged.oldValue),
-                        BitConverter.GetBytes(valueChanged.newValue)
+                    if (Packet.BytesToStruct<MPPacketMonitoredValueChanged>(packetBody, _endianness) is not {} valueChanged) {
+                        throw new NetworkParsingException("Failed to parse monitored value changed packet.");
+                    }
+                    
+                    _clientHandler?.OnHybridMobyValueChange(
+                        valueChanged.Uid,
+                        valueChanged.Flags == 1 ? MonitoredValueType.Attribute : MonitoredValueType.PVar,
+                        valueChanged.Offset,
+                        valueChanged.Size,
+                        BitConverter.GetBytes(valueChanged.OldValue),
+                        BitConverter.GetBytes(valueChanged.NewValue)
                     );
                     
                     break;
                 }
-                case MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED: {
-                    var flagChanged = Packet.BytesToStruct<MPPacketLevelFlagChanged>(packetBody, _endianness);
-                    _clientHandler.OnLevelFlagChanged(
-                        flagChanged.type,
-                        flagChanged.level,
-                        flagChanged.size,
-                        flagChanged.index,
-                        flagChanged.value
+                case MPPacketType.MP_PACKET_MONITORED_ADDRESS_CHANGED: {
+                    if (Packet.BytesToStruct<MPPacketMonitoredAddressChanged>(packetBody, _endianness) is not
+                        { } addressChanged) {
+                        throw new NetworkParsingException("Failed to parse monitored address changed packet.");
+                    }
+                    
+                    _clientHandler?.OnMonitoredAddressChanged(
+                        addressChanged.Address,
+                        (byte)addressChanged.Size,
+                        BitConverter.GetBytes(addressChanged.OldValue),
+                        BitConverter.GetBytes(addressChanged.NewValue)
                     );
+                    break;
+                }
+                case MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED: {
+                    if (Packet.BytesToStruct<MPPacketLevelFlagsChanged>(packetBody, _endianness) is not {} flagChanged) {
+                        throw new NetworkParsingException("Failed to parse level flag changed packet.");
+                    }
+
+                    for (var i = 0; i < flagChanged.Flags; i++) {
+                        var offset = Marshal.SizeOf<MPPacketLevelFlagsChanged>() + Marshal.SizeOf<MPPacketLevelFlag>() * i;
+                        if (Packet.BytesToStruct<MPPacketLevelFlag>(packetBody.Skip(offset).ToArray(), _endianness) is not {} levelFlag) {
+                            throw new NetworkParsingException($"Failed to parse level flag {i} of {flagChanged.Flags}.");
+                        }
+                        
+                        _clientHandler?.OnLevelFlagChanged(
+                            flagChanged.Type,
+                            flagChanged.Level,
+                            levelFlag.Size,
+                            levelFlag.Index,
+                            levelFlag.Value
+                        );
+                    }
+                    
+                    break;
+                }
+                case MPPacketType.MP_PACKET_UI_EVENT: {
+                    if (Packet.BytesToStruct<MPPacketUIEvent>(packetBody, _endianness) is not {} uiEvent) {
+                        throw new NetworkParsingException("Failed to parse UI event packet.");
+                    }
+                    
+                    byte[] extraData = uiEvent.GetExtraData(packetBody);
+
+                    _clientHandler?.UIEvent(uiEvent.EventType, uiEvent.ElementId, uiEvent.Data, extraData);
+                    
                     break;
                 }
                 default: {
                     Logger.Error(
-                        $"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.ptype} with size: {packetSize}.");
+                        $"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.PacketType} with size: {packetSize}.");
                     break;
                 }
             }
@@ -609,8 +796,9 @@ public partial class Client {
 
     private readonly Mutex _recvLock;
     private readonly bool _resetBuffer = false;
-    private List<byte[]> _recvBuffer = new(400);
+    private List<byte[]> _recvBuffer = new(4096);
     private readonly Dictionary<uint, long> _lastHashes = new(10);
+    
     public void ReceiveData(byte[] data) {
         if (_disconnected) {
             return;
@@ -620,17 +808,16 @@ public partial class Client {
 
         _lastContact = timeNow / 1000;
 
-        _recvLock.WaitOne();
-
-        if (_resetBuffer) {
-            _recvBuffer = new List<byte[]>(100);
-        }
-
         uint currentHash = Crc32Algorithm.Compute(data);
+        
+        if (_resetBuffer) {
+            _recvLock.WaitOne();
+            _recvBuffer = new List<byte[]>(4096);
+            _recvLock.ReleaseMutex();
+        }
 
         // Throw away duplicate packets in the last 200 milliseconds
         if (_lastHashes.ContainsKey(currentHash) && _lastHashes[currentHash] > timeNow - 200) {
-            _recvLock.ReleaseMutex();
             return;
         }
 
@@ -644,8 +831,8 @@ public partial class Client {
 
         _lastHashes[currentHash] = timeNow;
 
+        _recvLock.WaitOne();
         _recvBuffer.Add(data);
-
         _recvLock.ReleaseMutex();
 
         if (_recvBuffer.Count > 399) {
@@ -653,25 +840,33 @@ public partial class Client {
         }
     }
 
-    private List<byte[]> DrainPackets() {
-        // We take at max 50 packets out of the buffer
-        int takePackets = Math.Min(50, _recvBuffer.Count);
-
-        if (takePackets <= 0) {
-            // No packets in buffer
-            return null;
-        }
-
+    private List<byte[]>? DrainPackets() {
         // Make sure the networking receive thread isn't working with the buffer
         _recvLock.WaitOne();
 
-        // Drain packets from buffer
-        List<byte[]> packets = _recvBuffer.Take(takePackets).ToList();
-        _recvBuffer.RemoveRange(0, takePackets);
+        try {
+            // We take at max 100 packets out of the buffer
+            int takePackets = Math.Min(100, _recvBuffer.Count);
 
-        _recvLock.ReleaseMutex();
+            if (takePackets <= 0) {
+                // No packets in buffer
+                return null;
+            }
 
-        return packets;
+            // Drain packets from buffer
+            List<byte[]> packets = _recvBuffer.Take(takePackets).ToList();
+            _recvBuffer.RemoveRange(0, takePackets);
+
+            if (_recvBuffer.Count > 0) {
+                Logger.Trace($"[{GetUsername()}] There's still {_recvBuffer.Count} packets in the buffer.");
+            }
+            
+            return packets;
+        } finally {
+            _recvLock.ReleaseMutex();
+        }
+
+        return null;
     }
 
     public void Tick() {
@@ -738,6 +933,8 @@ public partial class Client {
     }
 }
 
+public class NetworkParsingException(string message) : Exception(message) { }
+
 #region Handling Mobys
 partial class Client {
     private ushort _lastDeletedId = 0;
@@ -746,22 +943,87 @@ partial class Client {
         public Guid Id;
         public long LastUpdate;
         public Moby MobyRef;
+        public bool ClientCreated;
     }
 
-    private readonly ConcurrentDictionary<Guid, ushort> _mobysTable = new ConcurrentDictionary<Guid, ushort>();
-    private readonly ConcurrentDictionary<ushort, MobyData> _mobys = new ConcurrentDictionary<ushort, MobyData>();
+    private readonly ConcurrentDictionary<Guid, ushort> _mobysTable = new();
+    private readonly ConcurrentDictionary<ushort, MobyData> _mobys = new();
+    
+    private readonly ConcurrentDictionary<ushort, MobyData> _syncMobys = new();
+
+    public ushort CreateSyncMoby(Moby moby) {
+        // Find next available ID
+        for (ushort i = 1; i <= 4096; i++) {
+            if (!_syncMobys.ContainsKey(i)) {
+                _syncMobys[i] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+                
+                return i;
+            }
+        }
+
+        return 0;
+    }
+    
+    public Moby? GetSyncMobyByInternalId(ushort internalId) {
+        if (_syncMobys.TryGetValue((ushort)internalId, out var mobyData)) {
+            return mobyData.MobyRef;
+        }
+
+        return null;
+    }
+    
+    public void DeleteSyncMoby(ushort internalId) {
+        if (_syncMobys.TryRemove(internalId, out var mobyData)) {
+            mobyData.MobyRef.Delete();
+        }
+    }
+
+    public void DeleteSyncMoby(Moby moby) {
+        foreach (var pair in _syncMobys) {
+            if (pair.Value.MobyRef == moby) {
+                _syncMobys.TryRemove(pair.Key, out _);
+                return;
+            }
+        }
+    }
 
     public void UpdateMoby(Moby moby) {
+        if (moby.SyncOwner == _clientHandler?.Moby()) {
+            Logger.Error("We're trying to send updates to a player about their own synced moby.");
+            return;
+        }
+        
         var internalId = GetOrCreateInternalId(moby);
         
         if (internalId == 0) {
-            Logger.Error("A player has run out of moby space.");
+            return;
+        }
+        
+        if (!_mobys[internalId].ClientCreated) {
+            if (Game.Game.Shared().Ticks() > _mobys[internalId].LastUpdate + 120) {
+                ushort parentInternalId = 0;
+                if (moby.AttachedTo != null) {
+                    parentInternalId = GetOrCreateInternalId(moby.AttachedTo);
+                    if (parentInternalId == 0) {
+                        Logger.Error($"Player({_clientHandler?.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
+                    }
+                }
+                
+                SendPacket(Packet.MakeCreateMobyPacket(internalId, moby, parentInternalId));
+                _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby, ClientCreated = false };
+            }
+            
             return;
         }
 
-        _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+        _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby, ClientCreated = true };
         SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
-        SendPacket(Packet.MakeMobyUpdateExtended(internalId, new [] { new Packet.UpdateMobyValue(0x38, moby.Color.ToUInt()) }));
+        SendPacket(Packet.MakeMobyUpdateExtended(internalId, [new Packet.UpdateMobyValue(0x38, moby.Color.ToUInt())]));
+    }
+    
+    public void ClearInternalMobyCache() {
+        _mobys.Clear();
+        _mobysTable.Clear();
     }
 
     private ushort GetOrCreateInternalId(Moby moby) {
@@ -769,10 +1031,40 @@ partial class Client {
             return internalId;
         }
 
+        ushort parentInternalId = 0;
+        if (moby.AttachedTo != null) {
+            parentInternalId = GetOrCreateInternalId(moby.AttachedTo);
+            if (parentInternalId == 0) {
+                Logger.Error($"Player({_clientHandler?.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
+                return 0;
+            }
+        }
+        
+        // Find next available ID
+        for (ushort i = 1; i <= 4096; i++) {
+            if (!_mobys.ContainsKey(i) && _lastDeletedId != i) {
+                SendPacket(Packet.MakeCreateMobyPacket(i, moby, parentInternalId));
+                
+                _mobysTable[moby.GUID()] = i;
+                _mobys[i] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+                return i;
+            }
+        }
+
+        return 0;
+    }
+    
+    private ushort AssignInternalId(Moby moby) {
+        if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
+            return internalId;
+        }
+        
         // Find next available ID
         for (ushort i = 1; i <= 4096; i++) {
             if (!_mobys.ContainsKey(i) && _lastDeletedId != i) {
                 _mobysTable[moby.GUID()] = i;
+                _mobys[i] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
+                
                 return i;
             }
         }
@@ -780,14 +1072,18 @@ partial class Client {
         return 0;
     }
 
-    private Moby GetMobyByInternalId(ushort internalId) {
+    public Moby? GetMobyByInternalId(ushort internalId) {
         if (!_mobys.TryGetValue(internalId, out var mobyData)) {
             return null; // No Moby found with the given internalId.
         }
 
+        if (_clientHandler == null) {
+            return null;
+        }
+
         // Check if Moby is stale.
         long currentTicks = Game.Game.Shared().Ticks();
-        if (mobyData.LastUpdate < currentTicks - 120) {
+        if (!_clientHandler.HasMoby(mobyData.MobyRef) && mobyData.LastUpdate < currentTicks - 120) {
             // Moby is stale, delete it and return null.
             DeleteMoby(mobyData.MobyRef);
             return null;
@@ -804,8 +1100,13 @@ partial class Client {
     public void CleanupStaleMobys() {
         long currentTicks = Game.Game.Shared().Ticks();
         foreach (var pair in _mobys) {
-            if (pair.Value.LastUpdate < currentTicks - 10) {
-                SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
+            if (pair.Value.LastUpdate < currentTicks - 300) {
+                Logger.Log($"Cleaning up stale moby with internal ID {pair.Key}.");
+                
+                if (pair.Value.MobyRef.SyncOwner != _clientHandler?.Moby() && pair.Value.ClientCreated) {
+                    SendPacket(Packet.MakeDeleteMobyPacket(pair.Key));
+                }
+
                 _mobys.TryRemove(pair.Key, out _);
                 _mobysTable.TryRemove(pair.Value.Id, out _);
             }
@@ -814,15 +1115,61 @@ partial class Client {
 
     public void DeleteMoby(Moby moby) {
         if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
-            // If found, delete it from the game
-            SendPacket(Packet.MakeDeleteMobyPacket(internalId));
+            // If found, delete it from the game if our client is not the sync owner
+            if (moby.SyncOwner != _clientHandler?.Moby() && _mobys[internalId].ClientCreated) {
+                SendPacket(Packet.MakeDeleteMobyPacket(internalId));
+            }
+
             // And remove it from our dictionaries
             _mobys.TryRemove(internalId, out _);
             _mobysTable.TryRemove(moby.GUID(), out _);
             _lastDeletedId = internalId;
-        } else {
-            Logger.Error($"Trying to delete a moby that does not exist: {moby.GUID()}");
         }
+    }
+
+    public void SetMobyCreated(ushort id) {
+        if (_mobys.TryGetValue(id, out var mobyData)) {
+            _mobys[id] = mobyData with { LastUpdate = Game.Game.Shared().Ticks(), ClientCreated = true };
+        }
+    }
+
+    public void ClearMoby(ushort id) {
+        if (_mobys.TryGetValue(id, out var mobyData)) {
+            _mobysTable.TryRemove(mobyData.Id, out _);
+            _mobys.TryRemove(id, out _);
+        }
+    }
+
+    public string DumpMobys() {
+        if (_clientHandler?.Moby() is Player player) {
+            string dump = $"Player({player.Username()}) Mobys:";
+
+            foreach (var pair in _mobys) {
+                dump += "\n";
+
+                var moby = pair.Value.MobyRef;
+                var owner = (Player?)moby.AttachedTo;
+                var ownerUsername = owner == null ? "None" : owner.Username();
+
+                dump += $"\tInternal ID: {pair.Key}, GUID: {pair.Value.Id}, LastUpdate: {pair.Value.LastUpdate}\n";
+                dump += $"\t\t- oClass {moby.oClass}\n";
+                dump += $"\t\t- Owner: {ownerUsername}\n";
+                dump += $"\t\t- SyncSpawnId: {moby.SyncSpawnId}\n";
+
+                if (moby.AttachedTo != null) {
+                    ushort attachedToId = 0;
+                    _mobysTable.TryGetValue(moby.AttachedTo.GUID(), out attachedToId);
+                    dump += $"\t\t- Attached to: {attachedToId}\n";
+
+                    dump += $"\t\t\t- oClass: {moby.AttachedTo.oClass}\n";
+                    dump += $"\t\t\t- SyncSpawnId: {moby.AttachedTo.SyncSpawnId}\n";
+                }
+            }
+
+            return dump;
+        }
+        
+        return "Invalid client handler or Player moby.";
     }
 }
 #endregion

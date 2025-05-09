@@ -3,6 +3,7 @@ package.path = package.path .. ';./runtime/lib/?.lua'
 
 require 'middleclass'
 require 'bit'
+require 'ObservableList'
 
 require 'Entity'
 require 'Universe'
@@ -10,6 +11,13 @@ require 'Player'
 require 'Label'
 require 'Moby'
 require 'Item'
+
+require 'runtime.ui.View'
+require 'runtime.ui.ViewElement'
+require 'runtime.ui.TextAreaElement'
+require 'runtime.ui.ListMenuElement'
+require 'runtime.ui.TextElement'
+require 'runtime.ui.InputElement'
 
 require 'HybridMoby'
 
@@ -26,6 +34,29 @@ require 'runtime.levels.Pokitaru'
 require 'runtime.levels.DreksFleet'
 
 null = {}
+
+Gamepad = {
+    L2 = 1,
+    R2 = 2,
+    L1 = 4,
+    R1 = 8,
+    Triangle = 16,
+    Circle = 32,
+    Cross = 64,
+    Square = 128,
+    Select = 256,
+    L3 = 512,
+    R3 = 1024,
+    Start = 2048,
+    Up = 4096,
+    Right = 8192,
+    Down = 16384,
+    Left = 32768
+}
+
+function IsButton(input, button)
+    return input & button ~= 0
+end
 
 math.randomseed(os.time())
 
@@ -67,4 +98,8 @@ end
 
 function distance_between_3d_points(a, b)
     return math.sqrt((a.x - b.x)^2 + (a.y - b.y)^2 + (a.z - b.z)^2)
+end
+
+function RGBA(r, g, b, a)
+    return bit.blshift(a, 24) + bit.blshift(b, 16) + bit.blshift(g, 8) + r
 end

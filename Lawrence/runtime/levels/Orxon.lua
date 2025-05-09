@@ -1,4 +1,5 @@
 require 'runtime.levels.Orxon.HovenInfobot'
+require 'runtime.levels.Orxon.Clank'
 
 Orxon = class("Orxon", Level)
 
