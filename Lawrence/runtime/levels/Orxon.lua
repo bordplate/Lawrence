@@ -11,5 +11,4 @@ end
 
 function Orxon:LoadHybrids()
     self.hovenInfobot = HovenInfobot(self, 256)
-    self.clank = Clank(self, 77)
 end

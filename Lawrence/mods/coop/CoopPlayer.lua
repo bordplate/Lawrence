@@ -101,7 +101,9 @@ function CoopPlayer:Start()
         end
 
         for i, infobot in ipairs(self.lobby.unlockedInfobots) do
-            self:UnlockLevel(infobot)
+            if infobot ~= 0 then
+                self:UnlockLevel(infobot)
+            end
         end
 
         for i, skillpoint in ipairs(self.lobby.unlockedSkillpoints) do
@@ -166,6 +168,10 @@ function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
 end
 
 function CoopPlayer:OnAttack(moby, sourceOClass, damage)
+    if moby == nil then
+        return
+    end
+    
     if not self.lobby.options.friendlyFire.value then
         return
     end

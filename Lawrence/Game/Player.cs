@@ -37,6 +37,8 @@ public partial class Player : Moby {
 
     private int _respawns = 0;
 
+    private Dictionary<byte, List<(ushort, uint)>> _changedLevelFlags = new();
+
     public override float x {
         get { return _x; }
         set { base.x = value; _client.SendPacket(Packet.MakeSetPositionPacket(0, value)); }
@@ -293,6 +295,14 @@ partial class Player {
         }
     }
 
+    public void ChangedLevelFlag(byte type, ushort index, uint value) {
+        if (!_changedLevelFlags.ContainsKey(type)) {
+            _changedLevelFlags[type] = new();
+        }
+        
+        _changedLevelFlags[type].Add((index, value));
+    }
+
     public void ShowErrorMessage(string message) {
         _client.ShowErrorMessage(message);
     }
@@ -388,6 +398,16 @@ partial class Player {
         if (_level == null) {
             return;
         }
+        
+        // If we have any changed level flags queued, we send them here.
+        foreach (var (type, flags) in _changedLevelFlags) {
+            if (flags.Count <= 0) continue;
+            
+            var packet = Packet.MakeSetLevelFlagPacket(type, (byte)_level.GameID(), flags);
+            SendPacket(packet);
+            
+            flags.Clear();
+        }
 
         UpdateLabels();
         
@@ -460,7 +480,7 @@ partial class Player {
             return;
         }
         
-        if (!moby.IsHybrid) {
+        if (!moby.IsHybrid) { 
             _client.UpdateMoby(moby);
         }
     }
@@ -685,7 +705,24 @@ partial class Player : IClientHandler
     /// <summary>
     /// Called after a player has respawned. 
     /// </summary>
-    public void PlayerRespawned(byte spawnId) {
+    public void PlayerRespawned(byte spawnId, ushort levelId) {
+        if (levelId != Level()?.GameID()) {
+            Level? lastLevel = _level;
+                
+            _level?.Remove(this, false);
+                
+            _level = Universe()?.GetLevelByGameID(levelId);
+            if (_level == null) {
+                Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level with game ID {levelId}");
+                return;
+            }
+            
+            _level.Add(this);
+            Logger.Log($"Player moved from {lastLevel?.GetName()} to {_level.GetName()}");
+                
+            SetCurrentLevelFlags();
+        }
+        
         var mobys = Find<Moby>().ToArray();
         foreach (var moby in mobys) {
             if (moby.SyncOwner == this && moby.SyncSpawnId != spawnId) {
@@ -701,7 +738,7 @@ partial class Player : IClientHandler
         
         SendPacket(Packet.MakeMobyUpdateExtended(0, [new Packet.UpdateMobyValue(0x38, Color.ToUInt())]));
         
-        RegisterHybridMobys();
+        // RegisterHybridMobys();
     }
 
     /// <summary>
@@ -710,6 +747,10 @@ partial class Player : IClientHandler
     /// </summary>
     /// <param name="gameState">Game state this Player's client has changed to</param>
     public void GameStateChanged(GameState gameState) {
+        if (GameState == GameState.Loading && gameState == GameState.PlayerControl) {
+            RegisterHybridMobys();
+        }
+        
         GameState = gameState;
 
         if (gameState == GameState.Loading) {

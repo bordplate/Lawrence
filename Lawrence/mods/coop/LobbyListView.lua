@@ -13,7 +13,10 @@ function LobbyListView:initialize(player, lobbyUniverse)
     self.lobbyListMenu = ListMenuElement(0, 30, 250, 330)
     self.lobbyListMenu.ItemActivated = function(index)
         local lobby = self.lobbyUniverse.lobbies[index+1]
-
+        if lobby == nil then
+            return
+        end
+        
         if lobby.password == "" then
             lobby:Join(self.PlayerTable)
         else
