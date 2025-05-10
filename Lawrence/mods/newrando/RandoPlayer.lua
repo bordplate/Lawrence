@@ -159,12 +159,16 @@ function RandoPlayer:Unfreeze()
 end
 
 function RandoPlayer:OnTick()
-    if self.lobby.universe.helga ~= null and self.lobby.universe.helga:closeToPlayer(self) then
-        if self.totalBolts >= 1000 then
-            self:ToastMessage("\x12 Buy \x0cSwingshot\x08 for 1,000 bolts ", 1)
-        else
-            self:ToastMessage("You need 1,000 bolts for the \x0cSwingshot\x08", 1)
-        end
+    if self.lobby.universe.helga ~= null then
+        self.lobby.universe.helga:toastMessage(self)
+    end
+    
+    if self.lobby.universe.bob ~= null then
+        self.lobby.universe.bob:toastMessage(self)
+    end
+
+    if self.lobby.universe.al ~= null then
+        self.lobby.universe.al:toastMessage(self)
     end
     
     if (self.damageCooldown > 0) then
@@ -178,9 +182,11 @@ end
 
 function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
-        print("Moving player")
-        self:SetPosition(117, 83, 70)
-        --self:SetAddressValue(0x969EAC, 100, 4)
+        if self:Username() == "panad" then
+            print("Moving player")
+            self:SetPosition(295, 240, 36)
+            --self:SetAddressValue(0x969EAC, 100, 4)
+        end
     end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
@@ -196,12 +202,28 @@ function RandoPlayer:OnControllerInputTapped(input)
             end
         end
     end
-
+    
     if self.lobby.universe.helga ~= null and self.lobby.universe.helga:closeToPlayer(self) and input & 0x10 ~= 0 and self.totalBolts >= 1000 then
         self:GiveBolts(-1000)
-        self:GiveItem(Item.GetByName("Swingshot").id)
+        self:OnUnlockItem(Item.GetByName("Swingshot").id, true)
         self.lobby.universe.helga:Delete()
         self.lobby.universe.helga = null
+    end
+
+    if self.lobby.universe.bob ~= null and self.lobby.universe.bob:closeToPlayer(self) and input & 0x10 ~= 0 and self.totalBolts >= 2000 then
+        self:GiveBolts(-2000)
+        self:OnUnlockItem(Item.GetByName("Thruster-pack").id, true)
+        self.lobby.universe.bob:Delete()
+        self.lobby.universe.bob = null
+    end
+
+    if self.lobby.universe.al ~= null and self.lobby.universe.al:closeToPlayer(self) and input & 0x10 ~= 0 and self.totalBolts >= 1000 then
+        self:GiveBolts(-1000)
+        self:OnUnlockItem(Item.GetByName("Heli-pack").id, true)
+        self.lobby.universe.al:Delete()
+        self.lobby.universe.al = null
+        tmp = {[1]=1}
+        self:SetLevelFlags(2, 3, 78, tmp)
     end
 end
 
@@ -248,10 +270,12 @@ function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
 end
 
 function RandoPlayer:OnRespawned()
-    if self:Level():GetName() == "Kerwan" then
-        self:DeleteAllChildrenWithUID(158)
-    end 
+    RemoveReplacedMobys(self)
 end
+
+-- function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
+--     print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
+-- end
 
 function RandoPlayer:NotifyLocationCollected(location_id)
     print(string.format("player %s got location: %d", self.username, location_id))

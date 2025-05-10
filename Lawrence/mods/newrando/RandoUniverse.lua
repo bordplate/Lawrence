@@ -17,6 +17,8 @@ function RandoUniverse:initialize(lobby)
     Universe.initialize(self)
     
     self.helga = self:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby)
+    self.al = self:GetLevelByName("Kerwan"):SpawnMoby(AlMoby)
+    self.bob = self:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby)
     
     self.lobby = lobby
     
@@ -29,7 +31,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item)
     ap_item_type = GetAPItemType(ap_item)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if ap_item_type == "item" then
-            player:GiveItem(APItemToItem(ap_item))
+            player:GiveItem(APItemToItem(ap_item), true)
         elseif ap_item_type == "planet" then
             player:UnlockLevel(APItemToPlanet(ap_item))
         else
@@ -42,7 +44,7 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
---     player:GiveBolts(150000)
+    player:GiveBolts(150000)
 --     player:GiveItem(6)
 --     player:GiveItem(4)
 --     player:GiveItem(10)
@@ -69,7 +71,8 @@ end
 function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     print("OnPlayerGetPlanet: " .. tostring(planet_id))
     if not PlanetGotFromCorrectLocation(player:Level():GameID(), planet_id) then
-       print("Planet " .. planet_id .. " unlock_level not called from infobot. (ignoring)") 
+       print("Planet " .. planet_id .. " unlock_level not called from infobot. (ignoring)")
+       player:UnlockLevel(planet_id)
        return
     end
     location_id = PlanetToLocation(planet_id)
