@@ -14,7 +14,7 @@ function LobbyUniverse:OnPlayerJoin(player)
     --player:LoadLevel("KaleboIII")
     player:LoadLevel("Veldin1")
     player:Make(LobbyPlayer)
-    player:setCommunicationFlags(Player.communicationFlags.ENABLE_ALL - Player.communicationFlags.ENABLE_ON_UNLOCK_ITEM)
+    player:SetCommunicationFlags(Player.communicationFlags.ENABLE_ALL - Player.communicationFlags.ENABLE_ON_UNLOCK_ITEM)
 end
 
 function LobbyUniverse:OnTick()
