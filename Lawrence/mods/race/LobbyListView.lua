@@ -8,7 +8,7 @@ function LobbyListView:initialize(player, lobbyUniverse)
     
     self.lobbyUniverse = lobbyUniverse
 
-    self.lobbyTextElement = TextElement(250, 10, "Co-op Lobbies")
+    self.lobbyTextElement = TextElement(250, 10, "Race Lobbies")
     
     self.lobbyListMenu = ListMenuElement(0, 30, 250, 330)
     self.lobbyListMenu.ItemActivated = function(index)
@@ -100,7 +100,7 @@ end
 
 function LobbyListView:SelectedLobby(lobby)
     self.textArea.Text = "Host: " .. lobby.host:Username()
-    self.gamemodeTextArea.Text = "Friendly fire: " .. (lobby.options.friendlyFire and "On" or "Off")
+    self.gamemodeTextArea.Text = ""
 end
 
 function LobbyListView:OnControllerInputPressed(input)

@@ -402,9 +402,14 @@ public struct MPPacketStringData : MPPacket {
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct MPPacketLevelFlagChanged : MPPacket {
+public struct MPPacketLevelFlagsChanged : MPPacket {
     public ushort Type;
     public byte Level;
+    public byte Flags;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketLevelFlag : MPPacket {
     public byte Size;
     public ushort Index;
     public uint Value;
@@ -428,6 +433,7 @@ public struct MPPacketMonitoredAddressChanged : MPPacket {
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct MPPacketSpawned : MPPacket {
     public byte SpawnId;
+    public ushort LevelId;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1130,6 +1136,22 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         return packet;
     }
 
+    public static Packet MakeSetLevelFlagPacket(byte type, byte level, List<(ushort, uint)> flags) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+
+        foreach ((ushort index, uint value) in flags) {
+            MPPacketSetState setLevelFlag = new MPPacketSetState {
+                StateType = MPStateType.MP_STATE_TYPE_LEVEL_FLAG,
+                Offset = ((uint)level << 24) | ((uint)type << 16) | index,
+                Value = value
+            };
+            
+            packet.AddBodyPart(setLevelFlag);
+        }
+
+        return packet;
+    }
+
     public static Packet MakeSetCommunicationFlagsPacket(UInt32 bitmap) {
         var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
         
@@ -1139,6 +1161,7 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         };
         
         packet.AddBodyPart(setCommunicationFlags);
+        
         
         return packet;
     }

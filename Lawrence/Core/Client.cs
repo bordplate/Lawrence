@@ -31,7 +31,7 @@ public interface IClientHandler {
     void ControllerInputReleased(ControllerInput input);
     void Delete();
     Moby Moby();
-    void PlayerRespawned(byte spawnId);
+    void PlayerRespawned(byte spawnId, ushort levelId);
     void GameStateChanged(GameState state);
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
@@ -717,7 +717,7 @@ public partial class Client {
                 }
                 case MPPacketType.MP_PACKET_PLAYER_RESPAWNED: {
                     if (Packet.BytesToStruct<MPPacketSpawned>(packetBody, _endianness) is { } spawned) {
-                        _clientHandler?.PlayerRespawned(spawned.SpawnId);
+                        _clientHandler?.PlayerRespawned(spawned.SpawnId, spawned.LevelId);
                     }
 
                     break;
@@ -753,17 +753,25 @@ public partial class Client {
                     break;
                 }
                 case MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED: {
-                    if (Packet.BytesToStruct<MPPacketLevelFlagChanged>(packetBody, _endianness) is not {} flagChanged) {
+                    if (Packet.BytesToStruct<MPPacketLevelFlagsChanged>(packetBody, _endianness) is not {} flagChanged) {
                         throw new NetworkParsingException("Failed to parse level flag changed packet.");
                     }
+
+                    for (var i = 0; i < flagChanged.Flags; i++) {
+                        var offset = Marshal.SizeOf<MPPacketLevelFlagsChanged>() + Marshal.SizeOf<MPPacketLevelFlag>() * i;
+                        if (Packet.BytesToStruct<MPPacketLevelFlag>(packetBody.Skip(offset).ToArray(), _endianness) is not {} levelFlag) {
+                            throw new NetworkParsingException($"Failed to parse level flag {i} of {flagChanged.Flags}.");
+                        }
+                        
+                        _clientHandler?.OnLevelFlagChanged(
+                            flagChanged.Type,
+                            flagChanged.Level,
+                            levelFlag.Size,
+                            levelFlag.Index,
+                            levelFlag.Value
+                        );
+                    }
                     
-                    _clientHandler?.OnLevelFlagChanged(
-                        flagChanged.Type,
-                        flagChanged.Level,
-                        flagChanged.Size,
-                        flagChanged.Index,
-                        flagChanged.Value
-                    );
                     break;
                 }
                 case MPPacketType.MP_PACKET_UI_EVENT: {
@@ -800,17 +808,16 @@ public partial class Client {
 
         _lastContact = timeNow / 1000;
 
-        _recvLock.WaitOne();
-
-        if (_resetBuffer) {
-            _recvBuffer = new List<byte[]>(4096);
-        }
-
         uint currentHash = Crc32Algorithm.Compute(data);
+        
+        if (_resetBuffer) {
+            _recvLock.WaitOne();
+            _recvBuffer = new List<byte[]>(4096);
+            _recvLock.ReleaseMutex();
+        }
 
         // Throw away duplicate packets in the last 200 milliseconds
         if (_lastHashes.ContainsKey(currentHash) && _lastHashes[currentHash] > timeNow - 200) {
-            _recvLock.ReleaseMutex();
             return;
         }
 
@@ -824,8 +831,8 @@ public partial class Client {
 
         _lastHashes[currentHash] = timeNow;
 
+        _recvLock.WaitOne();
         _recvBuffer.Add(data);
-
         _recvLock.ReleaseMutex();
 
         if (_recvBuffer.Count > 399) {
@@ -834,24 +841,32 @@ public partial class Client {
     }
 
     private List<byte[]>? DrainPackets() {
-        // We take at max 50 packets out of the buffer
-        int takePackets = Math.Min(50, _recvBuffer.Count);
-
-        if (takePackets <= 0) {
-            // No packets in buffer
-            return null;
-        }
-
         // Make sure the networking receive thread isn't working with the buffer
         _recvLock.WaitOne();
 
-        // Drain packets from buffer
-        List<byte[]> packets = _recvBuffer.Take(takePackets).ToList();
-        _recvBuffer.RemoveRange(0, takePackets);
+        try {
+            // We take at max 100 packets out of the buffer
+            int takePackets = Math.Min(100, _recvBuffer.Count);
 
-        _recvLock.ReleaseMutex();
+            if (takePackets <= 0) {
+                // No packets in buffer
+                return null;
+            }
 
-        return packets;
+            // Drain packets from buffer
+            List<byte[]> packets = _recvBuffer.Take(takePackets).ToList();
+            _recvBuffer.RemoveRange(0, takePackets);
+
+            if (_recvBuffer.Count > 0) {
+                Logger.Trace($"[{GetUsername()}] There's still {_recvBuffer.Count} packets in the buffer.");
+            }
+            
+            return packets;
+        } finally {
+            _recvLock.ReleaseMutex();
+        }
+
+        return null;
     }
 
     public void Tick() {

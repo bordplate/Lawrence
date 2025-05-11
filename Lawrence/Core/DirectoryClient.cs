@@ -33,7 +33,7 @@ public class DirectoryClient {
                     client.Dispose();
                 }
                         
-                client = new UdpClient(_directoryIp, 2407);
+                client = new UdpClient(_directoryIp, 2400);
                 // Count players
                 int players = 0;
                 foreach (Client c in _server.Clients()) {

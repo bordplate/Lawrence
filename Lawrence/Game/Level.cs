@@ -184,7 +184,14 @@ public class Level : Entity {
                 if (player == originatingPlayer) {
                     continue;
                 }
-                player.SetLevelFlags((byte)type, (byte)GameID(), index, [value]);
+
+                if (player.Level() != this) {
+                    Logger.Error("Player level mismatch");
+                    return;
+                }
+                
+                
+                player.ChangedLevelFlag((byte)type, index, value);
             }
         }
     }

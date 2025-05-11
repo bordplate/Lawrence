@@ -17,7 +17,11 @@ local packet_types = {
     [12] = "QUERY_GAME_SERVERS",
     [13] = "CONTROLLER_INPUT",
     [14] = "TIME_SYNC",
-    [15] = "PLAYER_RESPAWNED"
+    [15] = "PLAYER_RESPAWNED",
+    [16] = "REGISTER_SERVER",
+    [17] = "TOAST_MESSAGE",
+    [18] = "MOBY_EXTENDED",
+    [21] = "ERROR_MESSAGE"
 }
 
 function proto.dissector(buffer, pinfo, tree)
