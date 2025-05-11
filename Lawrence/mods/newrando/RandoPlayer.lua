@@ -14,6 +14,8 @@ function RandoPlayer:Made()
     
     self.gameState = 0
     
+    self.totalBolts = 0
+    
     self.skillpointCounters = {
         Player.offset.aridiaShipsKilled,
         Player.offset.eudoraShipsKilled,
@@ -38,6 +40,11 @@ function RandoPlayer:Made()
         0xff,
     }
     
+    self.fullySpawnedIn = false
+    self.level_unlock_queue = {}
+    self.item_unlock_queue = {}
+    self.special_unlock_queue = {}
+    
 --     for _, counter in ipairs(self.skillpointCounters) do
 --         self:MonitorAddress(counter, 4) 
 --     end
@@ -49,6 +56,8 @@ function RandoPlayer:Made()
        for i = 0, 11 do
            self:MonitorAddress(Player.offset.vendorItems + i, 1)
        end
+   
+       self:MonitorAddress(0x0096bff1, 1) -- has_raritanium
 end
 
 function RandoPlayer:Start()
@@ -159,17 +168,7 @@ function RandoPlayer:Unfreeze()
 end
 
 function RandoPlayer:OnTick()
-    if self.lobby.universe.helga ~= null then
-        self.lobby.universe.helga:toastMessage(self)
-    end
-    
-    if self.lobby.universe.bob ~= null then
-        self.lobby.universe.bob:toastMessage(self)
-    end
-
-    if self.lobby.universe.al ~= null then
-        self.lobby.universe.al:toastMessage(self)
-    end
+    self.lobby.universe:ToastReplacementNPCs(self)
     
     if (self.damageCooldown > 0) then
         self.damageCooldown = self.damageCooldown - 1
@@ -203,27 +202,8 @@ function RandoPlayer:OnControllerInputTapped(input)
         end
     end
     
-    if self.lobby.universe.helga ~= null and self.lobby.universe.helga:closeToPlayer(self) and input & 0x10 ~= 0 and self.totalBolts >= 1000 then
-        self:GiveBolts(-1000)
-        self:OnUnlockItem(Item.GetByName("Swingshot").id, true)
-        self.lobby.universe.helga:Delete()
-        self.lobby.universe.helga = null
-    end
-
-    if self.lobby.universe.bob ~= null and self.lobby.universe.bob:closeToPlayer(self) and input & 0x10 ~= 0 and self.totalBolts >= 2000 then
-        self:GiveBolts(-2000)
-        self:OnUnlockItem(Item.GetByName("Thruster-pack").id, true)
-        self.lobby.universe.bob:Delete()
-        self.lobby.universe.bob = null
-    end
-
-    if self.lobby.universe.al ~= null and self.lobby.universe.al:closeToPlayer(self) and input & 0x10 ~= 0 and self.totalBolts >= 1000 then
-        self:GiveBolts(-1000)
-        self:OnUnlockItem(Item.GetByName("Heli-pack").id, true)
-        self.lobby.universe.al:Delete()
-        self.lobby.universe.al = null
-        tmp = {[1]=1}
-        self:SetLevelFlags(2, 3, 78, tmp)
+    if input & 0x10 ~= 0 then
+        self.lobby.universe:TriangleReplacementNPCs(self)
     end
 end
 
@@ -257,6 +237,10 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
         self.vendorItems[address - Player.offset.vendorItems] = newValue
         print(tostring(self.vendorItems[0]) .. ", " .. table.concat(self.vendorItems, ", "))
     end
+
+    if address == 0x0096bff1 then
+        print("has_raritanium changed from " .. tostring(oldValue) .. " to " .. tostring(newValue))
+    end
 end
 
 function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
@@ -271,6 +255,25 @@ end
 
 function RandoPlayer:OnRespawned()
     RemoveReplacedMobys(self)
+    
+    if not self.fullySpawnedIn then
+        for _, planet in ipairs(self.level_unlock_queue) do
+            print("Delayed unlocking planet: " .. tostring(planet))
+            self:UnlockLevel(planet)
+        end
+        for _, item in ipairs(self.item_unlock_queue) do
+            print("Delayed unlocking item: " .. tostring(item))
+            self:GiveItem(item, true)
+        end
+        for _, special in ipairs(self.special_unlock_queue) do
+            print("Delayed unlocking special: " .. tostring(special))
+            player:SetAddressValue(special, 1, 1)
+        end
+        self.fullySpawnedIn = true
+        self.level_unlock_queue = {}
+        self.item_unlock_queue = {}
+        self.special_unlock_queue = {}
+    end
 end
 
 -- function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)

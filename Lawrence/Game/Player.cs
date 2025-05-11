@@ -297,8 +297,6 @@ partial class Player {
 
     public void SetLevelFlags(byte type, byte level, ushort index, LuaTable valueTable)
     {
-        Logger.Log($"begin");
-        Logger.Log($"count = {valueTable.Values.Count}");
         uint[] value = new uint[valueTable.Values.Count];
         for (int i = 1; i <= valueTable.Values.Count; i++) {
             value[i-1] = Convert.ToUInt32(valueTable[i]);

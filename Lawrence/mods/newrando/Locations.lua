@@ -34,6 +34,7 @@ local itemLocations = {
     
     -- Gaspar
     [18]=46, -- walloper
+    [7]=47, -- pilot helmet
     
     -- Orxon
     [13]=50, -- visibomb

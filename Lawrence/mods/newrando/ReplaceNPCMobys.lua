@@ -20,6 +20,8 @@ function HelgaMoby:initialize(internalEntity)
     self.rotZ = 1.787
     
     self.scale = 0.2
+    
+    self.disabled = false
 end
 
 function HelgaMoby:closeToPlayer(player)
@@ -33,13 +35,23 @@ function HelgaMoby:closeToPlayer(player)
 end
 
 function HelgaMoby:toastMessage(player)
-    if self:closeToPlayer(player) then
+    if not self.disabled and self:closeToPlayer(player) then
         if player.totalBolts >= 1000 then
             player:ToastMessage("\x12 Buy \x0cSwingshot\x08 for 1,000 bolts ", 1)
         else
             player:ToastMessage("You need 1,000 bolts for the \x0cSwingshot\x08", 1)
         end
     end
+end
+
+function HelgaMoby:Triangle(player, universe) -- returns true if moby needs to be removed
+    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 1000 then
+        player:GiveBolts(-1000)
+        player:OnUnlockItem(Item.GetByName("Swingshot").id, true)
+        self.disabled = true
+        return true
+    end
+    return false
 end
 
 -- Bob
@@ -53,6 +65,8 @@ function BobMoby:initialize(internalEntity)
     self.rotZ = 1.787
     
     self.scale = 0.2
+    
+    self.disabled = false
 end
 
 function BobMoby:closeToPlayer(player)
@@ -66,13 +80,22 @@ function BobMoby:closeToPlayer(player)
 end
 
 function BobMoby:toastMessage(player)
-    if self:closeToPlayer(player) then
+    if not self.disabled and self:closeToPlayer(player) then
         if player.totalBolts >= 2000 then
             player:ToastMessage("\x12 Pay 2,000 Bolts for the \x0cThruster-Pack\x08", 1)
         else
             player:ToastMessage("You need 2,000 Bolts for the \x0cThruster-Pack\x08", 1)
         end
     end
+end
+
+function BobMoby:Triangle(player, universe) -- returns true if moby needs to be removed
+    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 2000 then
+        player:GiveBolts(-2000)
+        player:OnUnlockItem(Item.GetByName("Thruster-pack").id, true)
+        self.disabled = true
+    end
+    return false
 end
 
 -- Al
@@ -86,6 +109,8 @@ function AlMoby:initialize(internalEntity)
     self.rotZ = 1.571
     
     self.scale = 0.2
+    
+    self.disabled = false
 end
 
 function AlMoby:closeToPlayer(player)
@@ -99,11 +124,20 @@ function AlMoby:closeToPlayer(player)
 end
 
 function AlMoby:toastMessage(player)
-    if self:closeToPlayer(player) then
+    if not self.disabled and self:closeToPlayer(player) then
         if player.totalBolts >= 1000 then
             player:ToastMessage("\x12 Buy \x0cHeli-Pack\x08 for 1,000 bolts", 1)
         else
             player:ToastMessage("You need 1,000 Bolts for the \x0cHeli-Pack\x08", 1)
         end
+    end
+end
+
+function AlMoby:Triangle(player, universe) -- returns true if moby needs to be removed
+    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 2000 then
+        universe:DistributeGiveBolts(-1000)
+        player:OnUnlockItem(Item.GetByName("Heli-pack").id, true)
+        universe:DistributeSetLevelFlags(2, 3, 78, {[1]=1})
+        self.disabled = true
     end
 end

@@ -16,9 +16,11 @@ local password = ""
 function RandoUniverse:initialize(lobby)
     Universe.initialize(self)
     
-    self.helga = self:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby)
-    self.al = self:GetLevelByName("Kerwan"):SpawnMoby(AlMoby)
-    self.bob = self:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby)
+    self.replacementNPCs = {
+        helga=self:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby),
+        al = self:GetLevelByName("Kerwan"):SpawnMoby(AlMoby),
+        bob = self:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
+    }
     
     self.lobby = lobby
     
@@ -26,28 +28,82 @@ function RandoUniverse:initialize(lobby)
     self.ap_client_initialized = false
 end
 
+function RandoUniverse:DistributeGiveItem(item_id, equip)
+    if equip == nil then
+        equip = false
+    end
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        if player.fullySpawnedIn then
+            player:GiveItem(item_id, equip)
+        else
+            player.item_unlock_queue[#player.item_unlock_queue+1] = item_id
+        end
+    end
+end
+
+function RandoUniverse:DistributeUnlockSpecial(special_address)
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        if player.fullySpawnedIn then
+            player:SetAddressValue(special_address, 1, 1)
+        else
+            player.special_unlock_queue[#player.special_unlock_queue+1] = special_address
+        end
+    end
+end
+
+function RandoUniverse:DistributeUnlockPlanet(planet_id)
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        if player.fullySpawnedIn then
+            player:UnlockLevel(planet_id)
+        else
+            player.level_unlock_queue[#player.level_unlock_queue+1] = planet_id
+        end
+    end
+end
+
+function RandoUniverse:DistributeGiveBolts(bolts)
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        player:GiveBolts(bolts)
+    end
+end
+
+function RandoUniverse:DistributeSetLevelFlags(_type, level, index, value)
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        player:SetLevelFlags(_type, level, index, value)
+    end
+end
+
 function RandoUniverse:GiveAPItemToPlayers(ap_item)
     print("RandoUniverse:GiveAPItemToPlayers. item: " .. tostring(ap_item))
     ap_item_type = GetAPItemType(ap_item)
-    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
-        if ap_item_type == "item" then
-            player:GiveItem(APItemToItem(ap_item), true)
-        elseif ap_item_type == "planet" then
-            player:UnlockLevel(APItemToPlanet(ap_item))
-        else
-            APItemToGoldBolt(ap_item)
-            player:GiveBolts(15000)
-            -- do stuff for gold bolt (give money?)
-        end
+    
+    if ap_item_type == "item" then
+        self:DistributeGiveItem(APItemToItem(ap_item), true)
+    elseif ap_item_type == "special" then
+        self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
+    elseif ap_item_type == "planet" then
+        self:DistributeUnlockPlanet(APItemToPlanet(ap_item))
+    else
+--         APItemToGoldBolt(ap_item)
+        self:DistributeGiveBolts(15000)
     end
 end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    player:GiveBolts(150000)
+--     player:GiveBolts(150000)
 --     player:GiveItem(6)
 --     player:GiveItem(4)
 --     player:GiveItem(10)
+--     player:GiveItem(2)
+--     self:GiveAPItemToPlayers(48)
+--     self:GiveAPItemToPlayers(49)
+--     self:GiveAPItemToPlayers(50)
+--     self:GiveAPItemToPlayers(52)
+--     self:GiveAPItemToPlayers(53)
+--     player:GiveItem(35)
+--     player:GiveItem(26)
+--     player:GiveItem(22)
     if self.ap_client == nil then
         local uuid = "5"
         self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)
@@ -95,6 +151,25 @@ function RandoUniverse:NotifyPlayersLocationCollected(location_id, exclude_playe
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if _player ~= exclude_player then
             _player:NotifyLocationCollected(location_id)
+        end
+    end
+end
+
+function RandoUniverse:TriangleReplacementNPCs(player)
+    for name, moby in pairs(self.replacementNPCs) do
+        if moby ~= nil then
+            if moby:Triangle(player, self) then
+                moby:Delete()
+                self.replacementNPCs[name] = nil
+            end
+        end
+    end
+end
+
+function RandoUniverse:ToastReplacementNPCs(player)
+    for _, moby in pairs(self.replacementNPCs) do
+        if moby ~= nil then
+            moby:toastMessage(player)
         end
     end
 end
