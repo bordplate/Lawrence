@@ -174,6 +174,15 @@ function RandoUniverse:ToastReplacementNPCs(player)
     end
 end
 
+function RandoUniverse:NovalisShipGotByPlayer(player)
+    for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        _player:SetAddressValue(0x443941c0 + 0xbc, 0x2, 1) -- bridge half
+        _player:SetAddressValue(0x443942c0 + 0xbc, 0x2, 1) -- bridge half
+
+        _player:SetLevelFlags(1,1,0,{0xff}) -- ship flag
+    end
+end
+
 function RandoUniverse:OnTick()
     if self.ap_client_initialized then
         self.ap_client:poll()

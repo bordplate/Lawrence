@@ -183,7 +183,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(295, 240, 36)
+            self:SetPosition(168, 204, 42)
             --self:SetAddressValue(0x969EAC, 100, 4)
         end
     end
@@ -276,9 +276,12 @@ function RandoPlayer:OnRespawned()
     end
 end
 
--- function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
---     print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
--- end
+function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
+    if (index == 3 and flag_type == 1) or (index == 44 and flag_type == 2) or (index == 4 and flag_type == 1) or (index == 0 and flag_type == 1) then
+    else
+        print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
+    end
+end
 
 function RandoPlayer:NotifyLocationCollected(location_id)
     print(string.format("player %s got location: %d", self.username, location_id))
@@ -301,3 +304,7 @@ function RandoPlayer:OnDisconnect()
         self.lobby:Leave(self)
     end
 end
+
+-- novalis bridge open cutscene play
+--self:SetAddressValue(0x44393bc0 + 0xbc, 0x1, 1) -- camera ???
+--self:SetAddressValue(0x443d4100 + 0x2c, 0x000000b4, 4) -- play bridge cutscene
