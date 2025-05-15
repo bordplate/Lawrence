@@ -1,6 +1,7 @@
 require 'ReplacementMobys.ReplacementMobys'
 require 'APClient'
 require 'Locations'
+require 'LocationSyncing'
 require 'Items'
 RandoUniverse = class("RandoUniverse", Universe)
 
@@ -139,7 +140,7 @@ function RandoUniverse:OnPlayerGetGoldBolt(player, planet, number)
 end
 
 function RandoUniverse:OnPlayerGetLocation(player, location_id)
-    -- stash location checked, and set flags for other players (and delete relevant npc's like helga)
+    LocationSync(self, player, location_id)
     self.ap_client:getLocation(location_id)
 end
 

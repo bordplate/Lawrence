@@ -7,9 +7,9 @@ ReplacementMobys = class("ReplacementMobys")
 function ReplacementMobys:initialize(universe)
     self.universe = universe
     self.replacedMobys = {
-        helga = self.universe:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby),
-        al = self.universe:GetLevelByName("Kerwan"):SpawnMoby(AlMoby),
-        bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
+        Helga = self.universe:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby),
+        Al = self.universe:GetLevelByName("Kerwan"):SpawnMoby(AlMoby),
+        Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
     }
 end
 
@@ -40,3 +40,17 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     end
 end
 
+DummyMoby = class("DummyMoby")
+
+function DummyMoby:Disable()
+    -- nothing, it's a dummy
+    print('dummy disable')
+end
+
+function ReplacementMobys:GetMoby(name)
+    if self.replacedMobys[name] ~= nil then
+        return self.replacedMobys[name]
+    else
+        return DummyMoby()
+    end
+end
