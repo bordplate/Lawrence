@@ -1,5 +1,3 @@
-require 'ReplaceNPCMobys'
-
 RandoPlayer = class("RandoPlayer", Player)
 
 function RandoPlayer:Made()
@@ -168,7 +166,7 @@ function RandoPlayer:Unfreeze()
 end
 
 function RandoPlayer:OnTick()
-    self.lobby.universe:ToastReplacementNPCs(self)
+    self.lobby.universe.replacedMobys:ToastMessage(self)
     
     if (self.damageCooldown > 0) then
         self.damageCooldown = self.damageCooldown - 1
@@ -203,7 +201,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     end
     
     if input & 0x10 ~= 0 then
-        self.lobby.universe:TriangleReplacementNPCs(self)
+        self.lobby.universe.replacedMobys:Triangle(self)
     end
 end
 
@@ -254,7 +252,7 @@ function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
 end
 
 function RandoPlayer:OnRespawned()
-    RemoveReplacedMobys(self)
+    self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
     
     if not self.fullySpawnedIn then
         for _, planet in ipairs(self.level_unlock_queue) do

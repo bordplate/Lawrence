@@ -1,4 +1,4 @@
-require 'ReplaceNPCMobys'
+require 'ReplacementMobys.ReplacementMobys'
 require 'APClient'
 require 'Locations'
 require 'Items'
@@ -16,11 +16,7 @@ local password = ""
 function RandoUniverse:initialize(lobby)
     Universe.initialize(self)
     
-    self.replacementNPCs = {
-        helga=self:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby),
-        al = self:GetLevelByName("Kerwan"):SpawnMoby(AlMoby),
-        bob = self:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
-    }
+    self.replacedMobys = ReplacementMobys(self)
     
     self.lobby = lobby
     
@@ -91,7 +87,7 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
---     player:GiveBolts(150000)
+     player:GiveBolts(150000)
 --     player:GiveItem(6)
 --     player:GiveItem(4)
 --     player:GiveItem(10)
@@ -151,25 +147,6 @@ function RandoUniverse:NotifyPlayersLocationCollected(location_id, exclude_playe
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if _player ~= exclude_player then
             _player:NotifyLocationCollected(location_id)
-        end
-    end
-end
-
-function RandoUniverse:TriangleReplacementNPCs(player)
-    for name, moby in pairs(self.replacementNPCs) do
-        if moby ~= nil then
-            if moby:Triangle(player, self) then
-                moby:Delete()
-                self.replacementNPCs[name] = nil
-            end
-        end
-    end
-end
-
-function RandoUniverse:ToastReplacementNPCs(player)
-    for _, moby in pairs(self.replacementNPCs) do
-        if moby ~= nil then
-            moby:toastMessage(player)
         end
     end
 end
