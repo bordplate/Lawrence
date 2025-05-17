@@ -38,6 +38,8 @@ function RandoPlayer:Made()
         0xff,
     }
     
+    self.has_hoverboard = false
+    
     self.has_zoomerator = false
     self.has_raritanium = false
     self.has_codebot = false
@@ -57,12 +59,12 @@ function RandoPlayer:Made()
 --         self:MonitorAddress(Player.offset.gildedItems + i, 1)
 --     end
 
-       for i = 0, 11 do
-           self:MonitorAddress(Player.offset.vendorItems + i, 1)
-       end
-   
-       self:MonitorAddress(0x96bff1, 1) -- has_raritanium
-       self:MonitorAddress(0x723E57, 1) -- number of sandsharks
+    for i = 0, 11 do
+        self:MonitorAddress(Player.offset.vendorItems + i, 1)
+    end
+
+    self:MonitorAddress(Player.offset.has_zoomerator, 1)
+    self:MonitorAddress(Player.offset.has_raritanium, 1)
 end
 
 function RandoPlayer:Start()
@@ -157,17 +159,6 @@ function RandoPlayer:OnCollectedGoldBolt(planet, number)
     end
 end
 
-function RandoPlayer:OnAttack(moby, sourceOClass, damage)
-    if not self.lobby.options.friendlyFire.value then
-        return
-    end
-    
-    if self.damageCooldown <= 0 then
-        moby:Damage(1)
-        self.damageCooldown = 40
-    end
-end
-
 function RandoPlayer:Unfreeze()
     self.state = 0
 end
@@ -188,7 +179,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(286, 111, 70)
+            self:SetPosition(415, 295, 64)
             --self:SetAddressValue(0x969EAC, 100, 4)
         end
     end
@@ -209,10 +200,8 @@ function RandoPlayer:OnControllerInputTapped(input)
 
     if input & 0x10 ~= 0 then
         print("Setting flags")
-        self:SetLevelFlags(1, 4, 1, {0xff})
-        self:SetLevelFlags(2, 4, 16, {128})
-        self:SetLevelFlags(2, 4, 41, {16})
-        self:SetGhostRatchet(150)
+        self:SetGhostRatchet(100)
+        self:GiveBolts(150000)
     end
     
     if input & 0x10 ~= 0 then
@@ -251,8 +240,15 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
         print(tostring(self.vendorItems[0]) .. ", " .. table.concat(self.vendorItems, ", "))
     end
 
-    if address == 0x0096bff1 then
+    if address == Player.offset.has_raritanium then
         print("has_raritanium changed from " .. tostring(oldValue) .. " to " .. tostring(newValue))
+    end
+
+    if address == Player.offset.has_zoomerator then
+        if newValue == 1 then
+            print("race completed, but don't actually give zoomerator here")
+            self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
+        end
     end
 end
 
@@ -290,6 +286,10 @@ function RandoPlayer:OnRespawned()
 end
 
 function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
+    if flag_type == 2 and level == 5 and index == 126 and value == 1 then -- rilgar race complete
+        print("special rilgar race win trigger???")
+        self:OnUnlockItem(player:GiveItem(Item.GetByName("Zoomerator").id), false)
+    end
     print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
 end
 

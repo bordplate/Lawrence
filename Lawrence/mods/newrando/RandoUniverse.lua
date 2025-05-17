@@ -30,6 +30,10 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
         equip = false
     end
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        if item_id == Item.GetByName("Hoverboard").id then
+            player.has_hoverboard = true
+        end
+        
         if player.fullySpawnedIn then
             player:GiveItem(item_id, equip)
         else
@@ -100,12 +104,11 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    player:GiveBolts(150000)
+    --player:GiveBolts(150000)
     player:GiveItem(Item.GetByName("Heli-pack").id)
-    player:GiveItem(Item.GetByName("Thruster-pack").id)
-    player:GiveItem(Item.GetByName("R.Y.N.O.").id)
-    player.has_zoomerator = true
-    player.level_unlock_queue[#player.level_unlock_queue+1] = 0x06
+    player:GiveItem(Item.GetByName("Hoverboard").id)
+    --player:GiveItem(Item.GetByName("R.Y.N.O.").id)
+    player.has_hoverboard = true
 --     player:GiveItem(6)
 --     player:GiveItem(4)
 --     player:GiveItem(10)

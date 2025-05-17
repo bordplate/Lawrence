@@ -32,10 +32,10 @@ local locationToActionMap = {
     [24] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 4 * 4 + 0, 1, 1) end, -- gold bolt
     
     -- Rilgar
-    [25] = function (universe, player) print("Replace Bouncer") end, -- Bouncer
-    [26] = function (universe, player) print("Replace race girl (this one might be a pain)") end, -- zoomerator
+    [25] = function (universe, player) universe.replacedMobys:GetMoby('Bouncer'):Disable() end, -- Bouncer
+    [26] = function (universe, player) universe.replacedMobys:GetMoby('Zoomerator'):Disable() end, -- zoomerator
     [27] = function (universe, player) print("Location mine glove bought. funcitonality pending") end, -- mine glove
-    [28] = function (universe, player) print("Replace ryno guy") end, -- ryno
+    [28] = function (universe, player) universe.replacedMobys:GetMoby('Salesman'):Disable() end, -- ryno
     [29] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 5 * 4 + 0, 1, 1) end, -- maze gold bolt
     [30] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 5 * 4 + 1, 1, 1) end, -- waterworks gold bolt
     

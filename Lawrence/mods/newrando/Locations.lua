@@ -17,8 +17,8 @@ local itemLocations = {
     [20]=23, -- glove of doom
     
     -- Rilgar
-    [48]=25, -- zoomerator
-    [17]=26, -- mine glove
+    [48]=26, -- zoomerator
+    [17]=27, -- mine glove
     [23]=28, -- RYNO
     
     -- Blarg

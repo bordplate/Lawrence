@@ -6,6 +6,9 @@ require 'ReplacementMobys.SkidMoby'
 require 'ReplacementMobys.HelgaMoby'
 require 'ReplacementMobys.AlMoby'
 require 'ReplacementMobys.SuckCannonMoby'
+require 'ReplacementMobys.BouncerMoby'
+require 'ReplacementMobys.ZoomeratorMoby'
+require 'ReplacementMobys.SalesmanMoby'
 require 'ReplacementMobys.BobMoby'
 
 ReplacementMobys = class("ReplacementMobys")
@@ -25,6 +28,10 @@ function ReplacementMobys:initialize(universe)
         KerwanInfobot = self.universe:GetLevelByName("Kerwan"):SpawnMoby(InfobotMoby),
         -- Eudora
         SuckCannon = self.universe:GetLevelByName("Eudora"):SpawnMoby(SuckCannonMoby),
+        -- Rilgar
+        Bouncer = self.universe:GetLevelByName("Rilgar"):SpawnMoby(BouncerMoby),
+        Zoomerator = self.universe:GetLevelByName("Rilgar"):SpawnMoby(ZoomeratorMoby),
+        Salesman = self.universe:GetLevelByName("Rilgar"):SpawnMoby(SalesmanMoby),
         -- Pokitaru
         Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
     }
@@ -64,6 +71,9 @@ function ReplacementMobys:RemoveReplacedMobys(player)
         player:DeleteAllChildrenWithUID(60) -- Infobot    
     elseif levelName == "Eudora" then
         player:DeleteAllChildrenWithUID(449) -- Suck cannon
+    elseif levelName == "Rilgar" then
+        player:DeleteAllChildrenWithUID(661) -- Bouncer
+        player:DeleteAllChildrenWithUID(1334) -- Shady Salesman
     elseif levelName == "Pokitaru" then
         player:DeleteAllChildrenWithUID(653) -- Bob
     end
