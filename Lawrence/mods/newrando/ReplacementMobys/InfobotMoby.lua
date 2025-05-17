@@ -25,7 +25,7 @@ end
 
 function InfobotMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        player:ToastMessage("\x12 Take \x0cBlarg infobot\x08", 1)
+        player:ToastMessage("\x12 Take \x0cInfobot\x08", 1)
     end
 end
 

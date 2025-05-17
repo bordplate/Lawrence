@@ -26,8 +26,8 @@ local locationToActionMap = {
     [20] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 3 * 4 + 1, 1, 1) end, -- lone tower gold bolt
     
     -- Eudora
-    [21] = function (universe, player) print("Replace henchman") end, -- Henchman
-    [22] = function (universe, player) print("Replace suck cannon") end, -- suck cannon
+    [21] = function (universe, player) player:SetLevelFlags(1, 4, 1, {0xff}) player:SetLevelFlags(2, 4, 16, {128}) player:SetLevelFlags(2, 4, 41, {16}) end, -- Henchman
+    [22] = function (universe, player) universe.replacedMobys:GetMoby('SuckCannon'):Disable() end, -- suck cannon
     [23] = function (universe, player) print("Location glove of doom bought. funcitonality pending") end, -- glove of doom
     [24] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 4 * 4 + 0, 1, 1) end, -- gold bolt
     

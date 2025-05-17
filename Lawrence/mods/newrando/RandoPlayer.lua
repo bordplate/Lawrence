@@ -209,22 +209,10 @@ function RandoPlayer:OnControllerInputTapped(input)
 
     if input & 0x10 ~= 0 then
         print("Setting flags")
-        self:GiveBolts(150000)
-        --self:SetLevelFlags(1, 2, 2, {0xff})
-        ----self:SetLevelFlags(2, 2, 6, {8})
-        --self:SetLevelFlags(2, 2, 15, {128})
-        --self:SetLevelFlags(2, 2, 14, {15})
-        --self:SetLevelFlags(2, 2, 22, {4})
-        --self:SetAddressValue(0x723E54, 1, 0)
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 1, level: 2, size: 1, index: 2, value: 255
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 6, value: 8
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 16, value: 247
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 17, value: 255
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 22, value: 5
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 23, value: 255
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 25, value: 64
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 61, value: 15
-        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 62, value: 192
+        self:SetLevelFlags(1, 4, 1, {0xff})
+        self:SetLevelFlags(2, 4, 16, {128})
+        self:SetLevelFlags(2, 4, 41, {16})
+        self:SetGhostRatchet(150)
     end
     
     if input & 0x10 ~= 0 then

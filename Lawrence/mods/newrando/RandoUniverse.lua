@@ -100,10 +100,12 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-     player:GiveBolts(150000)
-     player:GiveItem(Item.GetByName("Heli-pack").id)
-     player:GiveItem(Item.GetByName("R.Y.N.O.").id)
+    player:GiveBolts(150000)
+    player:GiveItem(Item.GetByName("Heli-pack").id)
+    player:GiveItem(Item.GetByName("Thruster-pack").id)
+    player:GiveItem(Item.GetByName("R.Y.N.O.").id)
     player.has_zoomerator = true
+    player.level_unlock_queue[#player.level_unlock_queue+1] = 0x06
 --     player:GiveItem(6)
 --     player:GiveItem(4)
 --     player:GiveItem(10)

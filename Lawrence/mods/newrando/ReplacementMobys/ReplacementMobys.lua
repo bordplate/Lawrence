@@ -5,6 +5,7 @@ require 'ReplacementMobys.AgentMoby'
 require 'ReplacementMobys.SkidMoby'
 require 'ReplacementMobys.HelgaMoby'
 require 'ReplacementMobys.AlMoby'
+require 'ReplacementMobys.SuckCannonMoby'
 require 'ReplacementMobys.BobMoby'
 
 ReplacementMobys = class("ReplacementMobys")
@@ -22,6 +23,8 @@ function ReplacementMobys:initialize(universe)
         Helga = self.universe:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby),
         Al = self.universe:GetLevelByName("Kerwan"):SpawnMoby(AlMoby),
         KerwanInfobot = self.universe:GetLevelByName("Kerwan"):SpawnMoby(InfobotMoby),
+        -- Eudora
+        SuckCannon = self.universe:GetLevelByName("Eudora"):SpawnMoby(SuckCannonMoby),
         -- Pokitaru
         Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
     }
@@ -34,7 +37,7 @@ end
 function ReplacementMobys:Triangle(player)
     for _, moby in pairs(self.replacedMobys) do
         if moby ~= nil then
-            moby:Triangle(player, self)
+            moby:Triangle(player, self.universe)
         end
     end
 end
@@ -48,21 +51,20 @@ function ReplacementMobys:ToastMessage(player)
 end
 
 function ReplacementMobys:RemoveReplacedMobys(player)
-    if player:Level():GetName() == "Novalis" then
+    levelName = player:Level():GetName()
+    if levelName == "Novalis" then
         player:DeleteAllChildrenWithUID(558) -- Plumber
-    end
-    if player:Level():GetName() == "Aridia" then
+    elseif levelName == "Aridia" then
         player:DeleteAllChildrenWithUID(564) -- Trespasser
         player:DeleteAllChildrenWithUID(419) -- Skid's Agent
         player:DeleteAllChildrenWithUID(532) -- Skid
-    end
-    if player:Level():GetName() == "Kerwan" then
+    elseif levelName == "Kerwan" then
         player:DeleteAllChildrenWithUID(158) -- Helga
         player:DeleteAllChildrenWithUID(165) -- Al
-        player:DeleteAllChildrenWithUID(60) -- Infobot
-    end
-
-    if player:Level():GetName() == "Pokitaru" then
+        player:DeleteAllChildrenWithUID(60) -- Infobot    
+    elseif levelName == "Eudora" then
+        player:DeleteAllChildrenWithUID(449) -- Suck cannon
+    elseif levelName == "Pokitaru" then
         player:DeleteAllChildrenWithUID(653) -- Bob
     end
 end
