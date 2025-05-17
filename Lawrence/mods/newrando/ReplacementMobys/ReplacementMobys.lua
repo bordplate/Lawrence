@@ -37,6 +37,8 @@ function ReplacementMobys:initialize(universe)
         -- Blarg
         Hydrodisplacer = self.universe:GetLevelByName("BlargStation"):SpawnMoby(HydrodisplacerMoby),
         Scientist = self.universe:GetLevelByName("BlargStation"):SpawnMoby(ScientistMoby),
+        -- Umbris
+        UmbrisInfobot = self.universe:GetLevelByName("Umbris"):SpawnMoby(InfobotMoby),
         -- Pokitaru
         Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
     }
@@ -44,6 +46,11 @@ function ReplacementMobys:initialize(universe)
     -- change values of generic mobys
     self.replacedMobys.KerwanInfobot:SetPosition(288, 128, 66)
     self.replacedMobys.KerwanInfobot.planet_id = 0x04
+
+    self.replacedMobys.UmbrisInfobot:SetPosition(216, 455, 36.5)
+    self.replacedMobys.UmbrisInfobot.planet_id = 0x08
+    
+    
 end
 
 function ReplacementMobys:Triangle(player)
@@ -82,6 +89,8 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "BlargStation" then
         player:DeleteAllChildrenWithUID(191) -- Hydrodisplacer
         player:DeleteAllChildrenWithUID(186) -- Scientist
+    elseif levelName == "Umbris" then
+        player:DeleteAllChildrenWithUID(445) -- unnamed object that causes travel to batalia
     elseif levelName == "Pokitaru" then
         player:DeleteAllChildrenWithUID(653) -- Bob
     end

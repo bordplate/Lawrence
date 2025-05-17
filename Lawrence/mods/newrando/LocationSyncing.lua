@@ -48,7 +48,7 @@ local locationToActionMap = {
     [36] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 6 * 4 + 1, 1, 1) end, -- swarmer gold bolt
     
     -- Umbris
-    [37] = function (universe, player) print("Replace Snagglebeast infobot") end, -- infobot
+    [37] = function (universe, player) universe.replacedMobys:GetMoby('UmbrisInfobot'):Disable() end, -- infobot
     [38] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 7 * 4 + 1, 1, 1) end, -- puzzle gold bolt
     [39] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 7 * 4 + 0, 1, 1) end, -- jump down gold bolt
     
