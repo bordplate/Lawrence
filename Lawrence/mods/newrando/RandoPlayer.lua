@@ -179,7 +179,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(415, 295, 64)
+            self:SetPosition(190, 331, 145)
             --self:SetAddressValue(0x969EAC, 100, 4)
         end
     end
@@ -200,8 +200,7 @@ function RandoPlayer:OnControllerInputTapped(input)
 
     if input & 0x10 ~= 0 then
         print("Setting flags")
-        self:SetGhostRatchet(100)
-        self:GiveBolts(150000)
+        --self:SetGhostRatchet(100)
     end
     
     if input & 0x10 ~= 0 then

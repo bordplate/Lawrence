@@ -9,6 +9,8 @@ require 'ReplacementMobys.SuckCannonMoby'
 require 'ReplacementMobys.BouncerMoby'
 require 'ReplacementMobys.ZoomeratorMoby'
 require 'ReplacementMobys.SalesmanMoby'
+require 'ReplacementMobys.HydrodisplacerMoby'
+require 'ReplacementMobys.ScientistMoby'
 require 'ReplacementMobys.BobMoby'
 
 ReplacementMobys = class("ReplacementMobys")
@@ -32,6 +34,9 @@ function ReplacementMobys:initialize(universe)
         Bouncer = self.universe:GetLevelByName("Rilgar"):SpawnMoby(BouncerMoby),
         Zoomerator = self.universe:GetLevelByName("Rilgar"):SpawnMoby(ZoomeratorMoby),
         Salesman = self.universe:GetLevelByName("Rilgar"):SpawnMoby(SalesmanMoby),
+        -- Blarg
+        Hydrodisplacer = self.universe:GetLevelByName("BlargStation"):SpawnMoby(HydrodisplacerMoby),
+        Scientist = self.universe:GetLevelByName("BlargStation"):SpawnMoby(ScientistMoby),
         -- Pokitaru
         Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
     }
@@ -74,6 +79,9 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "Rilgar" then
         player:DeleteAllChildrenWithUID(661) -- Bouncer
         player:DeleteAllChildrenWithUID(1334) -- Shady Salesman
+    elseif levelName == "BlargStation" then
+        player:DeleteAllChildrenWithUID(191) -- Hydrodisplacer
+        player:DeleteAllChildrenWithUID(186) -- Scientist
     elseif levelName == "Pokitaru" then
         player:DeleteAllChildrenWithUID(653) -- Bob
     end

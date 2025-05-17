@@ -40,9 +40,9 @@ local locationToActionMap = {
     [30] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 5 * 4 + 1, 1, 1) end, -- waterworks gold bolt
     
     -- Blarg
-    [31] = function (universe, player) print("Replace Hydrodisplacer") end, -- Hydrodisplacer
-    [32] = function (universe, player) print("Investigate if infobot replace or level flag setting") end, -- Explosion Infobot
-    [33] = function (universe, player) print("Replace Scientist") end, -- Scientist
+    [31] = function (universe, player) universe.replacedMobys:GetMoby('Hydrodisplacer'):Disable() end, -- Hydrodisplacer
+    [32] = function (universe, player) player:SetLevelFlags(1, 6, 0, {0xff}) end, -- Explosion Infobot
+    [33] = function (universe, player) universe.replacedMobys:GetMoby('Scientist'):Disable() end, -- Scientist
     [34] = function (universe, player) print("Location taunter bought. funcitonality pending") end, -- taunter
     [35] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 6 * 4 + 0, 1, 1) end, -- outside gold bolt
     [36] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 6 * 4 + 1, 1, 1) end, -- swarmer gold bolt

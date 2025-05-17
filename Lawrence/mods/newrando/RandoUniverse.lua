@@ -104,11 +104,10 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    --player:GiveBolts(150000)
+    player:GiveBolts(150000)
     player:GiveItem(Item.GetByName("Heli-pack").id)
-    player:GiveItem(Item.GetByName("Hoverboard").id)
-    --player:GiveItem(Item.GetByName("R.Y.N.O.").id)
-    player.has_hoverboard = true
+    player:GiveItem(Item.GetByName("R.Y.N.O.").id)
+    player:GiveItem(Item.GetByName("Trespasser").id)
 --     player:GiveItem(6)
 --     player:GiveItem(4)
 --     player:GiveItem(10)
