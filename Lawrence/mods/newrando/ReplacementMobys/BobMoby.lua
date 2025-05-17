@@ -32,7 +32,7 @@ function BobMoby:ToastMessage(player)
     end
 end
 
-function BobMoby:Triangle(player, universe) -- returns true if moby needs to be removed
+function BobMoby:Triangle(player, universe)
     if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 2000 then
         player:GiveBolts(-2000)
         player:OnUnlockItem(Item.GetByName("Thruster-pack").id, true)

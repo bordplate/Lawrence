@@ -40,7 +40,19 @@ end
 
 function RandoUniverse:DistributeUnlockSpecial(special_address)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
-        if player.fullySpawnedIn then
+        if special_address == Player.offset.has_zoomerator then
+            player.has_zoomerator = true
+        elseif special_address == Player.offset.has_raritanium then
+            player.has_raritanium = true
+        elseif special_address == Player.offset.has_codebot then
+            player.has_codebot = true
+        elseif special_address == Player.offset.has_premium_nanotech then
+            player.has_premium_nanotech = true
+        elseif special_address == Player.offset.has_ultra_nanotech then
+            player.has_ultra_nanotech = true
+        end
+        
+        if player.fullySpawnedIn then            
             player:SetAddressValue(special_address, 1, 1)
         else
             player.special_unlock_queue[#player.special_unlock_queue+1] = special_address
@@ -89,6 +101,9 @@ end
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
      player:GiveBolts(150000)
+     player:GiveItem(Item.GetByName("Heli-pack").id)
+     player:GiveItem(Item.GetByName("R.Y.N.O.").id)
+    player.has_zoomerator = true
 --     player:GiveItem(6)
 --     player:GiveItem(4)
 --     player:GiveItem(10)

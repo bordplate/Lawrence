@@ -32,7 +32,7 @@ function HelgaMoby:ToastMessage(player)
     end
 end
 
-function HelgaMoby:Triangle(player, universe) -- returns true if moby needs to be removed
+function HelgaMoby:Triangle(player, universe)
     if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 1000 then
         player:GiveBolts(-1000)
         player:OnUnlockItem(Item.GetByName("Swingshot").id, true)

@@ -38,6 +38,12 @@ function RandoPlayer:Made()
         0xff,
     }
     
+    self.has_zoomerator = false
+    self.has_raritanium = false
+    self.has_codebot = false
+    self.has_premium_nanotech = false
+    self.has_ultra_nanotech = false
+    
     self.fullySpawnedIn = false
     self.level_unlock_queue = {}
     self.item_unlock_queue = {}
@@ -55,7 +61,8 @@ function RandoPlayer:Made()
            self:MonitorAddress(Player.offset.vendorItems + i, 1)
        end
    
-       self:MonitorAddress(0x0096bff1, 1) -- has_raritanium
+       self:MonitorAddress(0x96bff1, 1) -- has_raritanium
+       self:MonitorAddress(0x723E57, 1) -- number of sandsharks
 end
 
 function RandoPlayer:Start()
@@ -181,7 +188,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(168, 204, 42)
+            self:SetPosition(286, 111, 70)
             --self:SetAddressValue(0x969EAC, 100, 4)
         end
     end
@@ -198,6 +205,26 @@ function RandoPlayer:OnControllerInputTapped(input)
                 end
             end
         end
+    end
+
+    if input & 0x10 ~= 0 then
+        print("Setting flags")
+        self:GiveBolts(150000)
+        --self:SetLevelFlags(1, 2, 2, {0xff})
+        ----self:SetLevelFlags(2, 2, 6, {8})
+        --self:SetLevelFlags(2, 2, 15, {128})
+        --self:SetLevelFlags(2, 2, 14, {15})
+        --self:SetLevelFlags(2, 2, 22, {4})
+        --self:SetAddressValue(0x723E54, 1, 0)
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 1, level: 2, size: 1, index: 2, value: 255
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 6, value: 8
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 16, value: 247
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 17, value: 255
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 22, value: 5
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 23, value: 255
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 25, value: 64
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 61, value: 15
+        --2025-05-17 08:28:30 [Log] OnLevelFlagChanged: type: 2, level: 2, size: 1, index: 62, value: 192
     end
     
     if input & 0x10 ~= 0 then
@@ -265,7 +292,7 @@ function RandoPlayer:OnRespawned()
         end
         for _, special in ipairs(self.special_unlock_queue) do
             print("Delayed unlocking special: " .. tostring(special))
-            player:SetAddressValue(special, 1, 1)
+            self:SetAddressValue(special, 1, 1)
         end
         self.fullySpawnedIn = true
         self.level_unlock_queue = {}
@@ -275,10 +302,7 @@ function RandoPlayer:OnRespawned()
 end
 
 function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
-    if (index == 3 and flag_type == 1) or (index == 44 and flag_type == 2) or (index == 4 and flag_type == 1) or (index == 0 and flag_type == 1) then
-    else
-        print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
-    end
+    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
 end
 
 function RandoPlayer:NotifyLocationCollected(location_id)
@@ -302,7 +326,3 @@ function RandoPlayer:OnDisconnect()
         self.lobby:Leave(self)
     end
 end
-
--- novalis bridge open cutscene play
---self:SetAddressValue(0x44393bc0 + 0xbc, 0x1, 1) -- camera ???
---self:SetAddressValue(0x443d4100 + 0x2c, 0x000000b4, 4) -- play bridge cutscene
