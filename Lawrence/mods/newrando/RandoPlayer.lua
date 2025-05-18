@@ -179,7 +179,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(289, 383, 76)
+            self:SetPosition(231, 166, 59)
         end
     end
     
@@ -199,7 +199,23 @@ function RandoPlayer:OnControllerInputTapped(input)
 
     if input & 0x10 ~= 0 then
         print("Setting flags")
-        --self:SetGhostRatchet(100)
+        self:SetGhostRatchet(100)
+        --self:SetLevelFlags(2, 10, 94, {1}) -- maybe gates
+        --self:SetLevelFlags(1, 10, 5, {0xff}) -- maybe gates
+        --self:SetLevelFlags(1, 10, 1, {0xff}) -- reaching magneboots
+        --self:SetLevelFlags(2, 10, 35, {2}) -- reaching magneboots
+        --
+        --self:SetLevelFlags(1, 10, 2, {0xff}) -- final step?
+        --self:SetLevelFlags(2, 10, 94, {65}) -- final step?
+        --
+        --self:SetLevelFlags(2, 10, 30, {112}) -- final step?
+        --self:SetLevelFlags(2, 10, 103, {1}) -- final step?
+        --
+        --self:SetLevelFlags(1, 10, 4, {0xff}) -- ratchet get infobot?
+        
+        self:SetLevelFlags(2, 10, 31, {1}) -- reach nanotech vendor?
+        self:SetLevelFlags(2, 10, 87, {2}) -- reach nanotech vendor?
+        self:SetLevelFlags(1, 10, 0, {0xff}) -- reach nanotech vendor?
     end
     
     if input & 0x10 ~= 0 then

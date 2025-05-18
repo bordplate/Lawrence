@@ -11,6 +11,11 @@ require 'ReplacementMobys.ZoomeratorMoby'
 require 'ReplacementMobys.SalesmanMoby'
 require 'ReplacementMobys.HydrodisplacerMoby'
 require 'ReplacementMobys.ScientistMoby'
+require 'ReplacementMobys.DeserterMoby'
+require 'ReplacementMobys.CommandoMoby'
+require 'ReplacementMobys.PilotHelmetMoby'
+require 'ReplacementMobys.MagnebootsMoby'
+require 'ReplacementMobys.NanotechVendorMoby'
 require 'ReplacementMobys.BobMoby'
 
 ReplacementMobys = class("ReplacementMobys")
@@ -39,6 +44,14 @@ function ReplacementMobys:initialize(universe)
         Scientist = self.universe:GetLevelByName("BlargStation"):SpawnMoby(ScientistMoby),
         -- Umbris
         UmbrisInfobot = self.universe:GetLevelByName("Umbris"):SpawnMoby(InfobotMoby),
+        -- Batalia
+        Deserter = self.universe:GetLevelByName("Batalia"):SpawnMoby(DeserterMoby),
+        Commando = self.universe:GetLevelByName("Batalia"):SpawnMoby(CommandoMoby),
+        -- Gaspar
+        PilotHelmet = self.universe:GetLevelByName("Gaspar"):SpawnMoby(PilotHelmetMoby),
+        -- Orxon
+        Magneboots = self.universe:GetLevelByName("Orxon"):SpawnMoby(MagnebootsMoby),
+        NanotechVendor = self.universe:GetLevelByName("Orxon"):SpawnMoby(NanotechVendorMoby),
         -- Pokitaru
         Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
     }
@@ -91,6 +104,14 @@ function ReplacementMobys:RemoveReplacedMobys(player)
         player:DeleteAllChildrenWithUID(186) -- Scientist
     elseif levelName == "Umbris" then
         player:DeleteAllChildrenWithUID(445) -- unnamed object that causes travel to batalia
+    elseif levelName == "Batalia" then
+        player:DeleteAllChildrenWithUID(629) -- Deserter
+        player:DeleteAllChildrenWithUID(605) -- Commando
+    elseif levelName == "Gaspar" then
+        player:DeleteAllChildrenWithUID(326) -- Pilot's Helmet
+    elseif levelName == "Orxon" then
+        player:DeleteAllChildrenWithUID(742) -- Magneboots
+        player:DeleteAllChildrenWithUID(749) -- Nanotech Vendor
     elseif levelName == "Pokitaru" then
         player:DeleteAllChildrenWithUID(653) -- Bob
     end

@@ -36,7 +36,6 @@ function AlMoby:Triangle(player, universe)
     if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 1000 then
         player:GiveBolts(-1000)
         player:OnUnlockItem(Item.GetByName("Heli-pack").id, true)
-        universe:DistributeSetLevelFlags(2, 3, 78, {[1]=1})
     end
 end
 

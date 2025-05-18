@@ -18,7 +18,7 @@ local locationToActionMap = {
     
     -- Kerwan
     [14] = function (universe, player) universe.replacedMobys:GetMoby('Helga'):Disable() end, -- Helga
-    [15] = function (universe, player) universe.replacedMobys:GetMoby('Al'):Disable() end, -- Al
+    [15] = function (universe, player) universe.replacedMobys:GetMoby('Al'):Disable() player:SetLevelFlags(2, 3, 78, {1}) end, -- Al
     [16] = function (universe, player) universe.replacedMobys:GetMoby('KerwanInfobot'):Disable() end, -- Train infobot
     [17] = function (universe, player) print("Location blaster bought. funcitonality pending") end, -- blaster
     [18] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 3 * 4 + 0, 1, 1) end, -- belows ship gold bolt
@@ -54,25 +54,25 @@ local locationToActionMap = {
     
     -- Batalia
     [40] = function (universe, player) print("Location devestator bought. funcitonality pending") end, -- devestator
-    [41] = function (universe, player) print("Replace deserter") end, -- deseter
-    [42] = function (universe, player) print("Replace commander") end, -- commander
-    [43] = function (universe, player) print("Replace plumber") end, -- metal detector
+    [41] = function (universe, player) universe.replacedMobys:GetMoby('Deserter'):Disable() end, -- deseter
+    [42] = function (universe, player) universe.replacedMobys:GetMoby('Commando'):Disable() end, -- commando
+    [43] = function (universe, player) player:SetLevelFlags(1, 8, 4, {0xff}) if player:Level():GetName() == "Batalia" then player:DeleteAllChildrenWithUID(271) end end, -- metal detector
     [44] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 8 * 4 + 0, 1, 1) end, -- cliffside gold bolt
     [45] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 8 * 4 + 1, 1, 1) end, -- tresspasser gold bolt
     
     -- Gaspar
     [46] = function (universe, player) print("Location walloper bought. funcitonality pending") end, -- walloper
-    [47] = function (universe, player) print("Replace pilot helmet") end, -- pilot helmet
+    [47] = function (universe, player) universe.replacedMobys:GetMoby('PilotHelmet'):Disable() end, -- pilot helmet
     [48] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 9 * 4 + 1, 1, 1) end, -- swingshot gold bolt
     [49] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 9 * 4 + 0, 1, 1) end, -- volcano gold bolt
     
     -- Orxon
     [50] = function (universe, player) print("Location visibomb bought. funcitonality pending") end, -- visibomb
-    [51] = function (universe, player) print("Investigate required action") end, -- clank infobot
-    [52] = function (universe, player) print("Investigate required action") end, -- ratchet infobot
-    [53] = function (universe, player) print("Replace magneboots") end, -- magneboots
-    [54] = function (universe, player) print("Replace nanotech vendor") end, -- premium nanotech
-    [55] = function (universe, player) print("Replace nanotech vendor") end, -- ultra nanotech
+    [51] = function (universe, player) universe.replacedMobys:GetMoby('OrxonClankInfobot'):Disable() player:SetLevelFlags(2, 10, 30, {112}) player:SetLevelFlags(2, 10, 103, {1}) if player:Level():GetName() == "Orxon" then player:DeleteAllChildrenWithUID(255) end end, -- clank infobot
+    [52] = function (universe, player) universe.replacedMobys:GetMoby('OrxonRatchetInfobot'):Disable() player:SetLevelFlags(1, 10, 4, {0xff}) end, -- ratchet infobot
+    [53] = function (universe, player) universe.replacedMobys:GetMoby('Magneboots'):Disable() player:SetLevelFlags(1, 10, 1, {0xff}) player:SetLevelFlags(2, 10, 35, {2}) end, -- magneboots
+    [54] = function (universe, player) universe.replacedMobys:GetMoby('NanotechVendor'):Progress() player:SetLevelFlags(2, 10, 31, {1}) player:SetLevelFlags(2, 10, 87, {2}) player:SetLevelFlags(1, 10, 0, {0xff}) end, -- premium nanotech
+    [55] = function (universe, player) universe.replacedMobys:GetMoby('NanotechVendor'):Disable() end, -- ultra nanotech
     [56] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 0, 1, 1) end, -- clank gold bolt
     [57] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 1, 1, 1) end, -- visibomb gold bolt
     

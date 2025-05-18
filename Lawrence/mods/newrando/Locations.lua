@@ -39,8 +39,8 @@ local itemLocations = {
     -- Orxon
     [13]=50, -- visibomb
     [28]=53, -- magneboots
-    [51]=54, -- premium nanotech
-    [52]=55, -- ultra nanotech
+    [52]=54, -- premium nanotech
+    [53]=55, -- ultra nanotech
     
     -- Pokitaru
     [25]=58, -- decoy glove
