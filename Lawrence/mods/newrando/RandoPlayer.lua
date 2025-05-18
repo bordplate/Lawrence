@@ -62,9 +62,6 @@ function RandoPlayer:Made()
     for i = 0, 11 do
         self:MonitorAddress(Player.offset.vendorItems + i, 1)
     end
-
-    self:MonitorAddress(Player.offset.has_zoomerator, 1)
-    self:MonitorAddress(Player.offset.has_raritanium, 1)
 end
 
 function RandoPlayer:Start()
@@ -198,10 +195,6 @@ function RandoPlayer:OnControllerInputTapped(input)
                 end
             end
         end
-    end
-
-    if input & 0x10 ~= 0 then
-        print("Setting flags")
     end
     
     if input & 0x10 ~= 0 then
