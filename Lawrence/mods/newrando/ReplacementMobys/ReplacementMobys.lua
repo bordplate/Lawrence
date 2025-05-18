@@ -17,6 +17,7 @@ require 'ReplacementMobys.PilotHelmetMoby'
 require 'ReplacementMobys.MagnebootsMoby'
 require 'ReplacementMobys.NanotechVendorMoby'
 require 'ReplacementMobys.BobMoby'
+require 'ReplacementMobys.FredMoby'
 
 ReplacementMobys = class("ReplacementMobys")
 
@@ -52,18 +53,26 @@ function ReplacementMobys:initialize(universe)
         -- Orxon
         Magneboots = self.universe:GetLevelByName("Orxon"):SpawnMoby(MagnebootsMoby),
         NanotechVendor = self.universe:GetLevelByName("Orxon"):SpawnMoby(NanotechVendorMoby),
+        OrxonClankInfobot = self.universe:GetLevelByName("Orxon"):SpawnMoby(InfobotMoby),
+        OrxonRatchetInfobot = self.universe:GetLevelByName("Orxon"):SpawnMoby(InfobotMoby),
         -- Pokitaru
         Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
+        Fred = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(FredMoby),
     }
-    
+
     -- change values of generic mobys
     self.replacedMobys.KerwanInfobot:SetPosition(288, 128, 66)
     self.replacedMobys.KerwanInfobot.planet_id = 0x04
 
     self.replacedMobys.UmbrisInfobot:SetPosition(216, 455, 36.5)
     self.replacedMobys.UmbrisInfobot.planet_id = 0x08
-    
-    
+
+
+    self.replacedMobys.OrxonClankInfobot:SetPosition(238, 190, 59.5)
+    self.replacedMobys.OrxonClankInfobot.planet_id = 0x0b
+    self.replacedMobys.OrxonRatchetInfobot:SetPosition(307, 228, 68.5)
+    self.replacedMobys.OrxonRatchetInfobot.planet_id = 0x0c
+
 end
 
 function ReplacementMobys:Triangle(player)
@@ -112,8 +121,11 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "Orxon" then
         player:DeleteAllChildrenWithUID(742) -- Magneboots
         player:DeleteAllChildrenWithUID(749) -- Nanotech Vendor
+        player:DeleteAllChildrenWithUID(255) -- Clank Infobot
+        player:DeleteAllChildrenWithUID(256) -- Ratchet Infobot
     elseif levelName == "Pokitaru" then
         player:DeleteAllChildrenWithUID(653) -- Bob
+        player:DeleteAllChildrenWithUID(652) -- Fred
     end
 end
 
