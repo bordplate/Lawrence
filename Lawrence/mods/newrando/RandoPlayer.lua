@@ -180,6 +180,9 @@ function RandoPlayer:OnControllerInputTapped(input)
         if self:Username() == "panad" then
             print("Moving player")
             self:SetPosition(695, 521, 170)
+        elseif self:Username() == "Sharlo" then
+            self.cheaterLabel = Label:new("nice try cheater", 0, 140, 0xC0FFA888, {GameState.PlayerControl});
+            self:AddLabel(self.cheaterLabel)
         end
     end
     
@@ -199,10 +202,6 @@ function RandoPlayer:OnControllerInputTapped(input)
 
     if input & 0x10 ~= 0 then
         print("Setting flags")
-        self:SetGhostRatchet(100)
-        --self:SetLevelFlags(1, 16, 3, {0xff}) -- reach helpdesk?
-        --self:SetLevelFlags(1, 16, 5, {0xff}) -- reach helpdesk?
-        
     end
     
     if input & 0x10 ~= 0 then
@@ -283,16 +282,14 @@ function RandoPlayer:OnRespawned()
         self.level_unlock_queue = {}
         self.item_unlock_queue = {}
         self.special_unlock_queue = {}
+        
+        PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
     end
 end
 
-function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
-    if flag_type == 2 and level == 5 and index == 126 and value == 1 then -- rilgar race complete
-        print("special rilgar race win trigger???")
-        self:OnUnlockItem(player:GiveItem(Item.GetByName("Zoomerator").id), false)
-    end
-    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
-end
+--function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
+--    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
+--end
 
 function RandoPlayer:NotifyLocationCollected(location_id)
     print(string.format("player %s got location: %d", self.username, location_id))

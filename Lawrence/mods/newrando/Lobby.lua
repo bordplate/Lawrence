@@ -36,7 +36,7 @@ function Lobby:initialize(host, password)
             name = "Start Planet",
             description = "The planet to start the game on.",
             handler = function(option, view, item) option:set((option.value+1) % 19) end,
-            value = 12,
+            value = 0,
             accessory = {
                 "Veldin1",
                 "Novalis",
