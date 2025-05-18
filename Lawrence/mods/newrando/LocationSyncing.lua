@@ -106,9 +106,9 @@ local locationToActionMap = {
     [78] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 0, 1, 1) end, -- final gold bolt
     
     -- Quartu
-    [79] = function (universe, player) print("probably level flags?") end, -- giant clank infobot
-    [80] = function (universe, player) print("Replace bolt grabber") end, -- bolt grabber
-    [81] = function (universe, player) print("probably level flags?") end, -- infiltrate infobot
+    [79] = function (universe, player) end, -- giant clank infobot. do nothing
+    [80] = function (universe, player) universe.replacedMobys:GetMoby('BoltGrabber'):Disable() end, -- bolt grabber
+    [81] = function (universe, player) end, -- infiltrate infobot. do nothing
     [82] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 15 * 4 + 0, 1, 1) end, -- mom gold bolt
     [83] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 15 * 4 + 1, 1, 1) end, -- codebot gold bolt
     

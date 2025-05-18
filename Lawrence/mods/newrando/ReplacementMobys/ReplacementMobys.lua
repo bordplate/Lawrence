@@ -22,6 +22,7 @@ require 'ReplacementMobys.MinerMoby'
 require 'ReplacementMobys.EdwinaMoby'
 require 'ReplacementMobys.SteveMoby'
 require 'ReplacementMobys.SamMoby'
+require 'ReplacementMobys.BoltGrabberMoby'
 
 ReplacementMobys = class("ReplacementMobys")
 
@@ -68,6 +69,8 @@ function ReplacementMobys:initialize(universe)
         -- Oltanis
         Steve = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SteveMoby),
         Sam = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SamMoby),
+        -- Quartu
+        BoltGrabber = self.universe:GetLevelByName("Quartu"):SpawnMoby(BoltGrabberMoby),
     }
 
     -- change values of generic mobys
@@ -142,6 +145,8 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "Oltanis" then
         player:DeleteAllChildrenWithUID(360) -- Steve
         player:DeleteAllChildrenWithUID(25) -- Sam
+    elseif levelName == "Quartu" then
+        player:DeleteAllChildrenWithUID(365)
     end
 end
 
