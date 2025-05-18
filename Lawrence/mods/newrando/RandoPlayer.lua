@@ -179,7 +179,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(119, 292, 123)
+            self:SetPosition(695, 521, 170)
         end
     end
     

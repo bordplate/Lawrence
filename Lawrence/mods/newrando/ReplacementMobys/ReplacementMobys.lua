@@ -24,6 +24,7 @@ require 'ReplacementMobys.SteveMoby'
 require 'ReplacementMobys.SamMoby'
 require 'ReplacementMobys.BoltGrabberMoby'
 require 'ReplacementMobys.HologuiseMoby'
+require 'ReplacementMobys.CodebotMoby'
 
 ReplacementMobys = class("ReplacementMobys")
 
@@ -74,6 +75,9 @@ function ReplacementMobys:initialize(universe)
         BoltGrabber = self.universe:GetLevelByName("Quartu"):SpawnMoby(BoltGrabberMoby),
         -- Kalebo III
         Hologuise = self.universe:GetLevelByName("KaleboIII"):SpawnMoby(HologuiseMoby),
+        -- Drek's Fleet
+        Codebot = self.universe:GetLevelByName("DreksFleet"):SpawnMoby(CodebotMoby),
+        FleetInfobot = self.universe:GetLevelByName("DreksFleet"):SpawnMoby(InfobotMoby),
     }
 
     -- change values of generic mobys
@@ -88,7 +92,9 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.OrxonClankInfobot.planet_id = 0x0b
     self.replacedMobys.OrxonRatchetInfobot:SetPosition(307, 228, 68.5)
     self.replacedMobys.OrxonRatchetInfobot.planet_id = 0x0c
-
+    
+    self.replacedMobys.FleetInfobot:SetPosition(695, 521, 169)
+    self.replacedMobys.FleetInfobot.planet_id = 0x12
 end
 
 function ReplacementMobys:Triangle(player)
@@ -150,6 +156,9 @@ function ReplacementMobys:RemoveReplacedMobys(player)
         player:DeleteAllChildrenWithUID(25) -- Sam
     elseif levelName == "Quartu" then
         player:DeleteAllChildrenWithUID(365) -- Bolt Grabber
+    elseif levelName == "DreksFleet" then
+        player:DeleteAllChildrenWithUID(669) -- Codebot
+        player:DeleteAllChildrenWithUID(285) -- Infobot
     end
 end
 

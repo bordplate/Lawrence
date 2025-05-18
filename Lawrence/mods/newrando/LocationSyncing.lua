@@ -119,8 +119,8 @@ local locationToActionMap = {
     [87] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 16 * 4 + 0, 1, 1) end, -- break room gold bolt
 
     -- Drek's Fleet
-    [88] = function (universe, player) print("Replace Infobot") end, -- infobot
-    [89] = function (universe, player) print("Replace codebot") end, -- codebot
+    [88] = function (universe, player) universe.replacedMobys:GetMoby('FleetInfobot'):Disable() player:SetLevelFlags(1, 17, 3, {0xff}) end, -- infobot
+    [89] = function (universe, player) universe.replacedMobys:GetMoby('Codebot'):Disable() end, -- codebot
     [90] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 17 * 4 + 0, 1, 1) end, -- water gold bolt
     [91] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 17 * 4 + 1, 1, 1) end, -- robot gold bolt
     
