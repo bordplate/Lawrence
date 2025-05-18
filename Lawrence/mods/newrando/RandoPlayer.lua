@@ -179,7 +179,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(203, 191, 54)
+            self:SetPosition(119, 292, 123)
         end
     end
     
@@ -200,18 +200,8 @@ function RandoPlayer:OnControllerInputTapped(input)
     if input & 0x10 ~= 0 then
         print("Setting flags")
         self:SetGhostRatchet(100)
-        --self:SetLevelFlags(1, 14, 2, {0xff}) -- morph pick up?
-        --self:SetLevelFlags(1, 14, 8, {0xff}) -- morph arrive?
-        --
-        --self:SetLevelFlags(1, 14, 0, {0xff}) -- arrive at steve?
-        --self:SetLevelFlags(1, 14, 11, {0xff}) -- arrive at steve?
-        --self:SetLevelFlags(2, 14, 1, {16}) -- arrive at steve?
-        --self:SetLevelFlags(2, 14, 46, {1}) -- buy PDA?
-        --self:SetLevelFlags(2, 14, 47, {8}) -- buy PDA?
-        --
-        --self:SetLevelFlags(1, 14, 1, {0xff}) -- deaf guy arrive?
-        --self:SetLevelFlags(1, 14, 7, {0xff}) -- deaf guy arrive?
-        --self:SetLevelFlags(2, 14, 0, {2}) -- deaf guy buy?
+        --self:SetLevelFlags(1, 16, 3, {0xff}) -- reach helpdesk?
+        --self:SetLevelFlags(1, 16, 5, {0xff}) -- reach helpdesk?
         
     end
     

@@ -113,8 +113,8 @@ local locationToActionMap = {
     [83] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 15 * 4 + 1, 1, 1) end, -- codebot gold bolt
     
     -- Kalebo III
-    [84] = function (universe, player) print("Replace gadgetron race guy (also probably a pain)") end, -- hologuise
-    [85] = function (universe, player) print("Replace helpdesk girl") end, -- helpdesk girl
+    [84] = function (universe, player) universe.replacedMobys:GetMoby('Hologuise'):Disable() end, -- hologuise. do nothing
+    [85] = function (universe, player)  end, -- helpdesk lady. do nothing
     [86] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 16 * 4 + 1, 1, 1) end, -- grindrail gold bolt
     [87] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 16 * 4 + 0, 1, 1) end, -- break room gold bolt
 
