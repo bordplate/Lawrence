@@ -18,6 +18,8 @@ require 'ReplacementMobys.MagnebootsMoby'
 require 'ReplacementMobys.NanotechVendorMoby'
 require 'ReplacementMobys.BobMoby'
 require 'ReplacementMobys.FredMoby'
+require 'ReplacementMobys.MinerMoby'
+require 'ReplacementMobys.EdwinaMoby'
 
 ReplacementMobys = class("ReplacementMobys")
 
@@ -58,6 +60,9 @@ function ReplacementMobys:initialize(universe)
         -- Pokitaru
         Bob = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(BobMoby),
         Fred = self.universe:GetLevelByName("Pokitaru"):SpawnMoby(FredMoby),
+        -- Hoven
+        Miner = self.universe:GetLevelByName("Hoven"):SpawnMoby(MinerMoby),
+        Edwina = self.universe:GetLevelByName("Hoven"):SpawnMoby(EdwinaMoby),
     }
 
     -- change values of generic mobys
@@ -126,6 +131,9 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "Pokitaru" then
         player:DeleteAllChildrenWithUID(653) -- Bob
         player:DeleteAllChildrenWithUID(652) -- Fred
+    elseif levelName == "Hoven" then
+        player:DeleteAllChildrenWithUID(649) -- Miner
+        player:DeleteAllChildrenWithUID(67) -- Edwina
     end
 end
 

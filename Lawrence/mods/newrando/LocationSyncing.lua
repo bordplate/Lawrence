@@ -78,16 +78,16 @@ local locationToActionMap = {
     
     -- Pokitaru
     [58] = function (universe, player) print("Location decoy glove bought. funcitonality pending") end, -- decoy glove
-    [59] = function (universe, player) print("I think this is level flags?") end, -- O2 mask
-    [60] = function (universe, player) print("Replace Fred") end, -- persuader
+    [59] = function (universe, player)  end, -- O2 mask. do nothing
+    [60] = function (universe, player) universe.replacedMobys:GetMoby('Fred'):Disable() end, -- persuader
     [61] = function (universe, player) universe.replacedMobys:GetMoby('Bob'):Disable() end, -- thruster pack
     [62] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 11 * 4 + 0, 1, 1) end, -- gold bolt
     
     -- Hoven
     [63] = function (universe, player) print("Location drone device bought. funcitonality pending") end, -- drone device
-    [64] = function (universe, player) print("probably level flags?") end, -- infobot
-    [65] = function (universe, player) print("Replace hydro pack girl") end, -- hydro pack
-    [66] = function (universe, player) print("Replace aww heck guy") end, -- raritanium
+    [64] = function (universe, player) end, -- infobot. do nothing
+    [65] = function (universe, player) universe.replacedMobys:GetMoby('Edwina'):Disable() end, -- hydro pack
+    [66] = function (universe, player) universe.replacedMobys:GetMoby('Miner'):Disable() end, -- raritanium
     [67] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 12 * 4 + 1, 1, 1) end, -- water gold bolt
     [68] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 12 * 4 + 0, 1, 1) end, -- walljump gold bolt
     
