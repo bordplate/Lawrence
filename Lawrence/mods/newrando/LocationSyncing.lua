@@ -97,9 +97,9 @@ local locationToActionMap = {
     
     -- Oltanis
     [71] = function (universe, player) print("Location tesla claw bought. funcitonality pending") end, -- tesla claw
-    [72] = function (universe, player) print("Replace deaf guy") end, -- infobot
-    [73] = function (universe, player) print("Replace Steve") end, -- Steve
-    [74] = function (universe, player) print("probably level flags?") end, -- morph O ray
+    [72] = function (universe, player) universe.replacedMobys:GetMoby('Sam'):Disable() player:SetLevelFlags(1, 14, 1, {0xff}) player:SetLevelFlags(1, 14, 7, {0xff}) player:SetLevelFlags(2, 14, 0, {2}) end, -- infobot
+    [73] = function (universe, player) universe.replacedMobys:GetMoby('Steve'):Disable() player:SetLevelFlags(1, 14, 0, {0xff}) player:SetLevelFlags(1, 14, 11, {0xff}) player:SetLevelFlags(2, 14, 1, {16}) player:SetLevelFlags(2, 14, 46, {1}) player:SetLevelFlags(2, 14, 47, {8}) end, -- Steve
+    [74] = function (universe, player) player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) end, -- morph O ray
     [75] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 1, 1, 1) end, -- main gold bolt
     [76] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 2, 1, 1) end, -- magnet gold bolt 2
     [77] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 3, 1, 1) end, -- magnet gold bolt 2

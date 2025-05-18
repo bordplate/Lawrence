@@ -24,7 +24,7 @@ end
 
 function PlumberMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 1000 then
+        if player.totalBolts >= 500 then
             player:ToastMessage("\x12 Buy \x0cInfobot\x08 for 500 bolts ", 1)
         else
             player:ToastMessage("You need 500 bolts to buy the \x0cInfobot\x08", 1)
