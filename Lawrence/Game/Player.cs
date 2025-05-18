@@ -472,7 +472,7 @@ partial class Player {
                 _client.DeleteMoby(moby);
             }
             
-            Logger.Log($"Player [{Username()}]: Deleted moby {moby.oClass} [{moby.UID}]");
+            // Logger.Log($"Player [{Username()}]: Deleted moby {moby.oClass} [{moby.UID}]");
         }
 
         base.OnDeleteEntity(notification);
@@ -638,7 +638,7 @@ partial class Player : IClientHandler
         moby.oClass = oClass;
         moby.SyncSpawnId = spawnId;
         
-        Logger.Log($"Player [{Username()}]: Created moby with oClass {oClass} and spawn ID {spawnId}");
+        // Logger.Log($"Player [{Username()}]: Created moby with oClass {oClass} and spawn ID {spawnId}");
 
         Add(moby);
         Level()?.Add(moby, false);

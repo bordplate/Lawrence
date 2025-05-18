@@ -530,7 +530,7 @@ public partial class Client {
                     
                     SendPacket(Packet.MakeMobyCreateResponsePacket(internalId, packetHeader.RequiresAck, packetHeader.AckCycle));
                     
-                    Logger.Log($"Player({ID}) created moby (oClass: {create.OClass}) with internal ID {internalId}.");
+                    // Logger.Log($"Player({ID}) created moby (oClass: {create.OClass}) with internal ID {internalId}.");
 
                     break;
                 }
