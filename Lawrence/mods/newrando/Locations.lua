@@ -88,7 +88,7 @@ local planetLocations = {
     [7]=25, -- umbris
     
     -- Blarg
-    [5]=22, -- rilgar
+    [5]=32, -- rilgar
     
     -- Umbris
     [8]=37, -- batalia

@@ -176,11 +176,12 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(695, 521, 170)
-        elseif self:Username() == "Sharlo" then
-            self.cheaterLabel = Label:new("nice try cheater", 0, 140, 0xC0FFA888, {GameState.PlayerControl});
-            self:AddLabel(self.cheaterLabel)
+            self:SetPosition(202, 200, 55)
         end
+    end
+
+    if self.gameState == 3 and input & 0x8 ~= 0 then
+        self:SetGhostRatchet(200)
     end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
@@ -227,7 +228,7 @@ end
 
 function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
-       
+
     if address >= Player.offset.vendorItems and address <= Player.offset.vendorItems + 11 then
         self.vendorItems[address - Player.offset.vendorItems] = newValue
         print(tostring(self.vendorItems[0]) .. ", " .. table.concat(self.vendorItems, ", "))

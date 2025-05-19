@@ -14,9 +14,9 @@ end
 
 function SamMoby:closeToPlayer(player)
     if self:Level():GetName() == player:Level():GetName() and
-            self.x - 2 <= player.x and player.x <= self.x + 2 and
-            self.y - 2 <= player.y and player.y <= self.y + 2 and
-            self.z - 2 <= player.z and player.z <= self.z + 2 then
+            self.x - 4 <= player.x and player.x <= self.x + 4 and
+            self.y - 4 <= player.y and player.y <= self.y + 4 and
+            self.z - 4 <= player.z and player.z <= self.z + 4 then
         return true
     end
     return false

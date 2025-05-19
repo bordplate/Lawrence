@@ -3,7 +3,7 @@ FredMoby = class("FredMoby", Moby)
 function FredMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
-    self:SetOClass(1002)
+    self:SetOClass(298)
     self:SetPosition(547.5, 387, 154)
     self.rotZ = 1.787
 
@@ -44,6 +44,7 @@ function FredMoby:Triangle(player, universe)
 end
 
 function FredMoby:Disable()
+    print("disabling fred")
     self.disabled = true
     self:Delete()
 end 

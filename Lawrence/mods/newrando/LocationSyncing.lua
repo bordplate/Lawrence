@@ -79,7 +79,7 @@ local locationToActionMap = {
     -- Pokitaru
     [58] = function (universe, player) print("Location decoy glove bought. funcitonality pending") end, -- decoy glove
     [59] = function (universe, player)  end, -- O2 mask. do nothing
-    [60] = function (universe, player) universe.replacedMobys:GetMoby('Fred'):Disable() end, -- persuader
+    [60] = function (universe, player) universe.replacedMobys:GetMoby('Fred'):Disable() player:SetLevelFlags(1, 11, 4, {0xff}) end, -- persuader
     [61] = function (universe, player) universe.replacedMobys:GetMoby('Bob'):Disable() end, -- thruster pack
     [62] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 11 * 4 + 0, 1, 1) end, -- gold bolt
     
@@ -132,6 +132,7 @@ local locationToActionMap = {
 
 function LocationSync(universe, player, location_id)
     if locationToActionMap[location_id] ~= nil then
+        print("Hit location sync entry for location_id: " .. tostring(location_id))
         locationToActionMap[location_id](universe, player)
     else
         print("missed table for location: " .. tostring(location_id))
