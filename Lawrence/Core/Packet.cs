@@ -64,6 +64,7 @@ public enum MPStateType : ushort
     MP_STATE_TYPE_LEVEL_FLAG = 15,
     MP_STATE_TYPE_UNLOCK_SKILLPOINT = 16,
     MP_STATE_SET_COMMUNICATION_FLAGS = 17,
+    MP_STATE_TYPE_DETECTOR_MULT = 18,
 }
 
 public enum MPDamageFlags : uint {
@@ -1278,6 +1279,17 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
             Flags = flags
         });
         
+        return packet;
+    }
+
+    public static Packet MakeSetMetalDetectorMultPacket(uint value) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+        
+        packet.AddBodyPart(new MPPacketSetState {
+            StateType = MPStateType.MP_STATE_TYPE_DETECTOR_MULT,
+            Value = (ushort)value
+        });
+
         return packet;
     }
 

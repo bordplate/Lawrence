@@ -358,6 +358,10 @@ partial class Player {
     public void SetAddressValue(uint address, uint value, byte size) {
         SendPacket(Packet.MakeSetAddressValuePacket(address, value, size));
     }
+
+    public void SetMetalDetectorMultiplier(uint value) {
+        SendPacket(Packet.MakeSetMetalDetectorMultPacket(value));
+    }
 }
 #endregion
 
