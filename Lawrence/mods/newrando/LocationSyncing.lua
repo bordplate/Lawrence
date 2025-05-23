@@ -2,7 +2,7 @@ local locationToActionMap = {
     -- novalis
     [1] = function (universe, player) universe.replacedMobys:GetMoby('Plumber'):Disable() end, -- Plumber
     [2] = function (universe, player) player:SetLevelFlags(1,1,0,{0xff}) end, -- Mayor
-    [3] = function (universe, player) print("Location pyrocitor bought. funcitonality pending") end, -- pyrocitor
+    [3] = function (universe, player) universe:RemoveVendorItem(0x10) end, -- pyrocitor
     [4] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 0, 1, 1) end, -- sewer gold bolt
     [5] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 2, 1, 1) end, -- caves gold bolt
     [6] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 1, 1, 1) end, -- underwater caves gold bolt
@@ -20,7 +20,7 @@ local locationToActionMap = {
     [14] = function (universe, player) universe.replacedMobys:GetMoby('Helga'):Disable() end, -- Helga
     [15] = function (universe, player) universe.replacedMobys:GetMoby('Al'):Disable() player:SetLevelFlags(2, 3, 78, {1}) end, -- Al
     [16] = function (universe, player) universe.replacedMobys:GetMoby('KerwanInfobot'):Disable() end, -- Train infobot
-    [17] = function (universe, player) print("Location blaster bought. funcitonality pending") end, -- blaster
+    [17] = function (universe, player) universe:RemoveVendorItem(0x0f) end, -- blaster
     [18] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 3 * 4 + 0, 1, 1) end, -- belows ship gold bolt
     [19] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 3 * 4 + 2, 1, 1) end, -- train station gold botl
     [20] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 3 * 4 + 1, 1, 1) end, -- lone tower gold bolt
@@ -28,13 +28,13 @@ local locationToActionMap = {
     -- Eudora
     [21] = function (universe, player) player:SetLevelFlags(1, 4, 1, {0xff}) player:SetLevelFlags(2, 4, 16, {128}) player:SetLevelFlags(2, 4, 41, {16}) end, -- Henchman
     [22] = function (universe, player) universe.replacedMobys:GetMoby('SuckCannon'):Disable() end, -- suck cannon
-    [23] = function (universe, player) print("Location glove of doom bought. funcitonality pending") end, -- glove of doom
+    [23] = function (universe, player) universe:RemoveVendorItem(0x14) end, -- glove of doom
     [24] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 4 * 4 + 0, 1, 1) end, -- gold bolt
     
     -- Rilgar
     [25] = function (universe, player) universe.replacedMobys:GetMoby('Bouncer'):Disable() end, -- Bouncer
     [26] = function (universe, player) universe.replacedMobys:GetMoby('Zoomerator'):Disable() end, -- zoomerator
-    [27] = function (universe, player) print("Location mine glove bought. funcitonality pending") end, -- mine glove
+    [27] = function (universe, player) universe:RemoveVendorItem(0x11) end, -- mine glove
     [28] = function (universe, player) universe.replacedMobys:GetMoby('Salesman'):Disable() end, -- ryno
     [29] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 5 * 4 + 0, 1, 1) end, -- maze gold bolt
     [30] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 5 * 4 + 1, 1, 1) end, -- waterworks gold bolt
@@ -43,7 +43,7 @@ local locationToActionMap = {
     [31] = function (universe, player) universe.replacedMobys:GetMoby('Hydrodisplacer'):Disable() end, -- Hydrodisplacer
     [32] = function (universe, player) player:SetLevelFlags(1, 6, 0, {0xff}) end, -- Explosion Infobot
     [33] = function (universe, player) universe.replacedMobys:GetMoby('Scientist'):Disable() end, -- Scientist
-    [34] = function (universe, player) print("Location taunter bought. funcitonality pending") end, -- taunter
+    [34] = function (universe, player) universe:RemoveVendorItem(0x0e) end, -- taunter
     [35] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 6 * 4 + 0, 1, 1) end, -- outside gold bolt
     [36] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 6 * 4 + 1, 1, 1) end, -- swarmer gold bolt
     
@@ -53,7 +53,7 @@ local locationToActionMap = {
     [39] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 7 * 4 + 0, 1, 1) end, -- jump down gold bolt
     
     -- Batalia
-    [40] = function (universe, player) print("Location devestator bought. funcitonality pending") end, -- devestator
+    [40] = function (universe, player) universe:RemoveVendorItem(0x0b) end, -- devestator
     [41] = function (universe, player) universe.replacedMobys:GetMoby('Deserter'):Disable() end, -- deseter
     [42] = function (universe, player) universe.replacedMobys:GetMoby('Commando'):Disable() end, -- commando
     [43] = function (universe, player) player:SetLevelFlags(1, 8, 4, {0xff}) if player:Level():GetName() == "Batalia" then player:DeleteAllChildrenWithUID(271) end end, -- metal detector
@@ -61,13 +61,13 @@ local locationToActionMap = {
     [45] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 8 * 4 + 1, 1, 1) end, -- tresspasser gold bolt
     
     -- Gaspar
-    [46] = function (universe, player) print("Location walloper bought. funcitonality pending") end, -- walloper
+    [46] = function (universe, player) universe:RemoveVendorItem(0x12) end, -- walloper
     [47] = function (universe, player) universe.replacedMobys:GetMoby('PilotHelmet'):Disable() end, -- pilot helmet
     [48] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 9 * 4 + 1, 1, 1) end, -- swingshot gold bolt
     [49] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 9 * 4 + 0, 1, 1) end, -- volcano gold bolt
     
     -- Orxon
-    [50] = function (universe, player) print("Location visibomb bought. funcitonality pending") end, -- visibomb
+    [50] = function (universe, player) universe:RemoveVendorItem(0x0d) end, -- visibomb
     [51] = function (universe, player) universe.replacedMobys:GetMoby('OrxonClankInfobot'):Disable() player:SetLevelFlags(2, 10, 30, {112}) player:SetLevelFlags(2, 10, 103, {1}) if player:Level():GetName() == "Orxon" then player:DeleteAllChildrenWithUID(255) end end, -- clank infobot
     [52] = function (universe, player) universe.replacedMobys:GetMoby('OrxonRatchetInfobot'):Disable() player:SetLevelFlags(1, 10, 4, {0xff}) end, -- ratchet infobot
     [53] = function (universe, player) universe.replacedMobys:GetMoby('Magneboots'):Disable() player:SetLevelFlags(1, 10, 1, {0xff}) player:SetLevelFlags(2, 10, 35, {2}) end, -- magneboots
@@ -77,14 +77,14 @@ local locationToActionMap = {
     [57] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 1, 1, 1) end, -- visibomb gold bolt
     
     -- Pokitaru
-    [58] = function (universe, player) print("Location decoy glove bought. funcitonality pending") end, -- decoy glove
+    [58] = function (universe, player) universe:RemoveVendorItem(0x19) end, -- decoy glove
     [59] = function (universe, player)  end, -- O2 mask. do nothing
     [60] = function (universe, player) universe.replacedMobys:GetMoby('Fred'):Disable() player:SetLevelFlags(1, 11, 4, {0xff}) end, -- persuader
     [61] = function (universe, player) universe.replacedMobys:GetMoby('Bob'):Disable() end, -- thruster pack
     [62] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 11 * 4 + 0, 1, 1) end, -- gold bolt
     
     -- Hoven
-    [63] = function (universe, player) print("Location drone device bought. funcitonality pending") end, -- drone device
+    [63] = function (universe, player) universe:RemoveVendorItem(0x18) end, -- drone device
     [64] = function (universe, player) end, -- infobot. do nothing
     [65] = function (universe, player) universe.replacedMobys:GetMoby('Edwina'):Disable() end, -- hydro pack
     [66] = function (universe, player) universe.replacedMobys:GetMoby('Miner'):Disable() end, -- raritanium
@@ -96,7 +96,7 @@ local locationToActionMap = {
     [70] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 13 * 4 + 0, 1, 1) end, -- gold bolt
     
     -- Oltanis
-    [71] = function (universe, player) print("Location tesla claw bought. funcitonality pending") end, -- tesla claw
+    [71] = function (universe, player) universe:RemoveVendorItem(0x13) end, -- tesla claw
     [72] = function (universe, player) universe.replacedMobys:GetMoby('Sam'):Disable() player:SetLevelFlags(1, 14, 1, {0xff}) player:SetLevelFlags(1, 14, 7, {0xff}) player:SetLevelFlags(2, 14, 0, {2}) end, -- infobot
     [73] = function (universe, player) universe.replacedMobys:GetMoby('Steve'):Disable() player:SetLevelFlags(1, 14, 0, {0xff}) player:SetLevelFlags(1, 14, 11, {0xff}) player:SetLevelFlags(2, 14, 1, {16}) player:SetLevelFlags(2, 14, 46, {1}) player:SetLevelFlags(2, 14, 47, {8}) end, -- Steve
     [74] = function (universe, player) player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) end, -- morph O ray
@@ -132,7 +132,6 @@ local locationToActionMap = {
 
 function LocationSync(universe, player, location_id)
     if locationToActionMap[location_id] ~= nil then
-        print("Hit location sync entry for location_id: " .. tostring(location_id))
         locationToActionMap[location_id](universe, player)
     else
         print("missed table for location: " .. tostring(location_id))

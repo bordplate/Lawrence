@@ -23,12 +23,22 @@ function RandoUniverse:initialize(lobby)
     
     self.ap_client = nil
     self.ap_client_initialized = false
+    
+    self.buyable_weapons = {}
+    self.buyable_ammo = {} -- list weapons, +64 is performed to turn it into ammo
+    self.already_bought_weapons = {}
 end
 
 function RandoUniverse:DistributeGiveItem(item_id, equip)
     if equip == nil then
         equip = false
     end
+
+    if Item.GetById(item_id).isWeapon and item_id ~= 0x0e and item_id ~= 0x12 and item_id ~= 0x09 and item_id ~= 0x15 then -- is weapon that uses ammo
+        table.insert(self.buyable_ammo, item_id)
+        self:DistributeVendorContents()
+    end
+    
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if item_id == Item.GetByName("Hoverboard").id then
             player.has_hoverboard = true
@@ -105,6 +115,7 @@ end
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
     player:SetMetalDetectorMultiplier(35)
+    player:GiveBolts(2500)
     if self.ap_client == nil then
         local uuid = "5"
         self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)
@@ -127,8 +138,9 @@ end
 
 function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     print("OnPlayerGetPlanet: " .. tostring(planet_id))
-    if not PlanetGotFromCorrectLocation(player:Level():GameID(), planet_id) then
-       print("Planet " .. planet_id .. " unlock_level not called from infobot. (ignoring)")
+    if player.gameState == 6 or -- PlanetLoading
+        not player.fullySpawnedIn then 
+        print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
        player:UnlockLevel(planet_id)
        return
     end
@@ -156,13 +168,28 @@ function RandoUniverse:NotifyPlayersLocationCollected(location_id, exclude_playe
     end
 end
 
-function RandoUniverse:NovalisShipGotByPlayer(player)
-    for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
-        _player:SetAddressValue(0x443941c0 + 0xbc, 0x2, 1) -- bridge half
-        _player:SetAddressValue(0x443942c0 + 0xbc, 0x2, 1) -- bridge half
-
-        _player:SetLevelFlags(1,1,0,{0xff}) -- ship flag
+function RandoUniverse:AddPlanetVendorItem(planet_id)
+    item_id = GetPlanetVendorItem(planet_id)
+    if item_id ~= nil then
+        for _, v in ipairs(self.buyable_weapons) do if v == item_id then return end end -- end early if item already in list
+        for _, v in ipairs(self.already_bought_weapons) do if v == item_id then return end end -- end early if item location was already bought
+        table.insert(self.buyable_weapons, item_id)
+        self:DistributeVendorContents()
     end
+end
+
+function RandoUniverse:DistributeVendorContents()
+    for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        _player:UpdateVendorContents()
+    end
+end
+
+function RandoUniverse:RemoveVendorItem(item_id)
+    for k,v in ipairs(self.buyable_weapons) do
+        if v == item_id then table.remove(self.buyable_weapons, k) break end
+    end
+    table.insert(self.already_bought_weapons, item_id)
+    self:DistributeVendorContents()
 end
 
 function RandoUniverse:OnTick()

@@ -200,53 +200,18 @@ local boltLocation = {
     ["18-2"]=94,
 }
 
-infobot_pickup_planets = { -- maps a planet's id to the id of the planet you find the infobot on
-    -- Novalis
-    [2]=1, -- aridia
-    [3]=1, -- kerwan
-    
-    -- Kerwan
-    [4]=3, -- eudora
-        
-    -- Eudora
-    [6]=4, -- blarg
-    
-    -- Rilgar
-    [7]=5, -- umbris
-    
-    -- Blarg
-    [5]=6, -- rilgar
-    
-    -- Umbris
-    [8]=7, -- batalia
-    
-    -- Batalia
-    [9]=8, -- gaspar
-    [10]=8, -- orxon
-    
-    -- Gaspar
-    
-    -- Orxon
-    [11]=10, -- pokitaru
-    [12]=10, -- hoven
-    
-    -- Pokitaru
-    
-    -- Hoven
-    [13]=12, -- gemlik
-    
-    -- Gemlik
-    [14]=13, -- oltanis
-    
-    -- Oltanis
-    [15]=14, -- quartu
-    
-    -- Quartu
-    [16]=15, -- kalebo III
-    [17]=15, -- Drek's Fleet
-    
-    -- Drek's Fleet
-    [18]=17, -- veldin 2
+local planetVendorItems = {
+    [1] = 0x10,
+    [3] = 0x0f,
+    [4] = 0x14,
+    [5] = 0x11,
+    [6] = 0x0e,
+    [8] = 0x0b,
+    [9] = 0x12,
+    [10] = 0x0d,
+    [11] = 0x19,
+    [12] = 0x18,
+    [14] = 0x13,
 }
 
 function ItemToLocation(item_id)
@@ -275,6 +240,6 @@ function GoldBoltToLocation(planet, number)
     return 0
 end
 
-function PlanetGotFromCorrectLocation(current_level, unlocked_level)
-    return (infobot_pickup_planets[unlocked_level] == current_level)
+function GetPlanetVendorItem(planet_id) 
+    return planetVendorItems[planet_id]
 end

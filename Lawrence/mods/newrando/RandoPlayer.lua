@@ -24,20 +24,6 @@ function RandoPlayer:Made()
         Player.offset.veldin2CommandosKilled,
     }
     
-    self.vendorItems = {
-        [0]=0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-        0xff,
-    }
-    
     self.has_hoverboard = false
     
     self.has_zoomerator = false
@@ -58,10 +44,9 @@ function RandoPlayer:Made()
 --     for i = 2, 26 do
 --         self:MonitorAddress(Player.offset.gildedItems + i, 1)
 --     end
-
-    for i = 0, 11 do
-        self:MonitorAddress(Player.offset.vendorItems + i, 1)
-    end
+    
+    self:MonitorAddress(Player.offset.goldBolts + 16 * 4 + 1, 1)
+    self.tmp = false
 end
 
 function RandoPlayer:Start()
@@ -183,6 +168,18 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x8 ~= 0 then
         self:SetGhostRatchet(200)
     end
+
+    if self.gameState == 3 and input & 0x10 ~= 0 then
+        --print("setting vendor contents")
+        --num_buyable_weapons = #self.lobby.universe.buyable_weapons
+        --for i = 0, 11 do
+        --    if i+1 <= num_buyable_weapons then
+        --        self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_weapons[i+1], 1)
+        --    elseif i-num_buyable_weapons+1 <= #self.lobby.universe.buyable_ammo then
+        --        self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_ammo[i-num_buyable_weapons+1]+64, 1)
+        --    end
+        --end
+    end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
         if self:Username() == "panad" then
@@ -206,8 +203,6 @@ end
 function RandoPlayer:OnUnlockItem(item_id, equip)
     item = Item.GetById(item_id)
     
-    self:RemoveItemFromVendor(item_id)
-    
     print("Unlocking item " .. item.name)
     
     self.lobby.universe:OnPlayerGetItem(self, item_id)
@@ -229,11 +224,6 @@ end
 function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
 
-    if address >= Player.offset.vendorItems and address <= Player.offset.vendorItems + 11 then
-        self.vendorItems[address - Player.offset.vendorItems] = newValue
-        print(tostring(self.vendorItems[0]) .. ", " .. table.concat(self.vendorItems, ", "))
-    end
-
     if address == Player.offset.has_raritanium then
         print("has_raritanium changed from " .. tostring(oldValue) .. " to " .. tostring(newValue))
     end
@@ -243,6 +233,11 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
             print("race completed, but don't actually give zoomerator here")
             self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
         end
+    end
+
+    if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.tmp then
+        self:OnCollectedGoldBolt(16, 1)
+        self.tmp = true
     end
 end
 
@@ -258,6 +253,7 @@ end
 
 function RandoPlayer:OnRespawned()
     self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
+    self.lobby.universe:AddPlanetVendorItem(self:Level():GameID())
     
     if not self.fullySpawnedIn then
         for _, planet in ipairs(self.level_unlock_queue) do
@@ -278,6 +274,7 @@ function RandoPlayer:OnRespawned()
         self.special_unlock_queue = {}
         
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
+        self:UpdateVendorContents()
     end
 end
 
@@ -289,14 +286,15 @@ function RandoPlayer:NotifyLocationCollected(location_id)
     print(string.format("player %s got location: %d", self.username, location_id))
 end
 
-function RandoPlayer:RemoveItemFromVendor(item_id)
-    for i = 0, #self.vendorItems do
-        if self.vendorItems[i] == item_id then
-            -- remove and shift all the items after it one to the left
-            for j = i, (#self.vendorItems - 1) do
-                self.vendorItems[j] = self.vendorItems[j+1]
-                self:SetAddressValue(Player.offset.vendorItems + j, self.vendorItems[j+1], 1)
-            end
+function RandoPlayer:UpdateVendorContents()
+    num_buyable_weapons = #self.lobby.universe.buyable_weapons
+    for i = 0, 11 do
+        if i+1 <= num_buyable_weapons then
+            self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_weapons[i+1], 1)
+        elseif i-num_buyable_weapons+1 <= #self.lobby.universe.buyable_ammo then
+            self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_ammo[i-num_buyable_weapons+1]+64, 1)
+        else
+            self:SetAddressValue(Player.offset.vendorItems + i, 0xff, 1)
         end
     end
 end
