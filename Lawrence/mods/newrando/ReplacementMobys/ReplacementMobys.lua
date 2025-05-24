@@ -22,6 +22,7 @@ require 'ReplacementMobys.MinerMoby'
 require 'ReplacementMobys.EdwinaMoby'
 require 'ReplacementMobys.SteveMoby'
 require 'ReplacementMobys.SamMoby'
+require 'ReplacementMobys.MorphORayMoby'
 require 'ReplacementMobys.BoltGrabberMoby'
 require 'ReplacementMobys.HologuiseMoby'
 require 'ReplacementMobys.CodebotMoby'
@@ -71,6 +72,7 @@ function ReplacementMobys:initialize(universe)
         -- Oltanis
         Steve = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SteveMoby),
         Sam = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SamMoby),
+        MorphORay = self.universe:GetLevelByName("Oltanis"):SpawnMoby(MorphORayMoby),
         -- Quartu
         BoltGrabber = self.universe:GetLevelByName("Quartu"):SpawnMoby(BoltGrabberMoby),
         -- Kalebo III
@@ -154,6 +156,7 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "Oltanis" then
         player:DeleteAllChildrenWithUID(360) -- Steve
         player:DeleteAllChildrenWithUID(25) -- Sam
+        player:DeleteAllChildrenWithUID(414) -- Morph-o-Ray
     elseif levelName == "Quartu" then
         player:DeleteAllChildrenWithUID(365) -- Bolt Grabber
     elseif levelName == "DreksFleet" then

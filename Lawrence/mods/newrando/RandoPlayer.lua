@@ -46,7 +46,7 @@ function RandoPlayer:Made()
 --     end
     
     self:MonitorAddress(Player.offset.goldBolts + 16 * 4 + 1, 1)
-    self.tmp = false
+    self.hasCollectedKaleboGrindrailBolt = false
 end
 
 function RandoPlayer:Start()
@@ -168,18 +168,6 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x8 ~= 0 then
         self:SetGhostRatchet(200)
     end
-
-    if self.gameState == 3 and input & 0x10 ~= 0 then
-        --print("setting vendor contents")
-        --num_buyable_weapons = #self.lobby.universe.buyable_weapons
-        --for i = 0, 11 do
-        --    if i+1 <= num_buyable_weapons then
-        --        self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_weapons[i+1], 1)
-        --    elseif i-num_buyable_weapons+1 <= #self.lobby.universe.buyable_ammo then
-        --        self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_ammo[i-num_buyable_weapons+1]+64, 1)
-        --    end
-        --end
-    end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
         if self:Username() == "panad" then
@@ -235,9 +223,9 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
         end
     end
 
-    if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.tmp then
+    if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.hasCollectedKaleboGrindrailBolt then
         self:OnCollectedGoldBolt(16, 1)
-        self.tmp = true
+        self.hasCollectedKaleboGrindrailBolt = true
     end
 end
 
@@ -274,8 +262,8 @@ function RandoPlayer:OnRespawned()
         self.special_unlock_queue = {}
         
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
-        self:UpdateVendorContents()
     end
+    self:UpdateVendorContents()
 end
 
 --function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)

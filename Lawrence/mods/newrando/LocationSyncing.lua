@@ -54,7 +54,7 @@ local locationToActionMap = {
     
     -- Batalia
     [40] = function (universe, player) universe:RemoveVendorItem(0x0b) end, -- devestator
-    [41] = function (universe, player) universe.replacedMobys:GetMoby('Deserter'):Disable() end, -- deseter
+    [41] = function (universe, player) universe.replacedMobys:GetMoby('Deserter'):Disable() end, -- deserter
     [42] = function (universe, player) universe.replacedMobys:GetMoby('Commando'):Disable() end, -- commando
     [43] = function (universe, player) player:SetLevelFlags(1, 8, 4, {0xff}) if player:Level():GetName() == "Batalia" then player:DeleteAllChildrenWithUID(271) end end, -- metal detector
     [44] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 8 * 4 + 0, 1, 1) end, -- cliffside gold bolt
@@ -99,7 +99,7 @@ local locationToActionMap = {
     [71] = function (universe, player) universe:RemoveVendorItem(0x13) end, -- tesla claw
     [72] = function (universe, player) universe.replacedMobys:GetMoby('Sam'):Disable() player:SetLevelFlags(1, 14, 1, {0xff}) player:SetLevelFlags(1, 14, 7, {0xff}) player:SetLevelFlags(2, 14, 0, {2}) end, -- infobot
     [73] = function (universe, player) universe.replacedMobys:GetMoby('Steve'):Disable() player:SetLevelFlags(1, 14, 0, {0xff}) player:SetLevelFlags(1, 14, 11, {0xff}) player:SetLevelFlags(2, 14, 1, {16}) player:SetLevelFlags(2, 14, 46, {1}) player:SetLevelFlags(2, 14, 47, {8}) end, -- Steve
-    [74] = function (universe, player) player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) end, -- morph O ray
+    [74] = function (universe, player) universe.replacedMobys:GetMoby('MorphORay'):Disable() player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) end, -- morph O ray
     [75] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 1, 1, 1) end, -- main gold bolt
     [76] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 2, 1, 1) end, -- magnet gold bolt 2
     [77] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 3, 1, 1) end, -- magnet gold bolt 2

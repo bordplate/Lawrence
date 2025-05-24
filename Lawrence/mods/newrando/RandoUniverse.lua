@@ -35,8 +35,14 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
     end
 
     if Item.GetById(item_id).isWeapon and item_id ~= 0x0e and item_id ~= 0x12 and item_id ~= 0x09 and item_id ~= 0x15 then -- is weapon that uses ammo
-        table.insert(self.buyable_ammo, item_id)
-        self:DistributeVendorContents()
+        for k, v in ipairs(self.buyable_ammo) do
+            if v == item_id then break end -- if item already in list, do nothing
+            if k == #self.buyable_ammo then -- if we have just checked the last item in the list and reached here, insert new item
+                table.insert(self.buyable_ammo, item_id)
+                self:DistributeVendorContents()
+                break
+            end
+        end
     end
     
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
@@ -115,7 +121,6 @@ end
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
     player:SetMetalDetectorMultiplier(35)
-    player:GiveBolts(2500)
     if self.ap_client == nil then
         local uuid = "5"
         self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)
