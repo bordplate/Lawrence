@@ -120,7 +120,8 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    player:SetMetalDetectorMultiplier(35)
+    player:SetAddressValue(0xB00000, 50, 1)
+    player:SetAddressValue(0xB00001, 1, 1)
     if self.ap_client == nil then
         local uuid = "5"
         self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)

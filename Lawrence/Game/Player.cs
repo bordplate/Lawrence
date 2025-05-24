@@ -360,7 +360,11 @@ partial class Player {
     }
 
     public void SetMetalDetectorMultiplier(uint value) {
-        SendPacket(Packet.MakeSetMetalDetectorMultPacket(value));
+        SetAddressValue(0xB00000, value, 1);
+    }
+
+    public void SetPreventDeleteSkid(bool value) {
+        SetAddressValue(0xB00001, (uint)(value ? 1 : 0), 1);
     }
 }
 #endregion

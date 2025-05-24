@@ -37,7 +37,6 @@ function ReplacementMobys:initialize(universe)
         -- Aridia
         Trespasser = self.universe:GetLevelByName("Aridia"):SpawnMoby(TrespasserMoby),
         Agent = self.universe:GetLevelByName("Aridia"):SpawnMoby(AgentMoby),
-        Skid = self.universe:GetLevelByName("Aridia"):SpawnMoby(SkidMoby),
         -- Kerwan
         Helga = self.universe:GetLevelByName("Kerwan"):SpawnMoby(HelgaMoby),
         Al = self.universe:GetLevelByName("Kerwan"):SpawnMoby(AlMoby),
@@ -122,7 +121,6 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "Aridia" then
         player:DeleteAllChildrenWithUID(564) -- Trespasser
         player:DeleteAllChildrenWithUID(419) -- Skid's Agent
-        player:DeleteAllChildrenWithUID(532) -- Skid
     elseif levelName == "Kerwan" then
         player:DeleteAllChildrenWithUID(158) -- Helga
         player:DeleteAllChildrenWithUID(165) -- Al

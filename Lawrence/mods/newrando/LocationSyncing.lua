@@ -8,7 +8,7 @@ local locationToActionMap = {
     [6] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 1, 1, 1) end, -- underwater caves gold bolt
     
     -- Aridia
-     [7] = function (universe, player) universe.replacedMobys:GetMoby('Skid'):Disable() end, -- Skid
+     [7] = function (universe, player) player:SetAddressValue(0xB00001, 0, 1) end, -- Skid
      [8] = function (universe, player) universe.replacedMobys:GetMoby('Trespasser'):Disable() end, -- trespasser
      [9] = function (universe, player) universe.replacedMobys:GetMoby('Agent'):Disable() end, -- Skids agent
      [10] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 2 * 4 + 3, 1, 1) end, -- tresspasser gold bolt
