@@ -262,6 +262,7 @@ function RandoPlayer:OnRespawned()
         self.special_unlock_queue = {}
         
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
+        self:UpdateHPAmount()
     end
     self:UpdateVendorContents()
 end
@@ -285,6 +286,13 @@ function RandoPlayer:UpdateVendorContents()
             self:SetAddressValue(Player.offset.vendorItems + i, 0xff, 1)
         end
     end
+end
+
+function RandoPlayer:UpdateHPAmount()
+    hp = 4
+    if self.has_premium_nanotech then hp = hp + 1 end
+    if self.has_ultra_nanotech then hp = hp + 3 end
+    self:SetAddressValue(0x71fb28, hp, 4)
 end
 
 function RandoPlayer:OnDisconnect()

@@ -68,8 +68,10 @@ function RandoUniverse:DistributeUnlockSpecial(special_address)
             player.has_codebot = true
         elseif special_address == Player.offset.has_premium_nanotech then
             player.has_premium_nanotech = true
+            player:UpdateHPAmount()
         elseif special_address == Player.offset.has_ultra_nanotech then
             player.has_ultra_nanotech = true
+            player:UpdateHPAmount()
         end
         
         if player.fullySpawnedIn then            
