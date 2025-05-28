@@ -31,8 +31,6 @@ end
 function HydrodisplacerMoby:Triangle(player, universe)
     if not self.disabled and self:closeToPlayer(player) then
         player:OnUnlockItem(Item.GetByName("Hydrodisplacer").id, true)
-        universe:DistributeSetLevelFlags(1, 6, 1, {0xff}) -- gadgebot gate
-        -- bridge flag???
     end
 end
 

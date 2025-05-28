@@ -58,6 +58,10 @@ function APClient:getLocation(location_id)
     self.ap:LocationChecks({location_id})
 end
 
+function APClient:WinGame()
+    self.ap:StatusUpdate(30)
+end
+
 function APClient:poll()
     self.ap:poll()
 end

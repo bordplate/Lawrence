@@ -3,6 +3,7 @@ require 'APClient'
 require 'Locations'
 require 'LocationSyncing'
 require 'Items'
+require 'runtime.levels.Common.Button'
 RandoUniverse = class("RandoUniverse", Universe)
 
 -- global to this mod
@@ -27,6 +28,8 @@ function RandoUniverse:initialize(lobby)
     self.buyable_weapons = {}
     self.buyable_ammo = {} -- list weapons, +64 is performed to turn it into ammo
     self.already_bought_weapons = {}
+    
+    self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
 
 function RandoUniverse:DistributeGiveItem(item_id, equip)
@@ -48,6 +51,9 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if item_id == Item.GetByName("Hoverboard").id then
             player.has_hoverboard = true
+        elseif item_id == Item.GetByName("O2 Mask").id then
+            player.has_o2_mask = true
+            FixPlanetsForPlayer(self, player)
         end
         
         if player.fullySpawnedIn then
@@ -122,8 +128,15 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    player:SetAddressValue(0xB00000, 50, 1)
-    player:SetAddressValue(0xB00001, 1, 1)
+    player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
+    player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
+    FixPlanetsForPlayer(self, player)
+    self:DistributeGiveItem(Item.GetByName("O2 Mask").id)
+    self:DistributeGiveItem(Item.GetByName("Heli-pack").id)
+    self:DistributeGiveItem(Item.GetByName("Thruster-pack").id)
+    self:DistributeGiveItem(Item.GetByName("R.Y.N.O.").id)
+    self:DistributeGiveItem(Item.GetByName("Swingshot").id)
+    self:DistributeGiveItem(Item.GetByName("Magneboots").id)
     if self.ap_client == nil then
         local uuid = "5"
         self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)
@@ -149,6 +162,7 @@ function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     if player.gameState == 6 or -- PlanetLoading
         not player.fullySpawnedIn then 
         print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
+        self:AddPlanetVendorItem(planet_id)
        player:UnlockLevel(planet_id)
        return
     end

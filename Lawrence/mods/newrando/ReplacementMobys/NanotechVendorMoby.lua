@@ -38,9 +38,6 @@ function NanotechVendorMoby:ToastMessage(player)
             else
                 player:ToastMessage("You need 30,000 Bolts for \x0cUltra Nanotech\x08", 1)
             end
-        else
-            print("error, nanotech vendor disabling self")
-            self:Disable() -- something went wrong
         end
     end
 end
@@ -53,9 +50,6 @@ function NanotechVendorMoby:Triangle(player, universe)
         elseif self.selling == "ultra" and player.totalBolts >= 30000 then
             player:GiveBolts(-30000)
             player:OnUnlockItem(Item.GetByName("Ultra Nanotech").id, true)
-        else
-            print("error, nanotech vendor disabling self")
-            self:Disable() -- something went wrong
         end
     end
 end

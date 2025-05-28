@@ -25,12 +25,17 @@ function RandoPlayer:Made()
     }
     
     self.has_hoverboard = false
+    self.has_o2_mask = false
     
     self.has_zoomerator = false
     self.has_raritanium = false
     self.has_codebot = false
     self.has_premium_nanotech = false
     self.has_ultra_nanotech = false
+
+    self.got_oltanis_infobot = false
+    self.got_oltanis_PDA = false
+    self.got_oltanis_morph = false
     
     self.fullySpawnedIn = false
     self.level_unlock_queue = {}
@@ -161,7 +166,7 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(202, 200, 55)
+            self:SetPosition(505, 633, 107)
         end
     end
 
@@ -216,13 +221,6 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
         print("has_raritanium changed from " .. tostring(oldValue) .. " to " .. tostring(newValue))
     end
 
-    if address == Player.offset.has_zoomerator then
-        if newValue == 1 then
-            print("race completed, but don't actually give zoomerator here")
-            self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
-        end
-    end
-
     if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.hasCollectedKaleboGrindrailBolt then
         self:OnCollectedGoldBolt(16, 1)
         self.hasCollectedKaleboGrindrailBolt = true
@@ -241,7 +239,6 @@ end
 
 function RandoPlayer:OnRespawned()
     self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
-    self.lobby.universe:AddPlanetVendorItem(self:Level():GameID())
     
     if not self.fullySpawnedIn then
         for _, planet in ipairs(self.level_unlock_queue) do
@@ -265,11 +262,12 @@ function RandoPlayer:OnRespawned()
         self:UpdateHPAmount()
     end
     self:UpdateVendorContents()
+    FixPlanetsForPlayer(self.lobby.universe, self)
 end
 
---function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
---    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
---end
+function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
+    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
+end
 
 function RandoPlayer:NotifyLocationCollected(location_id)
     print(string.format("player %s got location: %d", self.username, location_id))

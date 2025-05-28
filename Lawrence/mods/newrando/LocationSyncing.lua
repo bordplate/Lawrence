@@ -40,7 +40,7 @@ local locationToActionMap = {
     [30] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 5 * 4 + 1, 1, 1) end, -- waterworks gold bolt
     
     -- Blarg
-    [31] = function (universe, player) universe.replacedMobys:GetMoby('Hydrodisplacer'):Disable() end, -- Hydrodisplacer
+    [31] = function (universe, player) universe.replacedMobys:GetMoby('Hydrodisplacer'):Disable() player:SetLevelFlags(1, 6, 1, {0xff}) end, -- Hydrodisplacer
     [32] = function (universe, player) player:SetLevelFlags(1, 6, 0, {0xff}) end, -- Explosion Infobot
     [33] = function (universe, player) universe.replacedMobys:GetMoby('Scientist'):Disable() end, -- Scientist
     [34] = function (universe, player) universe:RemoveVendorItem(0x0e) end, -- taunter
@@ -68,9 +68,9 @@ local locationToActionMap = {
     
     -- Orxon
     [50] = function (universe, player) universe:RemoveVendorItem(0x0d) end, -- visibomb
-    [51] = function (universe, player) universe.replacedMobys:GetMoby('OrxonClankInfobot'):Disable() player:SetLevelFlags(2, 10, 30, {112}) player:SetLevelFlags(2, 10, 103, {1}) if player:Level():GetName() == "Orxon" then player:DeleteAllChildrenWithUID(255) end end, -- clank infobot
-    [52] = function (universe, player) universe.replacedMobys:GetMoby('OrxonRatchetInfobot'):Disable() player:SetLevelFlags(1, 10, 4, {0xff}) end, -- ratchet infobot
-    [53] = function (universe, player) universe.replacedMobys:GetMoby('Magneboots'):Disable() player:SetLevelFlags(1, 10, 1, {0xff}) player:SetLevelFlags(2, 10, 35, {2}) end, -- magneboots
+    [51] = function (universe, player) universe.replacedMobys:GetMoby('OrxonClankInfobot'):Disable() player:SetLevelFlags(2, 10, 30, {112}) player:SetLevelFlags(2, 10, 103, {1}) end, -- clank infobot
+    [52] = function (universe, player) universe.replacedMobys:GetMoby('OrxonRatchetInfobot'):Disable() player:SetLevelFlags(1, 10, 4, {0xff}) player:SetLevelFlags(2, 87, 4, {2}) player:SetLevelFlags(2, 10, 102, {48}) end, -- ratchet infobot
+    [53] = function (universe, player) universe.replacedMobys:GetMoby('Magneboots'):Disable() player:SetLevelFlags(1, 10, 1, {0xff}) player:SetLevelFlags(2, 10, 35, {2}) player:SetLevelFlags(1, 10, 1, {0xff}) end, -- magneboots
     [54] = function (universe, player) universe.replacedMobys:GetMoby('NanotechVendor'):Progress() player:SetLevelFlags(2, 10, 31, {1}) player:SetLevelFlags(2, 10, 87, {2}) player:SetLevelFlags(1, 10, 0, {0xff}) end, -- premium nanotech
     [55] = function (universe, player) universe.replacedMobys:GetMoby('NanotechVendor'):Disable() end, -- ultra nanotech
     [56] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 0, 1, 1) end, -- clank gold bolt
@@ -97,9 +97,9 @@ local locationToActionMap = {
     
     -- Oltanis
     [71] = function (universe, player) universe:RemoveVendorItem(0x13) end, -- tesla claw
-    [72] = function (universe, player) universe.replacedMobys:GetMoby('Sam'):Disable() player:SetLevelFlags(1, 14, 1, {0xff}) player:SetLevelFlags(1, 14, 7, {0xff}) player:SetLevelFlags(2, 14, 0, {2}) end, -- infobot
-    [73] = function (universe, player) universe.replacedMobys:GetMoby('Steve'):Disable() player:SetLevelFlags(1, 14, 0, {0xff}) player:SetLevelFlags(1, 14, 11, {0xff}) player:SetLevelFlags(2, 14, 1, {16}) player:SetLevelFlags(2, 14, 46, {1}) player:SetLevelFlags(2, 14, 47, {8}) end, -- Steve
-    [74] = function (universe, player) universe.replacedMobys:GetMoby('MorphORay'):Disable() player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) end, -- morph O ray
+    [72] = function (universe, player) universe.replacedMobys:GetMoby('Sam'):Disable() player.got_oltanis_infobot = true player:SetLevelFlags(1, 14, 1, {0xff}) player:SetLevelFlags(1, 14, 7, {0xff}) player:SetLevelFlags(2, 14, 0, {2}) FixPlanetsForPlayer(universe, player) end, -- infobot
+    [73] = function (universe, player) universe.replacedMobys:GetMoby('Steve'):Disable() player.got_oltanis_PDA = true player:SetLevelFlags(1, 14, 0, {0xff}) player:SetLevelFlags(1, 14, 11, {0xff}) player:SetLevelFlags(2, 14, 1, {16}) player:SetLevelFlags(2, 14, 46, {1}) player:SetLevelFlags(2, 14, 47, {8}) FixPlanetsForPlayer(universe, player) end, -- Steve
+    [74] = function (universe, player) universe.replacedMobys:GetMoby('MorphORay'):Disable() player.got_oltanis_morph = true player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) FixPlanetsForPlayer(universe, player) end, -- morph O ray
     [75] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 1, 1, 1) end, -- main gold bolt
     [76] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 2, 1, 1) end, -- magnet gold bolt 2
     [77] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 3, 1, 1) end, -- magnet gold bolt 2
@@ -150,5 +150,26 @@ end
 function PlayerResync(universe, player, location_id_list)
     for _, location_id in ipairs(location_id_list) do
         LocationSync(universe, player, location_id)
+    end
+end
+
+function FixPlanetsForPlayer(universe, player)
+    levelName = player:Level():GetName()
+    if levelName == "Orxon" then
+        if player.has_o2_mask then
+            player:SetLevelFlags(2, 10, 30, {112}) player:SetLevelFlags(2, 10, 103, {1})
+            player:SetLevelFlags(1, 10, 1, {0xff}) player:SetLevelFlags(2, 10, 35, {2}) player:SetLevelFlags(1, 10, 1, {0xff})
+            player:SetLevelFlags(1, 10, 4, {0xff}) player:SetLevelFlags(2, 87, 4, {2}) player:SetLevelFlags(2, 10, 102, {48}) -- ratchet got infobot flag
+            player:DeleteAllChildrenWithUID(83) -- last gadgebot door (not gate)
+            player:DeleteAllChildrenWithUID(673) -- main gate
+            player:DeleteAllChildrenWithUID(812) -- minor gate (right)
+            player:DeleteAllChildrenWithUID(813) -- minor gate (left)
+        end
+    elseif levelName == "BlargStation" then
+        player:SetLevelFlags(1, 6, 1, {0xff})
+    elseif levelName == "Oltanis" then
+        if universe.got_oltanis_infobot and universe.got_oltanis_PDA and universe.got_oltanis_morph then
+            player:DeleteAllChildrenWithUID(370) -- statue
+        end
     end
 end
