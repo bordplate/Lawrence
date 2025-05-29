@@ -1,7 +1,8 @@
 LobbyView = class("LobbyView", View)
 
 function LobbyView:initialize(player, lobby)
-    View.initialize(self, player)
+    self.PlayerTable = player
+    View.initialize(self)
     
     self.lobby = lobby
     
@@ -126,7 +127,7 @@ end
 function LobbyView:OnControllerInputPressed(input)
     if IsButton(input, Gamepad.Circle) then
         if self.lobby.started then
-            self.PlayerTable:CloseView()
+            self:CloseView()
             self.PlayerTable:Start()
             return
         end
@@ -140,12 +141,14 @@ function LobbyView:OnControllerInputPressed(input)
                 self.startButtonText.Text = "\x11 Ready"
             end
         elseif self.lobby:AllPlayersReady() then
+            self:CloseView()
             self.lobby:Start()
         end
     end
 
     if IsButton(input, Gamepad.Triangle) then
         self.lobby:Leave(self.PlayerTable)
+        self:CloseView()
     end
 end
 

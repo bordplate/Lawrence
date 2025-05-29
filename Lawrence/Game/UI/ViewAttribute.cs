@@ -65,8 +65,23 @@ public class ViewAttribute<T> : IViewAttribute {
                 packet.Write(y.ToArray());
                 break;
             }
+            case ViewAttribute<Vector3?> vector3Attribute: {
+                if (vector3Attribute.Value == null) {
+                    return null; // No packet if the value is null
+                }
+                
+                var x = BitConverter.GetBytes(vector3Attribute.Value.Value.X).Reverse();
+                var y = BitConverter.GetBytes(vector3Attribute.Value.Value.Y).Reverse();
+                var z = BitConverter.GetBytes(vector3Attribute.Value.Value.Z).Reverse();
+                
+                packet.Write(x.ToArray());
+                packet.Write(y.ToArray());
+                packet.Write(z.ToArray());
+                
+                break;
+            }
             case ViewAttribute<bool> boolAttribute: {
-                var value = BitConverter.GetBytes(boolAttribute.Value ? (int) 1 : 0).Reverse();
+                var value = BitConverter.GetBytes(boolAttribute.Value ? (int) 1 : 0);
                 
                 packet.Write(value.ToArray());
                 break;

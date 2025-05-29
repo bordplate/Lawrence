@@ -519,6 +519,10 @@ public enum MPUIElementAttribute : ushort {
     MenuItems,
     Shadow,
     InputPrompt,
+    WorldSpacePosition,
+    Alignment,
+    WorldSpaceFlags,
+    WorldSpaceMaxDistance,
 }
     
 public enum MPUIElementEventType: ushort {
@@ -663,9 +667,8 @@ public partial class Packet {
                     continue;
                 }
 
-                attribute.Dirty = false;
-
                 var dataPacket = attribute.GetPacket();
+                if (dataPacket == null) continue;
                 var attributePacket = new MPPacketUIItem {
                     Id = element.Id,
                     Operations = flags,
@@ -674,7 +677,7 @@ public partial class Packet {
                 };
 
                 attributes.Add(attributePacket);
-                if (dataPacket != null) attributes.Add(dataPacket);
+                attributes.Add(dataPacket!);
             }
         }
         
@@ -701,7 +704,7 @@ public partial class Packet {
             Items = (byte)(attributes.Count / 2)
         });
 
-        if (attributes.Count == 0 && (flags & MPUIOperationFlag.ClearAll) == 0) {
+        if (attributes.Count == 0 && (flags & (MPUIOperationFlag.ClearAll | MPUIOperationFlag.Delete)) == 0) {
             return null;
         }
         
