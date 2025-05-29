@@ -4,7 +4,8 @@ require 'LobbyView'
 LobbyListView = class("LobbyListView", View)
 
 function LobbyListView:initialize(player, lobbyUniverse)
-    View.initialize(self, player)
+    self.PlayerTable = player
+    View.initialize(self)
     
     self.lobbyUniverse = lobbyUniverse
 
@@ -18,7 +19,9 @@ function LobbyListView:initialize(player, lobbyUniverse)
         end
         
         if lobby.password == "" then
+            self:CloseView()
             lobby:Join(self.PlayerTable)
+            print("Player joined the thing")
         else
             self.selectedLobby = lobby
             self.lobbyPasswordInputElement:Activate()
@@ -43,6 +46,7 @@ function LobbyListView:initialize(player, lobbyUniverse)
     self.passwordInputElement = InputElement()
     self.passwordInputElement.Prompt = "Enter password (blank for public)"
     self.passwordInputElement.InputCallback = function(input)
+        self:CloseView()
         self.lobbyUniverse:NewLobby(self.PlayerTable, input)
     end
     
@@ -53,6 +57,7 @@ function LobbyListView:initialize(player, lobbyUniverse)
     self.lobbyPasswordInputElement.InputCallback = function(input)
         if self.selectedLobby ~= null then
             if self.selectedLobby.password == input then
+                self:CloseView()
                 self.selectedLobby:Join(self.PlayerTable)
             else
                 self.PlayerTable:ShowErrorMessage("Incorrect password.")

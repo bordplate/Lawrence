@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 jobs:
   deploy:
-    runs-on: 'self-hosted'
+    runs-on: [self-hosted, boltcrate]
     steps:
       - name: Download latest release
         uses: robinraju/release-downloader@v1.8

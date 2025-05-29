@@ -127,23 +127,27 @@ partial class Entity {
         _children.Remove(entity);
     }
 
-    public IEnumerable<T> Find<T>() where T : Entity {
+    public IEnumerable<T> Find<T>(Player? forPlayer = null) where T : Entity {
         List<Entity> removeEntities = new List<Entity>();
 
         foreach (var entity in _children) {
+            if (forPlayer != null && entity is Player player && player != forPlayer) {
+                continue; // Skip players that are not the one we're looking for
+            }
+            
             // Can't remove deleted while enumerating, remove later
             if (entity._deleted) {
                 removeEntities.Add(entity);
                 continue;
             }
             
-            if (entity is T) {
-                yield return (T)entity;
+            if (entity is T en) {
+                yield return en;
             }
 
             // Recursively search the children
             foreach (var e in entity.Find<T>()) {
-                yield return (T)e;
+                yield return e;
             }
         }
         

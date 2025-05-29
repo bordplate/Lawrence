@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Lawrence.Core;
+using Lawrence.Game.UI;
 
 namespace Lawrence.Game;
 
@@ -16,6 +17,8 @@ public class Level : Entity {
     private List<Moby> _hybridMobys = new();
 
     public bool ShouldPropagateLevelFlags = true;
+    
+    private View _levelView = new View();
 
     public Level(int gameId, string name, LuaTable? luaTable = null) : base(luaTable) {
         _gameId = gameId;
@@ -46,6 +49,8 @@ public class Level : Entity {
                 SetLuaEntity(levelEntity);
             }
         }
+        
+        Add(_levelView);
     }
 
     /// <summary>
@@ -133,6 +138,18 @@ public class Level : Entity {
         }
         
         return null;
+    }
+
+    public void AddViewElement(LuaTable luaTable) {
+        if (luaTable["_internalEntity"] is ViewElement element) {
+            AddViewElement(element);
+        } else {
+            Logger.Error("Failed to remove a Label. Label was not correct type.");
+        }
+    }
+    
+    public void AddViewElement(ViewElement viewElement) {
+        _levelView.AddElement(viewElement);
     }
 
     /// <summary>

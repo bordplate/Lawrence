@@ -258,7 +258,7 @@ class Lawrence {
             _directoryMode = true;
         }
 
-        var serverPort = _directoryMode ? 2400 : Settings.Default().Get("Server.port", 2407);
+        var serverPort = _directoryMode ? 2407 : Settings.Default().Get("Server.port", 2407);
         var maxPlayers = Settings.Default().Get("Server.max_players", 10);
         var listenAddress = Settings.Default().Get("Server.address", "0.0.0.0")!;
         

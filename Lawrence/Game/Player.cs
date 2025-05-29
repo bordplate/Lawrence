@@ -36,6 +36,21 @@ public partial class Player : Moby {
     private List<MonitoredAddress> _monitoredAddresses = new();
 
     private int _respawns = 0;
+    private int _levelId = -1;
+    
+    private bool _useNametag = true;
+
+    public bool UseNametag {
+        get => _useNametag;
+        set {
+            _useNametag = value;
+            if (!_nametagElement.IsDeleted()) {
+                _nametagElement.Delete();
+            }
+        }
+    }
+
+    private TextAreaElement _nametagElement = new TextAreaElement();
 
     private Dictionary<byte, List<(ushort, uint)>> _changedLevelFlags = new();
 
@@ -98,6 +113,14 @@ public partial class Player : Moby {
         modeBits = (ushort)(_modeBits | 0x1000 | 0x4000);
         
         Game.Shared().NotificationCenter().Subscribe<PostTickNotification>(OnPostTick);
+        
+        MonitorAddress(0x969C70, 4, false, o => _levelId = Convert.ToInt32(o));  // Current level
+        MonitorAddress(0xa10704, 4, false, o => {  // Destination level
+            var destination = Convert.ToUInt16(o);
+            if (destination != 0 && Universe()?.GetLevelByGameID(destination) is {} level) {
+                SetLevelFlags(level);
+            }
+        });
     }
 
     public override void Delete() {
@@ -182,6 +205,26 @@ partial class Player {
         LoadLevel(l);
     }
 
+    public void ReloadNametag() {
+        if (!UseNametag || _level is null) {
+            return;
+        }
+
+        if (!_nametagElement.IsDeleted()) {
+            _nametagElement.Delete();
+        }
+        
+        _nametagElement = new TextAreaElement();
+        _nametagElement.Text.Set(Username());
+        _nametagElement.SetWorldPosition(x, y, z);
+        _nametagElement.Alignment.Set(1);
+        _nametagElement.HasShadow.Set(true);
+        _nametagElement.WorldSpaceFlags.Value = 1 | 2;
+        _nametagElement.WorldSpaceMaxDistance.Value = 64.0f;
+        
+        _level.AddViewElement(_nametagElement);
+    }
+
     public void LoadLevel(string level) {
         if (Universe()?.GetLevelByName(level) is not { } l) {
             Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level {level}");
@@ -192,41 +235,15 @@ partial class Player {
     }
 
     public void LoadLevel(Level l) {
-        _level = l;
+        if (_levelId == l.GameID()) {
+            _level = l;
+            _level.Add(this);
+            ReloadNametag();
+            return;
+        }
         
-        _level.Add(this);
-
-        SendPacket(Packet.MakeGoToLevelPacket(_level.GameID()));
-        
-        RegisterHybridMobys();
-        
-        MonitorAddress(0x969C70, 4, false, o => {
-            var planet = (uint)o;
-            
-            Logger.Log($"Player {Username()} changed planet to {planet}");
-            
-            // Wait until we have a parent
-            if (Parent() == null) {
-                return;
-            }
-
-            if (planet != _level.GameID()) {
-                Level lastLevel = _level;
-                
-                _level.Remove(this, false);
-                
-                _level = Universe()?.GetLevelByGameID((ushort)planet);
-                if (_level == null) {
-                    Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level with game ID {planet}");
-                    return;
-                }
-                
-                _level.Add(this);
-                Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
-                
-                SetCurrentLevelFlags();
-            }
-        });
+        _level = null;
+        SendPacket(Packet.MakeGoToLevelPacket(l.GameID()));
     }
 
     public void RegisterHybridMobys() {
@@ -313,7 +330,7 @@ partial class Player {
         _changedLevelFlags[type].Add((index, value));
     }
 
-    public void setCommunicationFlags(UInt32 bitmap) {
+    public void SetCommunicationFlags(UInt32 bitmap) {
         SendPacket(Packet.MakeSetCommunicationFlagsPacket(bitmap));
     }
 
@@ -329,6 +346,10 @@ partial class Player {
             return;
         }
         
+        SetLevelFlags(level);
+    }
+
+    public void SetLevelFlags(Level level) {
         List<uint> levelFlags1 = new();
         List<uint> levelFlags2 = new();
         
@@ -378,6 +399,8 @@ partial class Player {
             return;
         }
         
+        _nametagElement.SetWorldPosition(x, y, z+2);
+        
         base.OnTick(notification);
     }
 
@@ -406,8 +429,49 @@ partial class Player {
             return;
         }
         
-        if (_activeView != null) {
-            foreach (var viewElement in _viewElements) {
+        // Find the nearest parent that masks visibility or use the level to update the client on surrounding,
+        //  visible mobys.
+        Entity visibilityGroup = this;
+
+        do {
+            if (visibilityGroup.MasksVisibility()) {
+                break;
+            }
+
+            if (visibilityGroup.Parent() is not {} parent) {
+                if (_level is null) break;
+                
+                visibilityGroup = _level;
+                break;
+            }
+            
+            visibilityGroup = parent;
+        } while (!visibilityGroup.MasksVisibility());
+        
+        List<Guid> updateMobys = new();
+
+        var visibleViews = visibilityGroup.Find<View>(this).ToList();
+        
+        // Views that are in _views and not in visibleViews should be deleted from the client.
+        foreach (var view in _views.ToList()) {
+            if (!visibleViews.Contains(view)) {
+                CloseView(view);
+            }
+        }
+        
+        foreach (var view in visibleViews) {
+            if (!_views.Contains(view)) {
+                ConfigureView(view);
+                
+                // We don't need to send an update the same frame as we're creating elements
+                continue;
+            }
+            
+            foreach (var viewElement in view.Elements()) {
+                if (viewElement == _nametagElement) {  // This is a little hacky
+                    continue;
+                }
+                
                 var packet = Packet.MakeUIItemPacket(viewElement, MPUIOperationFlag.Update);
 
                 if (packet != null) {
@@ -433,25 +497,6 @@ partial class Player {
 
         UpdateLabels();
         
-        // Find the nearest parent that masks visibility or use the level to update the client on surrounding,
-        //  visible mobys.
-        Entity visibilityGroup = this;
-
-        do {
-            if (visibilityGroup.MasksVisibility()) {
-                break;
-            }
-
-            if (visibilityGroup.Parent() is not {} parent) {
-                visibilityGroup = _level;
-                break;
-            }
-
-            visibilityGroup = parent;
-        } while (!visibilityGroup.MasksVisibility());
-        
-        List<Guid> updateMobys = new();
-
         foreach (Moby moby in visibilityGroup.Find<Moby>()) {
             if (!moby.Visible) {
                 _client.DeleteMoby(moby);
@@ -626,10 +671,10 @@ partial class Player : IClientHandler
     /// Called whenever a player has pressed a button, only fires once while a player is holding a button. 
     /// </summary>
     /// <param name="input">The pressed inputs, including any other buttons that are held.</param>
-    public void ControllerInputTapped(ControllerInput input)
-    {
-        if (_activeView != null) {
-            _activeView.OnControllerInputPresset(input);
+    public void ControllerInputTapped(ControllerInput input) {
+        var views = Find<View>().ToList();
+        foreach (var view in views) {
+            view.OnControllerInputPresset(input);
         }
         
         CallLuaFunction("OnControllerInputTapped", LuaEntity(), (int)input);
@@ -740,6 +785,7 @@ partial class Player : IClientHandler
             }
             
             _level.Add(this);
+            ReloadNametag();
             Logger.Log($"Player moved from {lastLevel?.GetName()} to {_level.GetName()}");
                 
             SetCurrentLevelFlags();
@@ -755,12 +801,14 @@ partial class Player : IClientHandler
         _client.CleanupStaleMobys();
         
         _respawns = spawnId;
+
+        if (spawnId <= 1) {
+            RegisterHybridMobys();
+        }
         
         CallLuaFunction("OnRespawned", LuaEntity());
         
         SendPacket(Packet.MakeMobyUpdateExtended(0, [new Packet.UpdateMobyValue(0x38, Color.ToUInt())]));
-        
-        // RegisterHybridMobys();
     }
 
     /// <summary>
@@ -802,6 +850,8 @@ partial class Player : IClientHandler
     }
 
     public void OnDisconnect() {
+        _nametagElement.Delete();
+        
         Logger.Log($"{Username()} disconnected.");
         Game.Shared().NotificationCenter().Post(new PlayerDisconnectedNotification(0, Username(), this));
         
@@ -845,6 +895,8 @@ partial class Player : IClientHandler
             return;
         }
         
+        Logger.Log($"Player [{Username()}]: Level({level}) flag type {type} changed: {index}->{value}");
+        
         Level()?.OnFlagChanged(this, type, size, index, value);
         
         CallLuaFunction("OnLevelFlagChanged", LuaEntity(), type, level, size, index, value);
@@ -856,34 +908,31 @@ partial class Player : IClientHandler
     
     public void UIEvent(MPUIElementEventType eventType, ushort elementId, uint data, byte[] extraData) {
         var deferredCalls = new List<Action>();
-        
-        foreach (var element in _viewElements) {
-            if (element.Id == elementId) {
-                switch (eventType) {
-                    case MPUIElementEventType.MPUIElementEventTypeItemActivated: {
-                        if (element is ListMenuElement listMenu) {
-                            deferredCalls.Add(() => {
-                                listMenu.OnItemActivated(data);
-                            });
-                        }
-                        break;
-                    }
-                    case MPUIElementEventType.MPUIElementEventTypeItemSelected: {
-                        if (element is ListMenuElement listMenu) {
-                            listMenu.OnItemSelected(data);
-                        }
-                        break;
-                    }
-                    case MPUIElementEventType.MPUIElementEventTypeInputCallback: {
-                        if (element is InputElement inputElement) {
-                            var text = System.Text.Encoding.UTF8.GetString(extraData);
-                            
-                            deferredCalls.Add(() => {
-                                inputElement.OnInputCallback(text);
-                            });
-                        }
 
-                        break;
+        foreach (var view in Find<View>()) {
+            foreach (var element in view.Elements()) {
+                if (element.Id == elementId) {
+                    switch (eventType) {
+                        case MPUIElementEventType.MPUIElementEventTypeItemActivated: {
+                            if (element is ListMenuElement listMenu) {
+                                deferredCalls.Add(() => { listMenu.OnItemActivated(data); });
+                            }
+                            break;
+                        }
+                        case MPUIElementEventType.MPUIElementEventTypeItemSelected: {
+                            if (element is ListMenuElement listMenu) {
+                                listMenu.OnItemSelected(data);
+                            }
+                            break;
+                        }
+                        case MPUIElementEventType.MPUIElementEventTypeInputCallback: {
+                            if (element is InputElement inputElement) {
+                                var text = System.Text.Encoding.UTF8.GetString(extraData);
+                                
+                                deferredCalls.Add(() => { inputElement.OnInputCallback(text); });
+                            }
+                            break;
+                        }
                     }
                 }
             }
@@ -905,52 +954,65 @@ partial class Player {
     /// </summary>
     private List<Label?> _labels = new ();
 
-    private List<ViewElement> _viewElements = new ();
-    private View? _activeView = null;
+    private List<View> _views = new();
 
-    public void ShowView(View view) {
-        _activeView = view;
-        Add(view);
+    public void ConfigureView(View view) {
+        _views.Add(view);
         
-        // view.Activate += () => {
-            _viewElements.Clear();
-            
-            var operations = MPUIOperationFlag.Create | MPUIOperationFlag.ClearAll;
-            foreach (var element in view.Elements()) {
-                _viewElements.Add(element);
+        view.Close += () => {
+            CloseView(view);
+        };
 
-                if (element is ListMenuElement listMenu) {
-                    listMenu.MakeFocusedDelegate += () => {
-                        SendPacket(Packet.MakeUIEventPacket(MPUIElementEventType.MPUIElementEventTypeMakeFocused, element));
-                    };
-                }
-
-                if (element is InputElement inputElement) {
-                    inputElement.ActivateDelegate += () => {
-                        SendPacket(Packet.MakeUIEventPacket(MPUIElementEventType.MPUIElementEventTypeActivate, element));
-                    };
-                }
-                
-                // FIXME: We want the first packet we send to include the ClearAll flag, but not subsequent ones. 
-                //      Since we send UDP, it's possible that the client receives the packets out of order.
-                SendPacket(Packet.MakeUIItemPacket(element, operations));
-
-                operations = MPUIOperationFlag.Create;
-            }
-        // };
+        view.ElementAdded += AddElement;
+        view.ElementRemoved += RemoveElement;
+        
+        foreach (var element in view.Elements()) {
+            AddElement(element);
+        }
         
         view.OnPresent();
     }
 
-    public void CloseView() {
-        if (_activeView == null) {
+    void AddElement(ViewElement element) {
+        if (element == _nametagElement) {  // This is a little hacky
             return;
         }
-
-        _activeView.Delete();
-        _activeView = null;
         
-        SendPacket(Packet.MakeUIItemPacket(null, MPUIOperationFlag.ClearAll));
+        if (element is ListMenuElement listMenu) {
+            listMenu.MakeFocusedDelegate += () => {
+                SendPacket(Packet.MakeUIEventPacket(MPUIElementEventType.MPUIElementEventTypeMakeFocused, element));
+            };
+        }
+
+        if (element is InputElement inputElement) {
+            inputElement.ActivateDelegate += () => {
+                SendPacket(Packet.MakeUIEventPacket(MPUIElementEventType.MPUIElementEventTypeActivate, element));
+            };
+        }
+            
+        // FIXME: We want the first packet we send to include the ClearAll flag, but not subsequent ones. 
+        //      Since we send UDP, it's possible that the client receives the packets out of order.
+        SendPacket(Packet.MakeUIItemPacket(element, MPUIOperationFlag.Create));
+    }
+
+    void RemoveElement(ViewElement element) {
+        if (element == _nametagElement) {  // This is a little hacky
+            return;
+        }
+        
+        SendPacket(Packet.MakeUIItemPacket(element, MPUIOperationFlag.Delete));
+    }
+
+    public void CloseView(View view) {
+        foreach (var element in view.Elements()) {
+            if (element == _nametagElement) {  // This is a little hacky
+                continue;
+            }
+            
+            SendPacket(Packet.MakeUIItemPacket(element, MPUIOperationFlag.Delete));
+        }
+
+        _views.Remove(view);
     }
 
     /// <summary>

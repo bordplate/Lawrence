@@ -204,10 +204,22 @@ function CoopPlayer:OnGameStateChanged(state)
 end
 
 function CoopPlayer:OnControllerInputTapped(input)
-    if self.gameState == 3 and input & 0x20 ~= 0 then
-        self:SetPosition(0, 0, -10000)
-        --self:SetAddressValue(0x969EAC, 100, 4)
+    if (self.debugCam or self.gameState == 3) and input & 1024 ~= 0 then
+        if not self.debugCam then
+            self:SetAddressValue(0x95c5d4, 1, 4)
+            self:SetAddressValue(0x95c5c8, 7, 4)
+            self.debugCam = true
+        else
+            self:SetAddressValue(0x95c5d4, 0, 4)
+            self:SetAddressValue(0x95c5c8, 0xf, 4)
+            self.debugCam = false
+        end
     end
+    
+    --if self.gameState == 3 and input & 0x20 ~= 0 then
+    --    self:SetPosition(0, 0, -10000)
+    --    --self:SetAddressValue(0x969EAC, 100, 4)
+    --end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
         if self:Username() == "bordplate3" then

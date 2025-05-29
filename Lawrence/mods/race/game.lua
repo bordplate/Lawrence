@@ -11,7 +11,7 @@ end
 
 function LobbyUniverse:OnPlayerJoin(player)
     local lobby = LobbyListView(player, self)
-    player:ShowView(lobby)
+    player:AddEntity(lobby)
 end
 
 function LobbyUniverse:NewLobby(host, password)

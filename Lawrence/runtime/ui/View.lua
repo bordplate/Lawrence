@@ -1,11 +1,7 @@
 View = class("View", Entity)
 
-function View:initialize(player)
-    if not player:Is(Player) then
-        error("View:initialize(player) requires a Player instance as argument 1")
-    end
-    
-    Entity.initialize(self, NativeView(player))
+function View:initialize()
+    Entity.initialize(self, NativeView())
     self:SetLuaEntity(self)
 end
 

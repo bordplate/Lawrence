@@ -4,3 +4,4 @@ docs/*
 settings.toml
 *.log
 **/*.csproj.user
+*.DotSettings.user
