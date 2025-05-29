@@ -36,6 +36,7 @@ public partial class Player : Moby {
     private List<MonitoredAddress> _monitoredAddresses = new();
 
     private int _respawns = 0;
+    private int _levelId = -1;
     
     private bool _useNametag = true;
 
@@ -112,6 +113,14 @@ public partial class Player : Moby {
         modeBits = (ushort)(_modeBits | 0x1000 | 0x4000);
         
         Game.Shared().NotificationCenter().Subscribe<PostTickNotification>(OnPostTick);
+        
+        MonitorAddress(0x969C70, 4, false, o => _levelId = Convert.ToInt32(o));  // Current level
+        MonitorAddress(0xa10704, 4, false, o => {  // Destination level
+            var destination = Convert.ToUInt16(o);
+            if (destination != 0 && Universe()?.GetLevelByGameID(destination) is {} level) {
+                SetLevelFlags(level);
+            }
+        });
     }
 
     public override void Delete() {
@@ -226,43 +235,15 @@ partial class Player {
     }
 
     public void LoadLevel(Level l) {
-        _level = l;
-        
-        _level.Add(this);
-        
-        ReloadNametag();
-
-        SendPacket(Packet.MakeGoToLevelPacket(_level.GameID()));
-        
-        MonitorAddress(0x969C70, 4, false, o => {
-            var planet = (uint)o;
-            
-            Logger.Log($"Player {Username()} changed planet to {planet}");
-            
-            // Wait until we have a parent
-            if (Parent() == null) {
-                return;
-            }
-
-            if (planet != _level.GameID()) {
-                Level lastLevel = _level;
-                
-                _level.Remove(this, false);
-                
-                _level = Universe()?.GetLevelByGameID((ushort)planet);
-                if (_level == null) {
-                    Logger.Error($"Player [{_client.GetEndpoint()}]: Could not find level with game ID {planet}");
-                    return;
-                }
-                
-                _level.Add(this);
-                Logger.Log($"Player moved from {lastLevel.GetName()} to {_level.GetName()}");
-                
-                SetCurrentLevelFlags();
-            }
-            
+        if (_levelId == l.GameID()) {
+            _level = l;
+            _level.Add(this);
             ReloadNametag();
-        });
+            return;
+        }
+        
+        _level = null;
+        SendPacket(Packet.MakeGoToLevelPacket(l.GameID()));
     }
 
     public void RegisterHybridMobys() {
@@ -355,6 +336,10 @@ partial class Player {
             return;
         }
         
+        SetLevelFlags(level);
+    }
+
+    public void SetLevelFlags(Level level) {
         List<uint> levelFlags1 = new();
         List<uint> levelFlags2 = new();
         
