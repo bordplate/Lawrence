@@ -55,9 +55,6 @@ function Lobby:Start()
     print("Starting lobby for: ")
     for i, player in ipairs(self.players) do
         print("  " .. player:Username())
-        
-        player:CloseView()
-        --player:Start()
     end
     
     self.universe:StartWaiting()
@@ -71,7 +68,7 @@ function Lobby:Join(player)
     self.players:Add(player)
     self.universe:AddEntity(player)
     
-    player:ShowView(LobbyView(player, self))
+    player:AddEntity(LobbyView(player, self))
 end
 
 function Lobby:Leave(player)

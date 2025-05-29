@@ -173,8 +173,6 @@ function RacePlayer:SetCourse(course)
     self.checkpointLabel:SetText(self.checkpoint .. "/" .. #self.course.checkpoints)
     
     self.finishTimeLabel:SetText("")
-    
-    self:SpawnCheckpoint()
 end
 
 function RacePlayer:SpawnCheckpoint()
@@ -214,6 +212,10 @@ function RacePlayer:OnCollision(moby)
 end
 
 function RacePlayer:OnRespawned()
+    if self.checkpointMoby == nil then
+        self:SpawnCheckpoint()
+    end
+    
     for i, moby in ipairs(self.course.delete) do
         self:DeleteAllChildrenWithOClass(moby)
     end
