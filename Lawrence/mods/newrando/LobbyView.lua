@@ -19,6 +19,38 @@ function LobbyView:initialize(player, lobby)
         end
     end
 
+    self.addressInput = InputElement()
+    self.addressInput.Prompt = "Enter Archipelago Address"
+    self.addressInput.InputCallback = function(input)
+        self.lobby.address = input
+        self.optionsListMenu:GetItem(1).Accessory = input
+    end
+    
+    self.portInput = InputElement()
+    self.portInput.Prompt = "Enter Archipelago Port"
+    self.portInput.InputCallback = function(input)
+        self.lobby.port = input
+        self.optionsListMenu:GetItem(2).Accessory = input
+    end
+
+    self.slotInput = InputElement()
+    self.slotInput.Prompt = "Enter Archipelago Slot name"
+    self.slotInput.InputCallback = function(input)
+        self.lobby.slot = input
+        self.optionsListMenu:GetItem(3).Accessory = input
+    end
+
+    self.archipelagoPasswordInput = InputElement()
+    self.archipelagoPasswordInput.Prompt = "Enter Archipelago Password}"
+    self.archipelagoPasswordInput.InputCallback = function(input)
+        self.lobby.ap_pass = input
+        if input == "" then
+            self.optionsListMenu:GetItem(4).Accessory = "Not set"
+        else
+            self.optionsListMenu:GetItem(4).Accessory = "Change"
+        end
+    end
+    
     self.lobbyTextElement = TextElement(40, 10, "Players")
     self.optionsTextElement = TextElement(250, 10, "Options")
     
@@ -53,6 +85,8 @@ function LobbyView:initialize(player, lobby)
                 accessory = option.accessory[option.value and 1 or 2]
             elseif type(option.value) == "number" then
                 accessory = option.accessory[option.value+1]
+            elseif type(option.value) == "string" then
+                accessory = option.value
             end
         end
         
@@ -66,6 +100,8 @@ function LobbyView:initialize(player, lobby)
                     self.optionsListMenu:GetItem(k-1).Accessory = value and option.accessory[1] or option.accessory[2]
                 elseif type(value) == "number" then
                     self.optionsListMenu:GetItem(k-1).Accessory = option.accessory[value+1]
+                elseif type(option.value) == "string" then
+                    self.optionsListMenu:GetItem(k-1).Accessory = value
                 end
 
                 break
@@ -94,6 +130,16 @@ function LobbyView:initialize(player, lobby)
         self.optionsListMenu:GetItem(0).Accessory = "Change"
     end
     
+    self.optionsListMenu:GetItem(1).Accessory = self.lobby.address
+    self.optionsListMenu:GetItem(2).Accessory = self.lobby.port
+    self.optionsListMenu:GetItem(3).Accessory = self.lobby.slot
+    if self.lobby.ap_password == "" then
+        self.optionsListMenu:GetItem(4).Accessory = "Not set"
+    else
+        self.optionsListMenu:GetItem(4).Accessory = "Change"
+    end
+    
+    
     self.lobby:AddReadyCallback(function(player)
         for i, item in ipairs(self.playersList:GetItems()) do
             if item.Title == player:Username() then
@@ -108,6 +154,10 @@ function LobbyView:initialize(player, lobby)
     self:AddElement(self.descriptionTextArea)
     self:AddElement(self.optionsListMenu)
     self:AddElement(self.passwordInput)
+    self:AddElement(self.addressInput)
+    self:AddElement(self.portInput)
+    self:AddElement(self.slotInput)
+    self:AddElement(self.archipelagoPasswordInput)
     
     self:AddElement(self.backButtonText)
     self:AddElement(self.startButtonText)

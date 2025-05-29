@@ -55,82 +55,8 @@ function RandoPlayer:Made()
 end
 
 function RandoPlayer:Start()
-    self.ingame = true
-    self.ready = true
-
-    if self.lobby.options.debugStart.value then
-        self:GiveItem(Item.GetByName("Heli-pack").id)
-        self:GiveItem(Item.GetByName("Thruster-pack").id)
-        self:GiveItem(Item.GetByName("Hydro-pack").id)
-        self:GiveItem(Item.GetByName("Sonic Summoner").id)
-        self:GiveItem(Item.GetByName("O2 Mask").id)
-        self:GiveItem(Item.GetByName("Pilot's Helmet").id)
-        self:GiveItem(Item.GetByName("Swingshot").id)
-        self:GiveItem(Item.GetByName("Hydrodisplacer").id)
-        self:GiveItem(Item.GetByName("Trespasser").id)
-        self:GiveItem(Item.GetByName("Metal Detector").id)
-        self:GiveItem(Item.GetByName("Hologuise").id)
-        self:GiveItem(Item.GetByName("PDA").id)
-        self:GiveItem(Item.GetByName("Magneboots").id)
-        self:GiveItem(Item.GetByName("Grindboots").id)
-        self:GiveItem(Item.GetByName("Devastator").id)
-        self:GiveItem(Item.GetByName("Visibomb").id)
-        self:GiveItem(Item.GetByName("Taunter").id)
-        self:GiveItem(Item.GetByName("Blaster").id)
-        self:GiveItem(Item.GetByName("Pyrociter").id)
-        self:GiveItem(Item.GetByName("Mine Glove").id)
-        self:GiveItem(Item.GetByName("Walloper").id)
-        self:GiveItem(Item.GetByName("Tesla Claw").id)
-        self:GiveItem(Item.GetByName("Glove of Doom").id)
-        self:GiveItem(Item.GetByName("Drone Device").id)
-        self:GiveItem(Item.GetByName("Decoy Glove").id)
-        self:GiveItem(Item.GetByName("Bomb Glove").id)
-        self:GiveItem(Item.GetByName("Suck Cannon").id)
-        self:GiveItem(Item.GetByName("Morph-o-Ray").id)
-        self:GiveItem(Item.GetByName("R.Y.N.O.").id)
-        
-        self:SetBolts(150000)
-
-        self:UnlockLevel(1)
-        self:UnlockLevel(2)
-        self:UnlockLevel(3)
-        self:UnlockLevel(4)
-        self:UnlockLevel(5)
-        self:UnlockLevel(6)
-        self:UnlockLevel(7)
-        self:UnlockLevel(8)
-        self:UnlockLevel(9)
-        self:UnlockLevel(10)
-        self:UnlockLevel(11)
-        self:UnlockLevel(12)
-        self:UnlockLevel(13)
-        self:UnlockLevel(14)
-        self:UnlockLevel(15)
-        self:UnlockLevel(16)
-        self:UnlockLevel(17)
-        self:UnlockLevel(18)
-    end
-
-    if not self.lobby.started then
-        self:LoadLevel(self.lobby.options.startPlanet.value)
-    else
-        self:SetBolts(self.lobby.bolts)
-
-        for i, item in ipairs(self.lobby.unlockedItems) do
-            self:GiveItem(item, false)
-        end
-
-        for i, infobot in ipairs(self.lobby.unlockedInfobots) do
-            self:UnlockLevel(infobot)
-        end
-
-        for i, skillpoint in ipairs(self.lobby.unlockedSkillpoints) do
-            self:UnlockSkillpoint(skillpoint)
-        end
-        
-        -- Load last unlocked level
-        self:LoadLevel(self.lobby.unlockedInfobots[#self.lobby.unlockedInfobots])
-    end
+    self.lobby.universe:AddEntity(self)
+    self:LoadLevel(self.lobby.startPlanet)
 end
 
 function RandoPlayer:OnCollectedGoldBolt(planet, number)
@@ -151,6 +77,7 @@ function RandoPlayer:Unfreeze()
 end
 
 function RandoPlayer:OnTick()
+    if not self.lobby.started then return end
     self.lobby.universe.replacedMobys:ToastMessage(self)
     
     if (self.damageCooldown > 0) then
@@ -172,9 +99,6 @@ function RandoPlayer:OnControllerInputTapped(input)
 
     if self.gameState == 3 and input & 0x8 ~= 0 then
         self:SetGhostRatchet(200)
-        self:GiveItem(Item.GetByName("Heli-pack").id)
-        self:GiveItem(Item.GetByName("R.Y.N.O.").id)
-        self:GiveItem(Item.GetByName("Grindboots").id)
     end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
@@ -261,6 +185,7 @@ function RandoPlayer:OnRespawned()
         self.item_unlock_queue = {}
         self.special_unlock_queue = {}
         
+        self.lobby.universe.ap_client:Sync()
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
         self:UpdateHPAmount()
     end

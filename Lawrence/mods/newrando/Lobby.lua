@@ -3,9 +3,9 @@ require 'RandoUniverse'
 
 Lobby = class("Lobby")
 
-function Lobby:initialize(host, password)
+function Lobby:initialize(host, lobby_password)
     self.host = host
-    self.password = password
+    self.password = lobby_password
     
     self.started = false
     
@@ -13,55 +13,45 @@ function Lobby:initialize(host, password)
 
     self.options = RandoOptions({
         password = {
-            name = "Password",
+            name = "Lobby Password",
             description = "Password for the lobby. Leave blank for public.",
             handler = function(self, view, item) view.passwordInput:Activate() end,
-            value = password,
+            value = self.password,
         },
-        friendlyFire = {
-            name = "Friendly fire",
-            description = "When enabled lets players hurt each other with weapons and the wrench.",
-            handler = function(option, view, item) option:set(not option.value) end,
-            value = true,
-            accessory = {"On", "Off"}
+        address = {
+            name = "Address",
+            description = "The address for the archipelago server (usually 'archipelago.gg' or 'localhost')",
+            handler = function(option, view, item) view.addressInput:Activate() end,
+            value = "archipelago.gg",
+            accessory = "archipelago.gg"
         },
-        debugStart = {
-            name = "Debug Start",
-            description = "Starts the game with 150k bolts and all levels, weapons, and items unlocked.",
+        port = {
+            name = "Port",
+            description = "The archipelago port",
+            handler = function(option, view, item) view.portInput:Activate() end,
+        },
+        slot = {
+            name = "Slot",
+            description = "The archipelago slot",
+            handler = function(option, view, item) view.slotInput:Activate() end,
+            value = "Player1",
+            accessory = "Player1"
+        },
+        archipelagoPassword = {
+            name = "Password",
+            description = "The archipelago password (blank if none)",
+            handler = function(option, view, item) view.archipelagoPasswordInput:Activate() end,
+        },
+        cheats = {
+            name = "Cheats",
+            description = "Enable cheats (currently only ghost ratchet)",
             handler = function(option, view, item) option:set(not option.value) end,
             value = false,
             accessory = {"On", "Off"}
         },
-        startPlanet = {
-            name = "Start Planet",
-            description = "The planet to start the game on.",
-            handler = function(option, view, item) option:set((option.value+1) % 19) end,
-            value = 0,
-            accessory = {
-                "Veldin1",
-                "Novalis",
-                "Aridia",
-                "Kerwan",
-                "Eudora",
-                "Rilgar",
-                "BlargStation",
-                "Umbris",
-                "Batalia",
-                "Gaspar",
-                "Orxon",
-                "Pokitaru",
-                "Hoven",
-                "GemlikStation",
-                "Oltanis",
-                "Quartu",
-                "KaleboIII",
-                "DreksFleet",
-                "Veldin2",
-            }
-        }
     })
     
-    self.optionsList = { self.options.password, self.options.friendlyFire, self.options.debugStart, self.options.startPlanet }
+    self.optionsList = { self.options.password, self.options.address, self.options.port, self.options.slot, self.options.archipelagoPassword, self.options.cheats }
     
     self.readyCallbacks = {}
     
@@ -70,7 +60,14 @@ function Lobby:initialize(host, password)
     self.unlockedSkillpoints = {}
     self.unlockedItems = {}
     
-    self.universe = RandoUniverse(self)
+    self.address = "archipelago.gg"
+    self.port = ""
+    self.slot = "Player1"
+    self.ap_password = ""
+    
+    self.waiting_on_connection = false
+    self.startPlanet = 1
+    self.universe = {}
 end
 
 function Lobby:AddReadyCallback(callback)
@@ -78,17 +75,37 @@ function Lobby:AddReadyCallback(callback)
 end
 
 function Lobby:Start()
-    self.unlockedInfobots = {self.options.startPlanet.value}
-    
+    --self.unlockedInfobots = {self.options.startPlanet.value}
+    --
+    --print("Starting lobby for: ")
+    --for i, player in ipairs(self.players) do
+    --    print("  " .. player:Username())
+    --    
+    --    player:CloseView()
+    --    player:Start()
+    --end
+    --
+    --self.started = true
+    if not self.waiting_on_connection then
+        self.waiting_on_connection = true
+        self.universe = RandoUniverse(self)
+    end
+end
+
+function Lobby:ap_connected()
     print("Starting lobby for: ")
     for i, player in ipairs(self.players) do
         print("  " .. player:Username())
-        
         player:CloseView()
         player:Start()
     end
-
     self.started = true
+end
+
+function Lobby:ap_refused()
+    print("ap_refused")
+    self.universe = {}
+    self.waiting_on_connection = false
 end
 
 function Lobby:Join(player)
@@ -96,7 +113,6 @@ function Lobby:Join(player)
     
     player.lobby = self
     self.players:Add(player)
-    self.universe:AddEntity(player)
     
     player:ShowView(LobbyView(player, self))
 end

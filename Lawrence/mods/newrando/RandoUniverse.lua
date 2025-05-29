@@ -21,9 +21,19 @@ function RandoUniverse:initialize(lobby)
     self.replacedMobys = ReplacementMobys(self)
     
     self.lobby = lobby
+
+    if self.lobby.port == "" then
+        self.host = self.lobby.address
+    else
+        self.host = self.lobby.address .. ":" .. self.lobby.port
+    end
     
-    self.ap_client = nil
-    self.ap_client_initialized = false
+    local uuid = "5"
+    
+    print(string.format("host: %s, slot: %s, password: %s", tostring(self.host), tostring(self.lobby.slot), tostring(self.lobby.ap_password)))
+    
+    self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
+    self.ap_client_initialized = true
     
     self.buyable_weapons = {}
     self.buyable_ammo = {} -- list weapons, +64 is performed to turn it into ammo
@@ -122,7 +132,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item)
         self:DistributeUnlockPlanet(APItemToPlanet(ap_item))
     else
 --         APItemToGoldBolt(ap_item)
-        self:DistributeGiveBolts(15000)
+--        self:DistributeGiveBolts(15000)
     end
 end
 
@@ -131,14 +141,6 @@ function RandoUniverse:OnPlayerJoin(player)
     player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
     player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
     FixPlanetsForPlayer(self, player)
-    if self.ap_client == nil then
-        local uuid = "5"
-        self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)
-        self.ap_client_initialized = true
-    else
-        -- sync new player with the other
-        print("AP already defined")
-    end
 end
 
 function RandoUniverse:OnPlayerGetItem(player, item_id)

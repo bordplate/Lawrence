@@ -6,7 +6,8 @@ assert(AP, 'Failed to load')
 APClient = class("APClient")
 
 function APClient:initialize(universe, game_name, items_handling, uuid, host, slot, password)
-    local running = true  -- set this to false to kill the coroutine
+    self.running = true  -- set this to false to kill the coroutine
+    self.first_socket_error = true
     self.game_name = game_name
     function on_socket_connected()
         print("Socket connected")
@@ -14,6 +15,14 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
 
     function on_socket_error(msg)
         print("Socket error: " .. msg)
+        if self.first_socket_error then
+            self.first_socket_error = false
+        else
+            self.ap = nil
+            self.running = false
+            collectgarbage("collect")
+            universe.lobby:ap_refused()
+        end
     end
 
     function on_socket_disconnected()
@@ -26,14 +35,16 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     end
 
     function on_slot_connected(slot_data)
-       print("Slot connected")
-       for k,v in ipairs(slot_data) do
-         print(string.format("%s: %d", k ,v))
-       end
+        print("Slot connected")
+        for k,v in ipairs(slot_data) do
+          print(string.format("%s: %d", k ,v))
+        end
+        universe.lobby:ap_connected()
     end
 
     function on_slot_refused(reasons)
-       print("Slot refused: " .. table.concat(reasons, ", "))
+        print("Slot refused: " .. table.concat(reasons, ", ")) 
+        universe.lobby:ap_refused()
     end
 
     function on_items_received(items)
@@ -62,7 +73,13 @@ function APClient:WinGame()
     self.ap:StatusUpdate(30)
 end
 
+function APClient:Sync()
+    self.ap:Sync()
+end
+
 function APClient:poll()
-    self.ap:poll()
+    if self.running then
+        self.ap:poll()
+    end
 end
 
