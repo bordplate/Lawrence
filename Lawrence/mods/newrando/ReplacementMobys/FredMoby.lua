@@ -4,10 +4,10 @@ function FredMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(298)
-    self:SetPosition(547.5, 387, 154)
+    self:SetPosition(547.5, 387, 153.99)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.750
 
     self.disabled = false
     self.was_close_before = false

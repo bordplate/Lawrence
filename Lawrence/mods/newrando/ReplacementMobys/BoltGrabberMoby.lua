@@ -4,10 +4,12 @@ function BoltGrabberMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1388)
-    self:SetPosition(332, 173, 39)
+    self:SetPosition(332.125, 173.303, 40)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.016
+
+    self.rotationSpeed = 0.01*math.pi
 
     self.disabled = false
 end
@@ -37,4 +39,8 @@ end
 function BoltGrabberMoby:Disable()
     self.disabled = true
     self:Delete()
-end 
+end
+
+function BoltGrabberMoby:OnTick()
+    self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
+end

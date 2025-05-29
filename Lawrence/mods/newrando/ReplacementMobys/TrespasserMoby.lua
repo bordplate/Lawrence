@@ -4,10 +4,14 @@ function TrespasserMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1005)
-    self:SetPosition(97, 273, 61)
-    self.rotZ = 1.787
+    self:SetPosition(98, 274, 61.2)
+    self.rotX = 1.571
+    self.rotY = 3.142
+    self.rotZ = -0.033
 
-    self.scale = 0.2
+    self.scale = 0.044
+
+    self.rotationSpeed = 0.01*math.pi
 
     self.disabled = false
 end
@@ -37,4 +41,8 @@ end
 function TrespasserMoby:Disable()
     self.disabled = true
     self:Delete()
-end 
+end
+
+function TrespasserMoby:OnTick()
+    self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
+end

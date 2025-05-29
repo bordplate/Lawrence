@@ -82,19 +82,24 @@ function ReplacementMobys:initialize(universe)
     }
 
     -- change values of generic mobys
-    self.replacedMobys.KerwanInfobot:SetPosition(288, 128, 66)
+    self.replacedMobys.KerwanInfobot:SetPosition(288.260, 127.805, 65.109)
+    self.replacedMobys.KerwanInfobot.rotZ = 1.571
     self.replacedMobys.KerwanInfobot.planet_id = 0x04
 
     self.replacedMobys.UmbrisInfobot:SetPosition(216, 455, 36.5)
+    self.replacedMobys.UmbrisInfobot.rotZ = 1.571
     self.replacedMobys.UmbrisInfobot.planet_id = 0x08
 
 
     self.replacedMobys.OrxonClankInfobot:SetPosition(238, 190, 59.5)
+    self.replacedMobys.OrxonClankInfobot.rotZ = 1.571
     self.replacedMobys.OrxonClankInfobot.planet_id = 0x0b
     self.replacedMobys.OrxonRatchetInfobot:SetPosition(307, 228, 68.5)
+    self.replacedMobys.OrxonRatchetInfobot.rotZ = 1.571
     self.replacedMobys.OrxonRatchetInfobot.planet_id = 0x0c
     
     self.replacedMobys.FleetInfobot:SetPosition(695, 521, 169)
+    self.replacedMobys.FleetInfobot.rotZ = 1.571
     self.replacedMobys.FleetInfobot.planet_id = 0x12
 end
 

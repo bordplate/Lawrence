@@ -4,10 +4,10 @@ function BobMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(90)
-    self:SetPosition(588, 579, 234)
+    self:SetPosition(588.527, 579.877, 233.389)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end

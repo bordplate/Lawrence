@@ -4,10 +4,10 @@ function SalesmanMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(925)
-    self:SetPosition(415, 295, 62)
-    self.rotZ = 1.571
+    self:SetPosition(415.014, 295.218, 61.844)
+    self.rotZ = 1.621
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end

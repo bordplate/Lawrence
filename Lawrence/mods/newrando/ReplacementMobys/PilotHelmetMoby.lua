@@ -4,10 +4,12 @@ function PilotHelmetMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1290)
-    self:SetPosition(345, 313, 41)
+    self:SetPosition(345.138, 313.903, 42.016)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.146
+
+    self.rotationSpeed = 0.01*math.pi
 
     self.disabled = false
 end
@@ -37,4 +39,8 @@ end
 function PilotHelmetMoby:Disable()
     self.disabled = true
     self:Delete()
-end 
+end
+
+function PilotHelmetMoby:OnTick()
+    self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
+end

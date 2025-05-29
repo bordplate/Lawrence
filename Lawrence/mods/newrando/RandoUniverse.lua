@@ -131,12 +131,6 @@ function RandoUniverse:OnPlayerJoin(player)
     player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
     player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
     FixPlanetsForPlayer(self, player)
-    self:DistributeGiveItem(Item.GetByName("O2 Mask").id)
-    self:DistributeGiveItem(Item.GetByName("Heli-pack").id)
-    self:DistributeGiveItem(Item.GetByName("Thruster-pack").id)
-    self:DistributeGiveItem(Item.GetByName("R.Y.N.O.").id)
-    self:DistributeGiveItem(Item.GetByName("Swingshot").id)
-    self:DistributeGiveItem(Item.GetByName("Magneboots").id)
     if self.ap_client == nil then
         local uuid = "5"
         self.ap_client = APClient(self, game_name, items_handling, uuid, host, slot, password)

@@ -4,10 +4,12 @@ function HydrodisplacerMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1016)
-    self:SetPosition(212, 195, 131.5)
+    self:SetPosition(212.3, 195.840, 131.747)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.044
+
+    self.rotationSpeed = 0.01*math.pi
 
     self.disabled = false
 end
@@ -37,4 +39,8 @@ end
 function HydrodisplacerMoby:Disable()
     self.disabled = true
     self:Delete()
-end 
+end
+
+function HydrodisplacerMoby:OnTick()
+    self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
+end

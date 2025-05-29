@@ -4,9 +4,8 @@ function InfobotMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(750)
-    self.rotZ = 1.571
 
-    self.scale = 0.2
+    self.scale = 0.167
     
     self.planet_id = 0x01 -- placeholder value must be changed
 

@@ -7,7 +7,7 @@ function MinerMoby:initialize(internalEntity)
     self:SetPosition(263.8, 279, 52.8)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.250
 
     self.disabled = false
 end

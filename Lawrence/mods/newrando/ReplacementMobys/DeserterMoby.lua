@@ -4,11 +4,13 @@ function DeserterMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1144)
-    self:SetPosition(305, 96, 37.5)
-    self.rotZ = 1.787
+    self:SetPosition(305.839, 95.922, 37.416)
+    self.rotZ = -0.115
 
-    self.scale = 0.2
+    self.scale = 0.250
 
+    self.AnimationId = 1
+    
     self.disabled = false
 end
 

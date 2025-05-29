@@ -4,11 +4,13 @@ function CommandoMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1130)
-    self:SetPosition(264, 286, 39)
+    self:SetPosition(264.794, 286.884, 36.235)
     self.rotZ = 1.571
 
-    self.scale = 0.2
+    self.scale = 0.208
 
+    self.AnimationId = 2
+    
     self.disabled = false
 end
 

@@ -166,12 +166,15 @@ function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
         if self:Username() == "panad" then
             print("Moving player")
-            self:SetPosition(505, 633, 107)
+            self:SetPosition(251, 278, 55.5)
         end
     end
 
     if self.gameState == 3 and input & 0x8 ~= 0 then
         self:SetGhostRatchet(200)
+        self:GiveItem(Item.GetByName("Heli-pack").id)
+        self:GiveItem(Item.GetByName("R.Y.N.O.").id)
+        self:GiveItem(Item.GetByName("Grindboots").id)
     end
     
     if self.gameState == 3 and input & 0x80 ~= 0 then
@@ -265,9 +268,9 @@ function RandoPlayer:OnRespawned()
     FixPlanetsForPlayer(self.lobby.universe, self)
 end
 
-function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
-    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
-end
+--function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
+--    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
+--end
 
 function RandoPlayer:NotifyLocationCollected(location_id)
     print(string.format("player %s got location: %d", self.username, location_id))

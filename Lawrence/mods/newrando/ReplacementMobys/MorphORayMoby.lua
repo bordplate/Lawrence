@@ -4,10 +4,12 @@ function MorphORayMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1354)
-    self:SetPosition(310.8, 102.2, 69)
+    self:SetPosition(310.824, 102.229, 69.534)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.083
+
+    self.rotationSpeed = 0.01*math.pi
 
     self.disabled = false
 end
@@ -37,4 +39,8 @@ end
 function MorphORayMoby:Disable()
     self.disabled = true
     self:Delete()
-end 
+end
+
+function MorphORayMoby:OnTick()
+    self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
+end

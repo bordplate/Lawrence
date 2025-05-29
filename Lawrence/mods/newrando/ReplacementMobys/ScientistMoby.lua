@@ -4,10 +4,10 @@ function ScientistMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1105)
-    self:SetPosition(170, 323, 142.7)
-    self.rotZ = 1.571
+    self:SetPosition(170.824, 323.326, 142.704)
+    self.rotZ = -0.919
 
-    self.scale = 0.2
+    self.scale = 0.125
 
     self.disabled = false
 end

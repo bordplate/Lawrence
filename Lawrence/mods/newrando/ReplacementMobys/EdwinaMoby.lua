@@ -4,10 +4,10 @@ function EdwinaMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(328)
-    self:SetPosition(416, 521, 36)
-    self.rotZ = 1.571
+    self:SetPosition(416.297, 521.419, 36.294)
+    self.rotZ = -1.596
 
-    self.scale = 0.2
+    self.scale = 0.250
 
     self.disabled = false
 end

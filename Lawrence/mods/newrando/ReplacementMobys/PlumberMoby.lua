@@ -4,10 +4,11 @@ function PlumberMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(774)
-    self:SetPosition(251, 187, 96)
-    self.rotZ = 1.787
+    self:SetPosition(251.524, 187.857, 95.569)
+    
+    self.rotZ = -0.635
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end

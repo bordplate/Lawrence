@@ -4,10 +4,12 @@ function MagnebootsMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(18)
-    self:SetPosition(231, 166, 57)
+    self:SetPosition(231.185, 166.063, 57.5)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.038
+
+    self.rotationSpeed = 0.01*math.pi
 
     self.disabled = false
 end
@@ -37,4 +39,8 @@ end
 function MagnebootsMoby:Disable()
     self.disabled = true
     self:Delete()
-end 
+end
+
+function MagnebootsMoby:OnTick()
+    self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
+end

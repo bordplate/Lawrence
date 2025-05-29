@@ -4,10 +4,10 @@ function AlMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(909)
-    self:SetPosition(295, 240, 34)
+    self:SetPosition(295.358, 240.418, 34.5)
     self.rotZ = 1.571
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end

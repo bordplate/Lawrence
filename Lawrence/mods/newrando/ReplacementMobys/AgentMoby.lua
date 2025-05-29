@@ -4,10 +4,10 @@ function AgentMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(786)
-    self:SetPosition(258, 266, 26)
-    self.rotZ = 1.787
+    self:SetPosition(258.540, 266.546, 25.326)
+    self.rotZ = 3.142
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end

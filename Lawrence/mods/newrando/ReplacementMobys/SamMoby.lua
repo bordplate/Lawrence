@@ -4,10 +4,10 @@ function SamMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(924)
-    self:SetPosition(203, 191, 50.5)
+    self:SetPosition(203.171, 191.666, 50.5)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.250
 
     self.disabled = false
 end

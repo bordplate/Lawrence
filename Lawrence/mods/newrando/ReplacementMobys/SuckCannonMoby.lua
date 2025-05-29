@@ -4,10 +4,12 @@ function SuckCannonMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1120)
-    self:SetPosition(324, 245, 63)
-    self.rotZ = 1.787
+    self:SetPosition(324.503, 245.971, 63.264)
+    self.rotZ = 1.992
 
-    self.scale = 0.2
+    self.scale = 0.040
+
+    self.rotationSpeed = 0.01*math.pi
 
     self.disabled = false
 end
@@ -37,4 +39,8 @@ end
 function SuckCannonMoby:Disable()
     self.disabled = true
     self:Delete()
-end 
+end
+
+function SuckCannonMoby:OnTick()
+    self.rotZ = self.rotZ + self.rotationSpeed * Game:DeltaTime()  -- update rotation
+end

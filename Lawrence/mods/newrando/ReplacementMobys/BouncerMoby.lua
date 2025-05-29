@@ -4,10 +4,10 @@ function BouncerMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(919)
-    self:SetPosition(250, 201, 100)
+    self:SetPosition(250.266, 201.119, 99.750)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end

@@ -4,10 +4,10 @@ function NanotechVendorMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1326)
-    self:SetPosition(155.7, 190.7, 54)
+    self:SetPosition(155.7, 190.7, 53.947)
     self.rotZ = 1.571
 
-    self.scale = 0.2
+    self.scale = 0.115
 
     self.disabled = false
     

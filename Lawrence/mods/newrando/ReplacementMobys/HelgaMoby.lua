@@ -7,7 +7,7 @@ function HelgaMoby:initialize(internalEntity)
     self:SetPosition(117.218, 83.312, 65.833)
     self.rotZ = 1.787
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end

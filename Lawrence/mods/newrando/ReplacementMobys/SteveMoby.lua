@@ -4,10 +4,10 @@ function SteveMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(851)
-    self:SetPosition(268, 128.7, 74)
-    self.rotZ = 1.571
+    self:SetPosition(268.115, 128.702, 72.609)
+    self.rotZ = -1.571
 
-    self.scale = 0.2
+    self.scale = 0.250
 
     self.disabled = false
 end

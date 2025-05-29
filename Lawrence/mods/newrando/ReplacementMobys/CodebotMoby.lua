@@ -4,10 +4,10 @@ function CodebotMoby:initialize(internalEntity)
     Moby.initialize(self, internalEntity)
 
     self:SetOClass(1428)
-    self:SetPosition(499, 360, 139.5)
-    self.rotZ = 1.787
+    self:SetPosition(499.594, 360.236, 140.5)
+    self.rotZ = 1.605
 
-    self.scale = 0.2
+    self.scale = 0.167
 
     self.disabled = false
 end
