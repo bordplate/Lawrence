@@ -40,6 +40,7 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
           print(string.format("%s: %d", k ,v))
         end
         universe.lobby:ap_connected()
+        print("after ap_connectec call")
     end
 
     function on_slot_refused(reasons)

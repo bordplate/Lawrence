@@ -21,25 +21,30 @@ function RandoUniverse:initialize(lobby)
     self.replacedMobys = ReplacementMobys(self)
     
     self.lobby = lobby
-
-    if self.lobby.port == "" then
-        self.host = self.lobby.address
-    else
-        self.host = self.lobby.address .. ":" .. self.lobby.port
-    end
     
-    local uuid = "5"
-    
-    print(string.format("host: %s, slot: %s, password: %s", tostring(self.host), tostring(self.lobby.slot), tostring(self.lobby.ap_password)))
-    
-    self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
-    self.ap_client_initialized = true
+    self.ap_client = nil
+    self.ap_client_initialized = false
     
     self.buyable_weapons = {}
     self.buyable_ammo = {} -- list weapons, +64 is performed to turn it into ammo
     self.already_bought_weapons = {}
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
+end
+
+function RandoUniverse:Connect()
+    if self.lobby.port == "" then
+        self.host = self.lobby.address
+    else
+        self.host = self.lobby.address .. ":" .. self.lobby.port
+    end
+
+    local uuid = "5"
+
+    print(string.format("host: %s, slot: %s, password: %s", tostring(self.host), tostring(self.lobby.slot), tostring(self.lobby.ap_password)))
+
+    self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
+    self.ap_client_initialized = true
 end
 
 function RandoUniverse:DistributeGiveItem(item_id, equip)
@@ -140,7 +145,6 @@ function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
     player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
     player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
-    FixPlanetsForPlayer(self, player)
 end
 
 function RandoUniverse:OnPlayerGetItem(player, item_id)
@@ -214,4 +218,5 @@ function RandoUniverse:OnTick()
     if self.ap_client_initialized then
         self.ap_client:poll()
     end
+    self.lobby:OnTick()
 end

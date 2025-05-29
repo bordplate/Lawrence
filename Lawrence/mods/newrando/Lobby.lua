@@ -65,9 +65,10 @@ function Lobby:initialize(host, lobby_password)
     self.slot = "Player1"
     self.ap_password = ""
     
+    self.connected = false
     self.waiting_on_connection = false
     self.startPlanet = 1
-    self.universe = {}
+    self.universe = RandoUniverse(self)
 end
 
 function Lobby:AddReadyCallback(callback)
@@ -88,18 +89,13 @@ function Lobby:Start()
     --self.started = true
     if not self.waiting_on_connection then
         self.waiting_on_connection = true
-        self.universe = RandoUniverse(self)
+        
+        self.universe:Connect()
     end
 end
 
 function Lobby:ap_connected()
-    print("Starting lobby for: ")
-    for i, player in ipairs(self.players) do
-        print("  " .. player:Username())
-        player:CloseView()
-        player:Start()
-    end
-    self.started = true
+    self.connected = true
 end
 
 function Lobby:ap_refused()
@@ -114,7 +110,7 @@ function Lobby:Join(player)
     player.lobby = self
     self.players:Add(player)
     
-    player:ShowView(LobbyView(player, self))
+    player:AddEntity(LobbyView(player, self))
 end
 
 function Lobby:Leave(player)
@@ -148,4 +144,15 @@ function Lobby:AllPlayersReady()
     end
     
     return true
+end
+
+function Lobby:OnTick()
+    if self.connected  and not self.started then
+        self.started = true
+        print("Starting lobby for: ")
+        for i, player in ipairs(self.players) do
+            print("  " .. player:Username())
+            player:Start()
+        end
+    end
 end

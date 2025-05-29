@@ -78,6 +78,7 @@ end
 
 function RandoPlayer:OnTick()
     if not self.lobby.started then return end
+    if not self.fullySpawnedIn then return end
     self.lobby.universe.replacedMobys:ToastMessage(self)
     
     if (self.damageCooldown > 0) then
@@ -91,13 +92,13 @@ end
 
 function RandoPlayer:OnControllerInputTapped(input)
     if self.gameState == 3 and input & 0x20 ~= 0 then
-        if self:Username() == "panad" then
-            print("Moving player")
-            self:SetPosition(251, 278, 55.5)
-        end
+        --if self:Username() == "panad" then
+        --    print("Moving player")
+        --    self:SetPosition(251, 278, 55.5)
+        --end
     end
 
-    if self.gameState == 3 and input & 0x8 ~= 0 then
+    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats then
         self:SetGhostRatchet(200)
     end
     
