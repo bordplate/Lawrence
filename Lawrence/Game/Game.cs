@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
+using System.Runtime.InteropServices;
 using NLua;
 
 using Lawrence.Core;
@@ -356,6 +356,10 @@ public class Game {
             _state["print"] = (string text) => {
                 Logger.Log(text);
             };
+
+            _state["GetOS"] = () => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Linux" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "Mac" : "Unknown";
         }
 
         return _state;
