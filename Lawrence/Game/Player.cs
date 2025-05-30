@@ -235,7 +235,7 @@ partial class Player {
     }
 
     public void LoadLevel(Level l) {
-        if (_levelId == l.GameID()) {
+        if (_levelId != 0 && _levelId == l.GameID()) {
             _level = l;
             _level.Add(this);
             ReloadNametag();
