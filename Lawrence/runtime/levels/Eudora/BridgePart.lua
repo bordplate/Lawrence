@@ -1,7 +1,6 @@
 BridgePart = class("BridgePart", HybridMoby)
 
 function BridgePart:initialize(level, uid)
-    print("Initializing BridgePart")
     HybridMoby.initialize(self, level, uid)
 
     self:MonitorAttribute(Moby.offset.position.x, 4, true)

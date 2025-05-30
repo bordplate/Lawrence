@@ -1,7 +1,6 @@
 MetalElevator = class("MetalElevator", HybridMoby)
 
 function MetalElevator:initialize(level, uid)
-    print("Initializing MetalElevator")
     HybridMoby.initialize(self, level, uid)
 
     --self:MonitorAttribute(Moby.offset.state, 1)

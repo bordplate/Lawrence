@@ -1,7 +1,6 @@
 HovenInfobot = class("HovenInfobot", HybridMoby)
 
 function HovenInfobot:initialize(level, uid)
-    print("Initializing HovenInfobot")
     HybridMoby.initialize(self, level, uid)
 
     self.dead = false

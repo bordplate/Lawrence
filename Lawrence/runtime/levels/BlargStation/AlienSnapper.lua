@@ -1,7 +1,6 @@
 AlienSnapper = class("AlienSnapper", HybridMoby)
 
 function AlienSnapper:initialize(level, uid)
-    print("Initializing AlienSnapper")
     HybridMoby.initialize(self, level, uid)
 
     self:MonitorAttribute(Moby.offset.state, 1)

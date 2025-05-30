@@ -1,7 +1,6 @@
 Elevator = class("Elevator", HybridMoby)
 
 function Elevator:initialize(level, uid)
-    print("Initializing Elevator")
     HybridMoby.initialize(self, level, uid)
 
     self:MonitorAttribute(0xbc, 1)

@@ -1,7 +1,6 @@
 RedButton = class("RedButton", HybridMoby)
 
 function RedButton:initialize(level, uid)
-    print("Initializing RedButton")
     HybridMoby.initialize(self, level, uid)
 
     self:MonitorAttribute(Moby.offset.state, 1)
@@ -10,11 +9,8 @@ end
 
 function RedButton:OnAttributeChange(player, offset, oldValue, newValue)
     if offset == Moby.offset.state then
-        print("RedButton state from " .. oldValue .. " changed to " .. newValue .. " by " .. player:Username())
-
         if newValue == 3 then
             for i, other in pairs(player:Level():LuaEntity():FindChildren("Player")) do
-                print("Distance from " .. player:Username() .. " to " .. other:Username() .. " is " .. player:DistanceTo(other))
                 if player:GUID() ~= other:GUID() and player:DistanceTo(other) < 111.0 then
                     -- Change invisible management moby to update far away
                     other:ChangeMobyAttribute(150, Moby.offset.updateDistance, 1, 0xff)
@@ -24,7 +20,6 @@ function RedButton:OnAttributeChange(player, offset, oldValue, newValue)
 
         if newValue == 4 then
             for i, other in pairs(player:Level():LuaEntity():FindChildren("Player")) do
-                print("Distance from " .. player:Username() .. " to " .. other:Username() .. " is " .. player:DistanceTo(other))
                 if player:GUID() ~= other:GUID() and player:DistanceTo(other) < 111.0 then
                     other:SetPosition(264+i, 492, 118.5)
                     other:ChangeMobyAttribute(self.UID, Moby.offset.state, 1, 4)

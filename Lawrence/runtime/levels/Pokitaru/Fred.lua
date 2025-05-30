@@ -1,7 +1,6 @@
 Fred = class("Fred", HybridMoby)
 
 function Fred:initialize(level, uid)
-    print("Initializing Fred")
     HybridMoby.initialize(self, level, uid)
 
     self.dead = false

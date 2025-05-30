@@ -1,7 +1,6 @@
 BoltCrank = class("BoltCrank", HybridMoby)
 
 function BoltCrank:initialize(level, uid)
-    print("Initializing BoltCrank")
     HybridMoby.initialize(self, level, uid)
     
     self:MonitorAttribute(Moby.offset.state, 1)

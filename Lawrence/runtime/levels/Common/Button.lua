@@ -1,7 +1,6 @@
 Button = class("Button", HybridMoby)
 
 function Button:initialize(level, uid)
-    print("Initializing Button")
     HybridMoby.initialize(self, level, uid)
 
     self:MonitorAttribute(Moby.offset.state, 1)

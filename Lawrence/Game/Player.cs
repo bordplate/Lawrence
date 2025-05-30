@@ -877,8 +877,6 @@ partial class Player : IClientHandler
             return;
         }
         
-        Logger.Log($"Player [{Username()}]: Level({level}) flag type {type} changed: {index}->{value}");
-        
         Level()?.OnFlagChanged(this, type, size, index, value);
         
         CallLuaFunction("OnLevelFlagChanged", LuaEntity(), type, level, size, index, value);

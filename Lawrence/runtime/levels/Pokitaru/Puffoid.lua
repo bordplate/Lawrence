@@ -1,7 +1,6 @@
 Puffoid = class("Puffoid", HybridMoby)
 
 function Puffoid:initialize(level, uid)
-    print("Initializing Puffoid")
     HybridMoby.initialize(self, level, uid)
     
     self.dead = false
