@@ -1,4 +1,9 @@
-package.cpath = package.cpath .. ';./mods/newrando/?.dll'
+local dir_sep = package.config:sub(1, 1)
+if dir_sep == '\\' then
+    package.cpath = package.cpath .. ';./mods/newrando/?.dll'
+else
+    package.cpath = package.cpath .. ';./mods/newrando/?.so'
+end
 
 local AP = require('lua-apclientpp')
 assert(AP, 'Failed to load')
@@ -72,10 +77,6 @@ end
 
 function APClient:WinGame()
     self.ap:StatusUpdate(30)
-end
-
-function APClient:Sync()
-    self.ap:Sync()
 end
 
 function APClient:poll()
