@@ -24,23 +24,7 @@ function RandoPlayer:Made()
         Player.offset.veldin2CommandosKilled,
     }
     
-    self.has_hoverboard = false
-    self.has_o2_mask = false
-    
-    self.has_zoomerator = false
-    self.has_raritanium = false
-    self.has_codebot = false
-    self.has_premium_nanotech = false
-    self.has_ultra_nanotech = false
-
-    self.got_oltanis_infobot = false
-    self.got_oltanis_PDA = false
-    self.got_oltanis_morph = false
-    
     self.fullySpawnedIn = false
-    self.level_unlock_queue = {}
-    self.item_unlock_queue = {}
-    self.special_unlock_queue = {}
     
 --     for _, counter in ipairs(self.skillpointCounters) do
 --         self:MonitorAddress(counter, 4) 
@@ -169,24 +153,20 @@ function RandoPlayer:OnRespawned()
     self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
     
     if not self.fullySpawnedIn then
-        for _, planet in ipairs(self.level_unlock_queue) do
+        for _, planet in ipairs(self.lobby.universe.level_unlock_queue) do
             print("Delayed unlocking planet: " .. tostring(planet))
             self:UnlockLevel(planet)
         end
-        for _, item in ipairs(self.item_unlock_queue) do
+        for _, item in ipairs(self.lobby.universe.item_unlock_queue) do
             print("Delayed unlocking item: " .. tostring(item))
             self:GiveItem(item, true)
         end
-        for _, special in ipairs(self.special_unlock_queue) do
+        for _, special in ipairs(self.lobby.universe.special_unlock_queue) do
             print("Delayed unlocking special: " .. tostring(special))
             self:SetAddressValue(special, 1, 1)
         end
         self.fullySpawnedIn = true
-        self.level_unlock_queue = {}
-        self.item_unlock_queue = {}
-        self.special_unlock_queue = {}
         
-        self.lobby.universe.ap_client:Sync()
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
         self:UpdateHPAmount()
     end

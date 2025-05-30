@@ -97,9 +97,9 @@ local locationToActionMap = {
     
     -- Oltanis
     [71] = function (universe, player) universe:RemoveVendorItem(0x13) end, -- tesla claw
-    [72] = function (universe, player) universe.replacedMobys:GetMoby('Sam'):Disable() player.got_oltanis_infobot = true player:SetLevelFlags(1, 14, 1, {0xff}) player:SetLevelFlags(1, 14, 7, {0xff}) player:SetLevelFlags(2, 14, 0, {2}) FixPlanetsForPlayer(universe, player) end, -- infobot
-    [73] = function (universe, player) universe.replacedMobys:GetMoby('Steve'):Disable() player.got_oltanis_PDA = true player:SetLevelFlags(1, 14, 0, {0xff}) player:SetLevelFlags(1, 14, 11, {0xff}) player:SetLevelFlags(2, 14, 1, {16}) player:SetLevelFlags(2, 14, 46, {1}) player:SetLevelFlags(2, 14, 47, {8}) FixPlanetsForPlayer(universe, player) end, -- Steve
-    [74] = function (universe, player) universe.replacedMobys:GetMoby('MorphORay'):Disable() player.got_oltanis_morph = true player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) FixPlanetsForPlayer(universe, player) end, -- morph O ray
+    [72] = function (universe, player) universe.replacedMobys:GetMoby('Sam'):Disable() universe.got_oltanis_infobot = true player:SetLevelFlags(1, 14, 1, {0xff}) player:SetLevelFlags(1, 14, 7, {0xff}) player:SetLevelFlags(2, 14, 0, {2}) FixPlanetsForPlayer(universe, player) end, -- infobot
+    [73] = function (universe, player) universe.replacedMobys:GetMoby('Steve'):Disable() universe.got_oltanis_PDA = true player:SetLevelFlags(1, 14, 0, {0xff}) player:SetLevelFlags(1, 14, 11, {0xff}) player:SetLevelFlags(2, 14, 1, {16}) player:SetLevelFlags(2, 14, 46, {1}) player:SetLevelFlags(2, 14, 47, {8}) FixPlanetsForPlayer(universe, player) end, -- Steve
+    [74] = function (universe, player) universe.replacedMobys:GetMoby('MorphORay'):Disable() universe.got_oltanis_morph = true player:SetLevelFlags(1, 14, 2, {0xff}) player:SetLevelFlags(1, 14, 8, {0xff}) FixPlanetsForPlayer(universe, player) end, -- morph O ray
     [75] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 1, 1, 1) end, -- main gold bolt
     [76] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 2, 1, 1) end, -- magnet gold bolt 2
     [77] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 14 * 4 + 3, 1, 1) end, -- magnet gold bolt 2
@@ -156,7 +156,7 @@ end
 function FixPlanetsForPlayer(universe, player)
     levelName = player:Level():GetName()
     if levelName == "Orxon" then
-        if player.has_o2_mask then
+        if universe.has_o2_mask then
             player:SetLevelFlags(2, 10, 30, {112}) player:SetLevelFlags(2, 10, 103, {1})
             player:SetLevelFlags(1, 10, 1, {0xff}) player:SetLevelFlags(2, 10, 35, {2}) player:SetLevelFlags(1, 10, 1, {0xff})
             player:SetLevelFlags(1, 10, 4, {0xff}) player:SetLevelFlags(2, 87, 4, {2}) player:SetLevelFlags(2, 10, 102, {48}) -- ratchet got infobot flag

@@ -24,7 +24,7 @@ end
 
 function AgentMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.has_zoomerator then
+        if self:Universe().has_zoomerator then
             player:ToastMessage("\x12 Trade \x0cZoomerator\x08 for \x0cSonic Summoner\x08", 1)
         else
             player:ToastMessage("Bring the prize from the hoverboard races", 1)
@@ -33,7 +33,7 @@ function AgentMoby:ToastMessage(player)
 end
 
 function AgentMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.has_zoomerator then
+    if not self.disabled and self:closeToPlayer(player) and self:Universe().has_zoomerator then
         player:OnUnlockItem(Item.GetByName("Sonic Summoner").id, true)
     end
 end

@@ -28,6 +28,23 @@ function RandoUniverse:initialize(lobby)
     self.buyable_weapons = {}
     self.buyable_ammo = {} -- list weapons, +64 is performed to turn it into ammo
     self.already_bought_weapons = {}
+
+    self.has_hoverboard = false
+    self.has_o2_mask = false
+
+    self.has_zoomerator = false
+    self.has_raritanium = false
+    self.has_codebot = false
+    self.has_premium_nanotech = false
+    self.has_ultra_nanotech = false
+
+    self.got_oltanis_infobot = false
+    self.got_oltanis_PDA = false
+    self.got_oltanis_morph = false
+    
+    self.level_unlock_queue = {}
+    self.item_unlock_queue = {}
+    self.special_unlock_queue = {}
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
@@ -48,6 +65,7 @@ function RandoUniverse:Connect()
 end
 
 function RandoUniverse:DistributeGiveItem(item_id, equip)
+    table.insert(self.item_unlock_queue, item_id)
     if equip == nil then
         equip = false
     end
@@ -73,42 +91,38 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
         
         if player.fullySpawnedIn then
             player:GiveItem(item_id, equip)
-        else
-            player.item_unlock_queue[#player.item_unlock_queue+1] = item_id
         end
     end
 end
 
 function RandoUniverse:DistributeUnlockSpecial(special_address)
+    table.insert(self.special_unlock_queue, special_address)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if special_address == Player.offset.has_zoomerator then
-            player.has_zoomerator = true
+            self.has_zoomerator = true
         elseif special_address == Player.offset.has_raritanium then
-            player.has_raritanium = true
+            self.has_raritanium = true
         elseif special_address == Player.offset.has_codebot then
-            player.has_codebot = true
+            self.has_codebot = true
         elseif special_address == Player.offset.has_premium_nanotech then
-            player.has_premium_nanotech = true
+            self.has_premium_nanotech = true
             player:UpdateHPAmount()
         elseif special_address == Player.offset.has_ultra_nanotech then
-            player.has_ultra_nanotech = true
+            self.has_ultra_nanotech = true
             player:UpdateHPAmount()
         end
         
         if player.fullySpawnedIn then            
             player:SetAddressValue(special_address, 1, 1)
-        else
-            player.special_unlock_queue[#player.special_unlock_queue+1] = special_address
         end
     end
 end
 
 function RandoUniverse:DistributeUnlockPlanet(planet_id)
+    table.insert(self.level_unlock_queue, planet_id)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if player.fullySpawnedIn then
             player:UnlockLevel(planet_id)
-        else
-            player.level_unlock_queue[#player.level_unlock_queue+1] = planet_id
         end
     end
 end
