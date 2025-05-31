@@ -1,7 +1,6 @@
 ThrusterPackLock = class("ThrusterPackLock", HybridMoby)
 
 function ThrusterPackLock:initialize(level, uid)
-    print("Initializing ThrusterPackLock")
     HybridMoby.initialize(self, level, uid)
 
     self:MonitorAttribute(Moby.offset.state, 1)

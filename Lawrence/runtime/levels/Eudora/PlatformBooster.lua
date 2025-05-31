@@ -1,7 +1,6 @@
 PlatformBooster = class("PlatformBooster", HybridMoby)
 
 function PlatformBooster:initialize(level, uid, boltCrank)
-    print("Initializing PlatformBooster")
     HybridMoby.initialize(self, level, uid)
     
     self.boltCrank = boltCrank

@@ -1,7 +1,6 @@
 Psyctopus = class("Psyctopus", HybridMoby)
 
 function Psyctopus:initialize(level, uid)
-    print("Initializing Psyctopus")
     HybridMoby.initialize(self, level, uid)
     
     self.dead = false

@@ -235,7 +235,7 @@ partial class Player {
     }
 
     public void LoadLevel(Level l) {
-        if (_levelId == l.GameID()) {
+        if (_levelId != 0 && _levelId == l.GameID()) {
             _level = l;
             _level.Add(this);
             ReloadNametag();
@@ -894,8 +894,6 @@ partial class Player : IClientHandler
         if (Level()?.GameID() != level) {
             return;
         }
-        
-        Logger.Log($"Player [{Username()}]: Level({level}) flag type {type} changed: {index}->{value}");
         
         Level()?.OnFlagChanged(this, type, size, index, value);
         

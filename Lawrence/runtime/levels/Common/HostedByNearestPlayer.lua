@@ -3,7 +3,6 @@ HostedByNearestPlayer = class("HostedByNearestPlayer", HybridMoby)
 function HostedByNearestPlayer:initialize(level, uid, syncedPVars)
     syncedPVars = syncedPVars or {}
     
-    print("Initializing HostedByNearestPlayer")
     HybridMoby.initialize(self, level, uid)
 
     self:MonitorAttribute(Moby.offset.state, 1)

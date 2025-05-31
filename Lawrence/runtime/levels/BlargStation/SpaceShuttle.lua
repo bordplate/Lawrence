@@ -1,7 +1,6 @@
 SpaceShuttle = class("SpaceShuttle", HybridMoby)
 
 function SpaceShuttle:initialize(level, uid)
-    print("Initializing SpaceShuttle")
     HybridMoby.initialize(self, level, uid)
     
     self:MonitorAttribute(Moby.offset.position.x, 4, true)
