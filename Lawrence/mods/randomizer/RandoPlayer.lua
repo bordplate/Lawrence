@@ -13,6 +13,10 @@ function RandoPlayer:Made()
     self.gameState = 0
     
     self.totalBolts = 0
+
+    self.level_unlock_queue = {}
+    self.item_unlock_queue = {}
+    self.special_unlock_queue = {}
     
     self.skillpointCounters = {
         Player.offset.aridiaShipsKilled,
@@ -23,7 +27,8 @@ function RandoPlayer:Made()
         Player.offset.oltanisShipsKilled,
         Player.offset.veldin2CommandosKilled,
     }
-    
+
+    self.receivedItemsWhileLoading = false
     self.fullySpawnedIn = false
     
 --     for _, counter in ipairs(self.skillpointCounters) do
@@ -143,30 +148,31 @@ end
 
 function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
     self.totalBolts = totalBolts
-    self.lobby.bolts = totalBolts
-    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-        if player ~= self then
-            player:GiveBolts(boltDiff)
-        end
-    end
 end
 
 function RandoPlayer:OnRespawned()
     self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
-    
-    if not self.fullySpawnedIn then
-        for _, planet in ipairs(self.lobby.universe.level_unlock_queue) do
+
+    if self.receivedItemsWhileLoading then
+        for _, planet in ipairs(self.level_unlock_queue) do
             print("Delayed unlocking planet: " .. tostring(planet))
             self:UnlockLevel(planet)
         end
-        for _, item in ipairs(self.lobby.universe.item_unlock_queue) do
+        for _, item in ipairs(self.item_unlock_queue) do
             print("Delayed unlocking item: " .. tostring(item))
             self:GiveItem(item, true)
         end
-        for _, special in ipairs(self.lobby.universe.special_unlock_queue) do
+        for _, special in ipairs(self.special_unlock_queue) do
             print("Delayed unlocking special: " .. tostring(special))
             self:SetAddressValue(special, 1, 1)
         end
+        self.level_unlock_queue = {}
+        self.item_unlock_queue = {}
+        self.special_unlock_queue = {}
+        self.receivedItemsWhileLoading = false
+    end
+    
+    if not self.fullySpawnedIn then
         self.fullySpawnedIn = true
         
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)

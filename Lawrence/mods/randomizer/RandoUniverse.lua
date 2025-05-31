@@ -94,6 +94,11 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
             player:ToastMessage("You received the \x0c" .. item_name .. "\x08")
             player:GiveItem(item_id, equip)
         end
+
+        if player.gameState == 6 then
+            table.insert(player.item_unlock_queue, item_id)
+            player.receivedItemsWhileLoading = true
+        end
     end
 end
 
@@ -118,9 +123,14 @@ function RandoUniverse:DistributeUnlockSpecial(special_address)
             player:UpdateHPAmount()
             player:ToastMessage("You received the \x0cUltra Nanotech\x08")
         end
-        
-        if player.fullySpawnedIn then            
+
+        if player.fullySpawnedIn then
             player:SetAddressValue(special_address, 1, 1)
+        end
+
+        if player.gameState == 6 then
+            table.insert(player.special_unlock_queue, special_address)
+            player.receivedItemsWhileLoading = true
         end
     end
 end
@@ -132,6 +142,10 @@ function RandoUniverse:DistributeUnlockPlanet(planet_id)
         if player.fullySpawnedIn then
             player:ToastMessage("Infobot for planet \x0c" .. planet_name .. "\x08 received.")
             player:UnlockLevel(planet_id)
+        end
+        if player.gameState == 6 then
+            table.insert(player.level_unlock_queue, planet_id)
+            player.receivedItemsWhileLoading = true
         end
     end
 end
@@ -168,6 +182,10 @@ function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
     player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
     player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
+    player.level_unlock_queue = self.level_unlock_queue
+    player.item_unlock_queue = self.item_unlock_queue
+    player.special_unlock_queue = self.special_unlock_queue
+    player.receivedItemsWhileLoading = true
 end
 
 function RandoUniverse:OnPlayerGetItem(player, item_id)
