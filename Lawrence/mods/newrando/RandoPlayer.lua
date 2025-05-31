@@ -178,10 +178,6 @@ end
 --    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
 --end
 
-function RandoPlayer:NotifyLocationCollected(location_id)
-    print(string.format("player %s got location: %d", self.username, location_id))
-end
-
 function RandoPlayer:UpdateVendorContents()
     num_buyable_weapons = #self.lobby.universe.buyable_weapons
     for i = 0, 11 do
@@ -197,8 +193,8 @@ end
 
 function RandoPlayer:UpdateHPAmount()
     hp = 4
-    if self.has_premium_nanotech then hp = hp + 1 end
-    if self.has_ultra_nanotech then hp = hp + 3 end
+    if self.lobby.universe.has_premium_nanotech then hp = hp + 1 end
+    if self.lobby.universe.has_ultra_nanotech then hp = hp + 3 end
     self:SetAddressValue(0x71fb28, hp, 4)
 end
 

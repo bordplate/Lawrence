@@ -29,7 +29,7 @@ function FredMoby:ToastMessage(player)
             player.lobby.universe:DistributeSetLevelFlags(1, 11, 4, {0xff})
             self.was_close_before = true
         end
-        if player.has_raritanium then
+        if self:Universe():LuaEntity().has_raritanium then
             player:ToastMessage("\x12 Trade \x0cRaritanium\x08 for \x0cPersuader\x08", 1)
         else
             player:ToastMessage("You need \x0cRaritanium\x08", 1)
@@ -38,7 +38,7 @@ function FredMoby:ToastMessage(player)
 end
 
 function FredMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.has_raritanium then
+    if not self.disabled and self:closeToPlayer(player) and self:Universe():LuaEntity().has_raritanium then
         player:OnUnlockItem(Item.GetByName("Persuader").id, true)
     end
 end

@@ -81,15 +81,16 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
         end
     end
     
+    item_name = Item.GetById(item_id).name
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if item_id == Item.GetByName("Hoverboard").id then
-            player.has_hoverboard = true
+            self.has_hoverboard = true
         elseif item_id == Item.GetByName("O2 Mask").id then
-            player.has_o2_mask = true
+            self.has_o2_mask = true
             FixPlanetsForPlayer(self, player)
         end
-        
         if player.fullySpawnedIn then
+            player:ToastMessage("You received the \x0c" .. item_name .. "\x08")
             player:GiveItem(item_id, equip)
         end
     end
@@ -100,16 +101,21 @@ function RandoUniverse:DistributeUnlockSpecial(special_address)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if special_address == Player.offset.has_zoomerator then
             self.has_zoomerator = true
+            player:ToastMessage("You received the \x0cZoomerator\x08")
         elseif special_address == Player.offset.has_raritanium then
             self.has_raritanium = true
+            player:ToastMessage("You received the \x0cRaritanium\x08")
         elseif special_address == Player.offset.has_codebot then
             self.has_codebot = true
+            player:ToastMessage("You received the \x0cCodebot\x08")
         elseif special_address == Player.offset.has_premium_nanotech then
             self.has_premium_nanotech = true
             player:UpdateHPAmount()
+            player:ToastMessage("You received the \x0cPremium Nanotech\x08")
         elseif special_address == Player.offset.has_ultra_nanotech then
             self.has_ultra_nanotech = true
             player:UpdateHPAmount()
+            player:ToastMessage("You received the \x0cUltra Nanotech\x08")
         end
         
         if player.fullySpawnedIn then            
@@ -120,8 +126,10 @@ end
 
 function RandoUniverse:DistributeUnlockPlanet(planet_id)
     table.insert(self.level_unlock_queue, planet_id)
+    planet_name = self:GetLevelByGameID(planet_id):GetName()
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if player.fullySpawnedIn then
+            player:ToastMessage("Infobot for planet \x0c" .. planet_name .. "\x08 received.")
             player:UnlockLevel(planet_id)
         end
     end
@@ -199,7 +207,7 @@ end
 function RandoUniverse:NotifyPlayersLocationCollected(location_id, exclude_player)
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if _player ~= exclude_player then
-            _player:NotifyLocationCollected(location_id)
+            LocationSync(self, _player, location_id)
         end
     end
 end

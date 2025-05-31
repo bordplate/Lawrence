@@ -24,7 +24,7 @@ end
 
 function HologuiseMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if self:Universe().has_hoverboard then
+        if self:Universe():LuaEntity().has_hoverboard then
             player:ToastMessage("\x12 Take \x0cHologuise\x08", 1)
         else
             player:ToastMessage("Hoverboard required to earn \x0cHologuise\x08", 1)
@@ -33,7 +33,7 @@ function HologuiseMoby:ToastMessage(player)
 end
 
 function HologuiseMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and self:Universe().has_hoverboard then
+    if not self.disabled and self:closeToPlayer(player) and self:Universe():LuaEntity().has_hoverboard then
         player:OnUnlockItem(Item.GetByName("Hologuise").id, true)
     end
 end
