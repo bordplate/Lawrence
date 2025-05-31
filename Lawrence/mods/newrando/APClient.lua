@@ -1,8 +1,10 @@
 local dir_sep = package.config:sub(1, 1)
-if dir_sep == '\\' then
+if GetOS() == "Windows" then
     package.cpath = package.cpath .. ';./mods/newrando/?.dll'
-else
+elseif GetOS() == "Linux" then
     package.cpath = package.cpath .. ';./mods/newrando/?.so'
+else
+    print("OS:" .. GetOS() .. " not supported")
 end
 
 local AP = require('lua-apclientpp')
