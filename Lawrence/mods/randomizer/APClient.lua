@@ -1,8 +1,8 @@
 local dir_sep = package.config:sub(1, 1)
 if GetOS() == "Windows" then
-    package.cpath = package.cpath .. ';./mods/newrando/?.dll'
+    package.cpath = package.cpath .. ';./mods/randomizer/?.dll'
 elseif GetOS() == "Linux" then
-    package.cpath = package.cpath .. ';./mods/newrando/?.so'
+    package.cpath = package.cpath .. ';./mods/randomizer/?.so'
 else
     print("OS:" .. GetOS() .. " not supported")
 end
