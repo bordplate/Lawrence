@@ -12,6 +12,13 @@ Player.offset = {
     oltanisShipsKilled = 0x96c9f0,
     veldin2CommandosKilled = 0x96c9f8,
     gildedItems = 0x969ca8,
+    vendorItems = 0x71fb2c,
+    
+    has_zoomerator = 0x96bff0,
+    has_raritanium = 0x96bff1,
+    has_codebot = 0x96bff2,
+    has_premium_nanotech = 0x96bff4,
+    has_ultra_nanotech = 0x96bff5,
 }
 
 Player.communicationFlags = {

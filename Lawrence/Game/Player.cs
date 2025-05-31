@@ -312,6 +312,16 @@ partial class Player {
         }
     }
 
+    public void SetLevelFlags(byte type, byte level, ushort index, LuaTable valueTable)
+    {
+        uint[] value = new uint[valueTable.Values.Count];
+        for (int i = 1; i <= valueTable.Values.Count; i++) {
+            value[i-1] = Convert.ToUInt32(valueTable[i]);
+        }
+        
+        SetLevelFlags(type, level, index, value);
+    }
+
     public void ChangedLevelFlag(byte type, ushort index, uint value) {
         if (!_changedLevelFlags.ContainsKey(type)) {
             _changedLevelFlags[type] = new();
@@ -368,6 +378,14 @@ partial class Player {
     
     public void SetAddressValue(uint address, uint value, byte size) {
         SendPacket(Packet.MakeSetAddressValuePacket(address, value, size));
+    }
+
+    public void SetMetalDetectorMultiplier(uint value) {
+        SetAddressValue(0xB00000, value, 1);
+    }
+
+    public void SetPreventDeleteSkid(bool value) {
+        SetAddressValue(0xB00001, (uint)(value ? 1 : 0), 1);
     }
 }
 #endregion
@@ -507,7 +525,7 @@ partial class Player {
                 _client.DeleteMoby(moby);
             }
             
-            Logger.Log($"Player [{Username()}]: Deleted moby {moby.oClass} [{moby.UID}]");
+            // Logger.Log($"Player [{Username()}]: Deleted moby {moby.oClass} [{moby.UID}]");
         }
 
         base.OnDeleteEntity(notification);
@@ -673,7 +691,7 @@ partial class Player : IClientHandler
         moby.oClass = oClass;
         moby.SyncSpawnId = spawnId;
         
-        Logger.Log($"Player [{Username()}]: Created moby with oClass {oClass} and spawn ID {spawnId}");
+        // Logger.Log($"Player [{Username()}]: Created moby with oClass {oClass} and spawn ID {spawnId}");
 
         Add(moby);
         Level()?.Add(moby, false);
