@@ -39,6 +39,8 @@ function RandoPlayer:Made()
 end
 
 function RandoPlayer:Start()
+    self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 340, 0xC0FFA888, {GameState.Menu})
+    self:AddLabel(self.GhostRatchetLabel)
     self.lobby.universe:AddEntity(self)
     self:LoadLevel(self.lobby.startPlanet)
 end

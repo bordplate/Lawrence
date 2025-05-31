@@ -240,5 +240,4 @@ function RandoUniverse:OnTick()
     if self.ap_client_initialized then
         self.ap_client:poll()
     end
-    self.lobby:OnTick()
 end

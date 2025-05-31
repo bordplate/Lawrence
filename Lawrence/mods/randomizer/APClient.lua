@@ -51,7 +51,10 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     end
 
     function on_slot_refused(reasons)
-        print("Slot refused: " .. table.concat(reasons, ", ")) 
+        print("Slot refused: " .. table.concat(reasons, ", "))
+        self.ap = nil
+        self.running = false
+        collectgarbage("collect")
         universe.lobby:ap_refused()
     end
 

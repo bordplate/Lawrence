@@ -191,7 +191,6 @@ function LobbyView:OnControllerInputPressed(input)
                 self.startButtonText.Text = "\x11 Ready"
             end
         elseif self.lobby:AllPlayersReady() then
-            self:CloseView()
             self.lobby:Start()
         end
     end
@@ -228,6 +227,15 @@ function LobbyView:OnTick()
             self.startButtonText.TextColor = RGBA(0xA0, 0xA0, 0xA0, 0xc0)
         else
             self.startButtonText.TextColor = RGBA(0x88, 0xa8, 0xff, 0xc0)
+        end
+    end
+    if self.lobby.connected  and not self.lobby.started then
+        self.lobby.started = true
+        print("Starting lobby for: ")
+        for i, player in ipairs(self.lobby.players) do
+            print("  " .. player:Username())
+            self:CloseView()
+            player:Start()
         end
     end
 end

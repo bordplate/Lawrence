@@ -89,7 +89,6 @@ function Lobby:Start()
     --self.started = true
     if not self.waiting_on_connection then
         self.waiting_on_connection = true
-        
         self.universe:Connect()
     end
 end
@@ -100,7 +99,6 @@ end
 
 function Lobby:ap_refused()
     print("ap_refused")
-    self.universe = {}
     self.waiting_on_connection = false
 end
 
@@ -115,7 +113,6 @@ end
 
 function Lobby:Leave(player)
     self.players:Remove(player)
-    
     if player:GUID() == self.host:GUID() then
         if #self.players > 0 then
             self.host = self.players[1]
@@ -144,15 +141,4 @@ function Lobby:AllPlayersReady()
     end
     
     return true
-end
-
-function Lobby:OnTick()
-    if self.connected  and not self.started then
-        self.started = true
-        print("Starting lobby for: ")
-        for i, player in ipairs(self.players) do
-            print("  " .. player:Username())
-            player:Start()
-        end
-    end
 end
