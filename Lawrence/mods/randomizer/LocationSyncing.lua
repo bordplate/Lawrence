@@ -1,7 +1,7 @@
 local locationToActionMap = {
     -- novalis
     [1] = function (universe, player) universe.replacedMobys:GetMoby('Plumber'):Disable() end, -- Plumber
-    [2] = function (universe, player) player:SetLevelFlags(1,1,0,{0xff}) end, -- Mayor
+    [2] = function (universe, player) player:SetLevelFlags(1,1,0,{0xff}) universe.got_novalis_mayor = true end, -- Mayor
     [3] = function (universe, player) universe:RemoveVendorItem(0x10) end, -- pyrocitor
     [4] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 0, 1, 1) end, -- sewer gold bolt
     [5] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 2, 1, 1) end, -- caves gold bolt
@@ -166,7 +166,9 @@ function FixPlanetsForPlayer(universe, player)
             player:DeleteAllChildrenWithUID(813) -- minor gate (left)
         end
     elseif levelName == "BlargStation" then
-        player:SetLevelFlags(1, 6, 1, {0xff})
+        if universe.has_o2_mask then
+            player:SetLevelFlags(1, 6, 1, {0xff})
+        end
     elseif levelName == "Oltanis" then
         if universe.got_oltanis_infobot and universe.got_oltanis_PDA and universe.got_oltanis_morph then
             player:DeleteAllChildrenWithUID(370) -- statue

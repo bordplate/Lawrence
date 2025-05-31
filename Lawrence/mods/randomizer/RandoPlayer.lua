@@ -176,6 +176,12 @@ function RandoPlayer:OnRespawned()
     FixPlanetsForPlayer(self.lobby.universe, self)
 end
 
+function RandoPlayer:OnGameStateChanged(gameState)
+    if self.fullySpawnedIn and gameState == 0 and self.lobby.universe.got_novalis_mayor and self:Level():GetName() == "Novalis" then
+        self:SetLevelFlags(1,1,0,{0xff})
+    end
+end
+
 --function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
 --    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
 --end

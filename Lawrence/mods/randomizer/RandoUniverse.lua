@@ -38,6 +38,7 @@ function RandoUniverse:initialize(lobby)
     self.has_premium_nanotech = false
     self.has_ultra_nanotech = false
 
+    self.got_novalis_mayor = false
     self.got_oltanis_infobot = false
     self.got_oltanis_PDA = false
     self.got_oltanis_morph = false
