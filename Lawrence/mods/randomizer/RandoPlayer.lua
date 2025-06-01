@@ -165,7 +165,7 @@ function RandoPlayer:OnRespawned()
         end
         for _, item in ipairs(self.item_unlock_queue) do
             print("Delayed unlocking item: " .. tostring(item))
-            self:GiveItem(item, true)
+            self:GiveItem(item, Item.GetById(item_id).isWeapon)
         end
         for _, special in ipairs(self.special_unlock_queue) do
             print("Delayed unlocking special: " .. tostring(special))
@@ -190,6 +190,12 @@ end
 --function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
 --    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
 --end
+
+function Player:OnStartInLevelMovie(movie, levelId)
+    if levelId == 18 and movie == 4 then
+        self.lobby.universe.ap_client:WinGame()
+    end
+end
 
 function RandoPlayer:UpdateVendorContents()
     num_buyable_weapons = #self.lobby.universe.buyable_weapons
