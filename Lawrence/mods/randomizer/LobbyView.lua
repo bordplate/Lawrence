@@ -122,8 +122,8 @@ function LobbyView:initialize(player, lobby)
     
     self.descriptionTextArea.Text = self.lobby.optionsList[1].description
     
-    self.backButtonText = TextElement(120, 390, "\x12 Exit")
-    self.startButtonText = TextElement(380, 390, "\x11 Start")
+    self.backButtonText = TextElement(90, 390, "\x12 Exit")
+    self.startButtonText = TextElement(400, 390, "\x11 Start")
 
     if self.lobby.password == "" then
         self.optionsListMenu:GetItem(0).Accessory = "Not set"
@@ -149,6 +149,9 @@ function LobbyView:initialize(player, lobby)
         end
     end)
     
+    self.archipelagoConnectingStatusText = TextElement(240, 390, "")
+    self.archipelagoConnectingStatusText.TextColor = RGBA(255, 51, 0, 0xc0)
+    
     self:AddElement(self.lobbyTextElement)
     self:AddElement(self.optionsTextElement)
     self:AddElement(self.playersList)
@@ -159,6 +162,8 @@ function LobbyView:initialize(player, lobby)
     self:AddElement(self.portInput)
     self:AddElement(self.slotInput)
     self:AddElement(self.archipelagoPasswordInput)
+    
+    self:AddElement(self.archipelagoConnectingStatusText)
     
     self:AddElement(self.backButtonText)
     self:AddElement(self.startButtonText)
@@ -229,6 +234,9 @@ function LobbyView:OnTick()
             self.startButtonText.TextColor = RGBA(0x88, 0xa8, 0xff, 0xc0)
         end
     end
+    
+    self.archipelagoConnectingStatusText.Text = self.lobby.archipelagoConnectingStatus
+    
     if self.lobby.connected  and not self.lobby.started then
         self.lobby.started = true
         print("Starting lobby for: ")

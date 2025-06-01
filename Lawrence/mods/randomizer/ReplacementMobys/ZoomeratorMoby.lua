@@ -24,7 +24,7 @@ end
 
 function ZoomeratorMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if self:Universe():LuaEntity().has_hoverboard then
+        if player.lobby.universe.has_hoverboard then
             player:ToastMessage("\x12 Take \x0cZoomerator\x08", 1)
         else
             player:ToastMessage("Hoverboard required to earn \x0cZoomerator\x08", 1)
@@ -33,7 +33,7 @@ function ZoomeratorMoby:ToastMessage(player)
 end
 
 function ZoomeratorMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and self:Universe():LuaEntity().has_hoverboard then
+    if not self.disabled and self:closeToPlayer(player) and universe.has_hoverboard then
         player:OnUnlockItem(Item.GetByName("Zoomerator").id, true)
     end
 end

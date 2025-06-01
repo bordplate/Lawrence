@@ -9,6 +9,8 @@ function Lobby:initialize(host, lobby_password)
     
     self.started = false
     
+    self.archipelagoConnectingStatus = ""
+    
     self.players = ObservableList({})
 
     self.options = RandoOptions({
@@ -89,6 +91,7 @@ function Lobby:Start()
     --self.started = true
     if not self.waiting_on_connection then
         self.waiting_on_connection = true
+        self.archipelagoConnectingStatus = "Connecting to Archipelago"
         self.universe:Connect()
     end
 end
@@ -99,6 +102,7 @@ end
 
 function Lobby:ap_refused()
     print("ap_refused")
+    self.archipelagoConnectingStatus = "Connection Failed"
     self.waiting_on_connection = false
 end
 
