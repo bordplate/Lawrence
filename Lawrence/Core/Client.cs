@@ -35,6 +35,7 @@ public interface IClientHandler {
     void GameStateChanged(GameState state);
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
+    void OnStartInLevelMovie(uint movie, uint levelId);
     void OnUnlockLevel(int level);
     void OnUnlockSkillpoint(byte skillpoint);
     void OnDisconnect();
@@ -608,7 +609,6 @@ public partial class Client {
                     }
 
                     if (state.StateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
-                        Logger.Log($"Player got bolt #{state.Value}");
                         _clientHandler?.CollectedGoldBolt((int)state.Offset, (int)state.Value);
                     }
 
@@ -617,12 +617,10 @@ public partial class Client {
                         uint item = state.Value & 0xFFFF;
                         bool equip = (state.Value >> 16) == 1;
                         
-                        Logger.Log($"Player got item #{item}: equip: {equip}");
                         _clientHandler?.UnlockItem((int)item, equip);
                     }
 
                     if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
-                        Logger.Log($"Player unlocked level #{state.Value}");
                         _clientHandler?.OnUnlockLevel((int)state.Value);
                     }
 
@@ -631,8 +629,11 @@ public partial class Client {
                     }
                         
                     if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
-                        Logger.Log($"Player unlocked skillpoint #{state.Value}");
                         _clientHandler?.OnUnlockSkillpoint((byte)state.Value);
+                    }
+
+                    if (state.StateType == MPStateType.MP_STATE_START_IN_LEVEL_MOVIE) {
+                        _clientHandler?.OnStartInLevelMovie(state.Value, state.Offset);
                     }
 
                     break;
