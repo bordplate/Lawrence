@@ -13,6 +13,10 @@ function RandoPlayer:Made()
     self.gameState = 0
     
     self.totalBolts = 0
+
+    self.level_unlock_queue = {}
+    self.item_unlock_queue = {}
+    self.special_unlock_queue = {}
     
     self.skillpointCounters = {
         Player.offset.aridiaShipsKilled,
@@ -23,7 +27,8 @@ function RandoPlayer:Made()
         Player.offset.oltanisShipsKilled,
         Player.offset.veldin2CommandosKilled,
     }
-    
+
+    self.receivedItemsWhileLoading = false
     self.fullySpawnedIn = false
     
 --     for _, counter in ipairs(self.skillpointCounters) do
@@ -39,8 +44,10 @@ function RandoPlayer:Made()
 end
 
 function RandoPlayer:Start()
-    self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 340, 0xC0FFA888, {GameState.Menu})
-    self:AddLabel(self.GhostRatchetLabel)
+    if self.lobby.options.cheats.value then
+        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 340, 0xC0FFA888, {GameState.Menu})
+        self:AddLabel(self.GhostRatchetLabel)
+    end
     self.lobby.universe:AddEntity(self)
     self:LoadLevel(self.lobby.startPlanet)
 end
@@ -74,6 +81,9 @@ end
 
 function RandoPlayer:OnGameStateChanged(state)
     self.gameState = state
+    if self.fullySpawnedIn and state == 0 and self.lobby.universe.got_novalis_mayor and self:Level():GetName() == "Novalis" then
+        self:SetLevelFlags(1,1,0,{0xff})
+    end
 end
 
 function RandoPlayer:OnControllerInputTapped(input)
@@ -84,7 +94,7 @@ function RandoPlayer:OnControllerInputTapped(input)
         --end
     end
 
-    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats then
+    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats.value then
         self:SetGhostRatchet(200)
     end
     
@@ -102,7 +112,7 @@ function RandoPlayer:OnControllerInputTapped(input)
         end
     end
     
-    if input & 0x10 ~= 0 then
+    if input & 0x10 ~= 0 and self.fullySpawnedIn then
         self.lobby.universe.replacedMobys:Triangle(self)
     end
 end
@@ -143,30 +153,31 @@ end
 
 function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
     self.totalBolts = totalBolts
-    self.lobby.bolts = totalBolts
-    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-        if player ~= self then
-            player:GiveBolts(boltDiff)
-        end
-    end
 end
 
 function RandoPlayer:OnRespawned()
     self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
-    
-    if not self.fullySpawnedIn then
-        for _, planet in ipairs(self.lobby.universe.level_unlock_queue) do
+
+    if self.receivedItemsWhileLoading then
+        for _, planet in ipairs(self.level_unlock_queue) do
             print("Delayed unlocking planet: " .. tostring(planet))
             self:UnlockLevel(planet)
         end
-        for _, item in ipairs(self.lobby.universe.item_unlock_queue) do
+        for _, item in ipairs(self.item_unlock_queue) do
             print("Delayed unlocking item: " .. tostring(item))
-            self:GiveItem(item, true)
+            self:GiveItem(item, Item.GetById(item_id).isWeapon)
         end
-        for _, special in ipairs(self.lobby.universe.special_unlock_queue) do
+        for _, special in ipairs(self.special_unlock_queue) do
             print("Delayed unlocking special: " .. tostring(special))
             self:SetAddressValue(special, 1, 1)
         end
+        self.level_unlock_queue = {}
+        self.item_unlock_queue = {}
+        self.special_unlock_queue = {}
+        self.receivedItemsWhileLoading = false
+    end
+    
+    if not self.fullySpawnedIn then
         self.fullySpawnedIn = true
         
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
@@ -179,6 +190,12 @@ end
 --function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
 --    print(string.format("OnLevelFlagChanged: type: %s, level: %s, size: %s, index: %s, value: %s", tostring(flag_type), tostring(level), tostring(size), tostring(index), tostring(value)))
 --end
+
+function Player:OnStartInLevelMovie(movie, levelId)
+    if levelId == 18 and movie == 4 then
+        self.lobby.universe.ap_client:WinGame()
+    end
+end
 
 function RandoPlayer:UpdateVendorContents()
     num_buyable_weapons = #self.lobby.universe.buyable_weapons

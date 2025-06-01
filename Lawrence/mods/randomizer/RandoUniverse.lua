@@ -38,6 +38,7 @@ function RandoUniverse:initialize(lobby)
     self.has_premium_nanotech = false
     self.has_ultra_nanotech = false
 
+    self.got_novalis_mayor = false
     self.got_oltanis_infobot = false
     self.got_oltanis_PDA = false
     self.got_oltanis_morph = false
@@ -64,7 +65,7 @@ function RandoUniverse:Connect()
     self.ap_client_initialized = true
 end
 
-function RandoUniverse:DistributeGiveItem(item_id, equip)
+function RandoUniverse:DistributeGiveItem(item_id)
     table.insert(self.item_unlock_queue, item_id)
     if equip == nil then
         equip = false
@@ -91,7 +92,12 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
         end
         if player.fullySpawnedIn then
             player:ToastMessage("You received the \x0c" .. item_name .. "\x08")
-            player:GiveItem(item_id, equip)
+            player:GiveItem(item_id, Item.GetById(item_id).isWeapon)
+        end
+
+        if player.gameState == 6 then
+            table.insert(player.item_unlock_queue, item_id)
+            player.receivedItemsWhileLoading = true
         end
     end
 end
@@ -117,9 +123,14 @@ function RandoUniverse:DistributeUnlockSpecial(special_address)
             player:UpdateHPAmount()
             player:ToastMessage("You received the \x0cUltra Nanotech\x08")
         end
-        
-        if player.fullySpawnedIn then            
+
+        if player.fullySpawnedIn then
             player:SetAddressValue(special_address, 1, 1)
+        end
+
+        if player.gameState == 6 then
+            table.insert(player.special_unlock_queue, special_address)
+            player.receivedItemsWhileLoading = true
         end
     end
 end
@@ -131,6 +142,10 @@ function RandoUniverse:DistributeUnlockPlanet(planet_id)
         if player.fullySpawnedIn then
             player:ToastMessage("Infobot for planet \x0c" .. planet_name .. "\x08 received.")
             player:UnlockLevel(planet_id)
+        end
+        if player.gameState == 6 then
+            table.insert(player.level_unlock_queue, planet_id)
+            player.receivedItemsWhileLoading = true
         end
     end
 end
@@ -152,7 +167,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item)
     ap_item_type = GetAPItemType(ap_item)
     
     if ap_item_type == "item" then
-        self:DistributeGiveItem(APItemToItem(ap_item), true)
+        self:DistributeGiveItem(APItemToItem(ap_item))
     elseif ap_item_type == "special" then
         self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
     elseif ap_item_type == "planet" then
@@ -167,6 +182,10 @@ function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
     player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
     player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
+    player.level_unlock_queue = self.level_unlock_queue
+    player.item_unlock_queue = self.item_unlock_queue
+    player.special_unlock_queue = self.special_unlock_queue
+    player.receivedItemsWhileLoading = true
 end
 
 function RandoUniverse:OnPlayerGetItem(player, item_id)
@@ -181,8 +200,8 @@ end
 
 function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     print("OnPlayerGetPlanet: " .. tostring(planet_id))
-    if player.gameState == 6 or -- PlanetLoading
-        not player.fullySpawnedIn then 
+    if (player.gameState == 6 or -- PlanetLoading
+        not player.fullySpawnedIn) then
         print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
         self:AddPlanetVendorItem(planet_id)
        player:UnlockLevel(planet_id)
