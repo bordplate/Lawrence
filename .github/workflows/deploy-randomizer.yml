@@ -1,4 +1,4 @@
-name: Deploy sandbox server
+name: Deploy randomizer server
 
 on: workflow_dispatch
 
