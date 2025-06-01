@@ -29,6 +29,7 @@ jobs:
         working-directory: ./Lawrence
         run: >
           dotnet publish -c Release -f net8.0 -r linux-x64 --self-contained -p:PublishSingleFile=true -o bin/publish/linux-x64 &&
+          cp -f .github/binaries/liblua54.so bin/publish/linux-x64/liblua54.so &&
           cd bin/publish/linux-x64 &&
           zip Lawrence-linux-x64.zip -r .
 
