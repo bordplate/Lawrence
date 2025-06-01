@@ -65,7 +65,7 @@ function RandoUniverse:Connect()
     self.ap_client_initialized = true
 end
 
-function RandoUniverse:DistributeGiveItem(item_id, equip)
+function RandoUniverse:DistributeGiveItem(item_id)
     table.insert(self.item_unlock_queue, item_id)
     if equip == nil then
         equip = false
@@ -92,7 +92,7 @@ function RandoUniverse:DistributeGiveItem(item_id, equip)
         end
         if player.fullySpawnedIn then
             player:ToastMessage("You received the \x0c" .. item_name .. "\x08")
-            player:GiveItem(item_id, equip)
+            player:GiveItem(item_id, Item.GetById(item_id).isWeapon)
         end
 
         if player.gameState == 6 then
@@ -167,7 +167,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item)
     ap_item_type = GetAPItemType(ap_item)
     
     if ap_item_type == "item" then
-        self:DistributeGiveItem(APItemToItem(ap_item), true)
+        self:DistributeGiveItem(APItemToItem(ap_item))
     elseif ap_item_type == "special" then
         self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
     elseif ap_item_type == "planet" then

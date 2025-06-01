@@ -49,7 +49,6 @@ function RandoPlayer:Start()
         self:AddLabel(self.GhostRatchetLabel)
     end
     self.lobby.universe:AddEntity(self)
-    self:GiveBolts(4000)
     self:LoadLevel(self.lobby.startPlanet)
 end
 
