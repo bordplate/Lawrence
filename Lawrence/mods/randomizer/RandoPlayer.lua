@@ -44,11 +44,12 @@ function RandoPlayer:Made()
 end
 
 function RandoPlayer:Start()
-    if self.lobby.options.cheats then
+    if self.lobby.options.cheats.value then
         self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 340, 0xC0FFA888, {GameState.Menu})
         self:AddLabel(self.GhostRatchetLabel)
     end
     self.lobby.universe:AddEntity(self)
+    self:GiveBolts(4000)
     self:LoadLevel(self.lobby.startPlanet)
 end
 
@@ -94,7 +95,7 @@ function RandoPlayer:OnControllerInputTapped(input)
         --end
     end
 
-    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats then
+    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats.value then
         self:SetGhostRatchet(200)
     end
     
@@ -112,7 +113,7 @@ function RandoPlayer:OnControllerInputTapped(input)
         end
     end
     
-    if input & 0x10 ~= 0 then
+    if input & 0x10 ~= 0 and self.fullySpawnedIn then
         self.lobby.universe.replacedMobys:Triangle(self)
     end
 end
