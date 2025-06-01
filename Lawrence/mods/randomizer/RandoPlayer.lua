@@ -44,8 +44,10 @@ function RandoPlayer:Made()
 end
 
 function RandoPlayer:Start()
-    self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 340, 0xC0FFA888, {GameState.Menu})
-    self:AddLabel(self.GhostRatchetLabel)
+    if self.lobby.options.cheats then
+        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 340, 0xC0FFA888, {GameState.Menu})
+        self:AddLabel(self.GhostRatchetLabel)
+    end
     self.lobby.universe:AddEntity(self)
     self:LoadLevel(self.lobby.startPlanet)
 end
@@ -79,6 +81,9 @@ end
 
 function RandoPlayer:OnGameStateChanged(state)
     self.gameState = state
+    if self.fullySpawnedIn and state == 0 and self.lobby.universe.got_novalis_mayor and self:Level():GetName() == "Novalis" then
+        self:SetLevelFlags(1,1,0,{0xff})
+    end
 end
 
 function RandoPlayer:OnControllerInputTapped(input)
@@ -180,12 +185,6 @@ function RandoPlayer:OnRespawned()
     end
     self:UpdateVendorContents()
     FixPlanetsForPlayer(self.lobby.universe, self)
-end
-
-function RandoPlayer:OnGameStateChanged(gameState)
-    if self.fullySpawnedIn and gameState == 0 and self.lobby.universe.got_novalis_mayor and self:Level():GetName() == "Novalis" then
-        self:SetLevelFlags(1,1,0,{0xff})
-    end
 end
 
 --function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)

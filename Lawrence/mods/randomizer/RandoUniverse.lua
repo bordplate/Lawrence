@@ -200,8 +200,8 @@ end
 
 function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     print("OnPlayerGetPlanet: " .. tostring(planet_id))
-    if player.gameState == 6 or -- PlanetLoading
-        not player.fullySpawnedIn then 
+    if (player.gameState == 6 or -- PlanetLoading
+        not player.fullySpawnedIn) then
         print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
         self:AddPlanetVendorItem(planet_id)
        player:UnlockLevel(planet_id)
