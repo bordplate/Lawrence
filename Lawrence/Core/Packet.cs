@@ -64,6 +64,7 @@ public enum MPStateType : ushort
     MP_STATE_TYPE_LEVEL_FLAG = 15,
     MP_STATE_TYPE_UNLOCK_SKILLPOINT = 16,
     MP_STATE_SET_COMMUNICATION_FLAGS = 17,
+    MP_STATE_START_IN_LEVEL_MOVIE = 18,
 }
 
 public enum MPDamageFlags : uint {
@@ -975,6 +976,20 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
 
         packet.AddBodyPart(setItemState);
 
+        return packet;
+    }
+
+    public static Packet MakeStartInLevelMoviePacket(uint movie) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+        
+        MPPacketSetState startInLevelMovieState = new MPPacketSetState {
+            StateType = MPStateType.MP_STATE_START_IN_LEVEL_MOVIE,
+            Value = movie,
+            Offset =  0
+        };
+        
+        packet.AddBodyPart(startInLevelMovieState);
+        
         return packet;
     }
 

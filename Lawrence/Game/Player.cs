@@ -252,6 +252,11 @@ partial class Player {
         }
     }
 
+    public void StartInLevelMovie(uint movie) {
+        Logger.Log($"Starting ILM: {movie}");
+        SendPacket(Packet.MakeStartInLevelMoviePacket(movie));
+    }
+
     public void GiveItem(ushort item, bool equip = false) {
         SendPacket(Packet.MakeSetItemPacket(item, equip));
     }
@@ -831,6 +836,10 @@ partial class Player : IClientHandler
 
     public void UnlockItem(int itemId, bool equip) {
         CallLuaFunction("OnUnlockItem", LuaEntity(), itemId, equip);
+    }
+
+    public void OnStartInLevelMovie(uint movie, uint level) {
+        CallLuaFunction("OnStartInLevelMovie", LuaEntity(), movie, level);
     }
 
     public void OnUnlockLevel(int level) {

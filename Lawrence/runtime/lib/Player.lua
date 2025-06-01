@@ -50,6 +50,10 @@ function Player:OnUnlockItem(item, equip)
     self:GiveItem(item, equip)
 end
 
+function Player:OnStartInLevelMovie(movie, levelId)
+    
+end
+
 function Player:OnUnlockLevel(level)
     self:UnlockLevel(level)
 end

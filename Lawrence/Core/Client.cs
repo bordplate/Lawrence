@@ -35,6 +35,7 @@ public interface IClientHandler {
     void GameStateChanged(GameState state);
     void CollectedGoldBolt(int planet, int number);
     void UnlockItem(int item, bool equip);
+    void OnStartInLevelMovie(uint movie, uint levelId);
     void OnUnlockLevel(int level);
     void OnUnlockSkillpoint(byte skillpoint);
     void OnDisconnect();
@@ -633,6 +634,10 @@ public partial class Client {
                     if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
                         Logger.Log($"Player unlocked skillpoint #{state.Value}");
                         _clientHandler?.OnUnlockSkillpoint((byte)state.Value);
+                    }
+
+                    if (state.StateType == MPStateType.MP_STATE_START_IN_LEVEL_MOVIE) {
+                        _clientHandler?.OnStartInLevelMovie(state.Value, state.Offset);
                     }
 
                     break;
