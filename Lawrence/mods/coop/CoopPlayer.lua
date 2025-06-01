@@ -258,14 +258,32 @@ function CoopPlayer:OnUnlockItem(item_id, equip)
                 if item.name == "Swingshot" then
                     player:DeleteAllChildrenWithOClass(890)  -- Delete Helga
                 end
+                if item.name == "Suck Cannon" then
+                    player:DeleteAllChildrenWithOClass(1120)  -- Delete Suck Cannon
+                end
                 if item.name == "Grindboots" then
                     player:DeleteAllChildrenWithOClass(1190)  -- Delete Fred
+                end
+                if item.name == "Trespasser" then
+                    player:DeleteAllChildrenWithOClass(1005)  -- Delete Trespasser
                 end
                 if item.name == "Hydrodisplacer" then
                     player:DeleteAllChildrenWithOClass(1016)  -- Delete Hydrodisplacer
                 end
                 if item.name == "Metal Detector" then
                     player:DeleteAllChildrenWithOClass(1283)  -- Delete Plumber
+                end
+                if item.name == "Pilot's Helmet" then
+                    player:DeleteAllChildrenWithOClass(1290)  -- Delete Pilot's Helmet
+                end
+                if item.name == "Magneboots" then
+                    player:DeleteAllChildrenWithOClass(18)  -- Delete Magneboots
+                end
+                if item.name == "Morph-o-Ray" then
+                    player:DeleteAllChildrenWithOClass(1354)  -- Delete Morph-o-Ray
+                end
+                if item.name == "Codebot" then
+                    player:DeleteAllChildrenWithOClass(1428)  -- Delete Codebot
                 end
             end
         end
