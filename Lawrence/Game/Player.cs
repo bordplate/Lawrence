@@ -89,6 +89,7 @@ public partial class Player : Moby {
     private List<int> _filteredAnimationIDs = new() {
         130,  // Gold bolt collect animation
         128,  // Electricity dying animation
+        131, 132, 133,  // Hydrodisplacer eject water animations
     };
 
     public override int AnimationId {
