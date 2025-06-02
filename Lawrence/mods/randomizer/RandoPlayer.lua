@@ -185,6 +185,7 @@ function RandoPlayer:OnRespawned()
     end
     self:UpdateVendorContents()
     FixPlanetsForPlayer(self.lobby.universe, self)
+    self:UpdateHPAmount()
 end
 
 --function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
