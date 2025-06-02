@@ -785,7 +785,10 @@ partial class Player : IClientHandler
             _level.Add(this);
             ReloadNametag();
             Logger.Log($"Player moved from {lastLevel?.GetName()} to {_level.GetName()}");
-                
+
+            if (levelId != 0) { // not for veldin
+                UnlockLevel(levelId);
+            }
             SetCurrentLevelFlags();
         }
         

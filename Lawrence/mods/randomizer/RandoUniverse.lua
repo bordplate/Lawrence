@@ -83,16 +83,16 @@ function RandoUniverse:DistributeGiveItem(item_id)
     end
     
     item_name = Item.GetById(item_id).name
-    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if item_id == Item.GetByName("Hoverboard").id then
             self.has_hoverboard = true
         elseif item_id == Item.GetByName("O2 Mask").id then
             self.has_o2_mask = true
-            FixPlanetsForPlayer(self, player)
         end
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if player.fullySpawnedIn then
             player:ToastMessage("You received the \x0c" .. item_name .. "\x08")
             player:GiveItem(item_id, Item.GetById(item_id).isWeapon)
+            FixPlanetsForPlayer(self, player)
         end
 
         if player.gameState == 6 then
@@ -104,28 +104,30 @@ end
 
 function RandoUniverse:DistributeUnlockSpecial(special_address)
     table.insert(self.special_unlock_queue, special_address)
+    
+    local toastMessage = ""
+    
+    if special_address == Player.offset.has_zoomerator then
+        self.has_zoomerator = true
+        toastMessage = "You received the \x0cZoomerator\x08"
+    elseif special_address == Player.offset.has_raritanium then
+        self.has_raritanium = true
+        toastMessage = "You received the \x0cRaritanium\x08"
+    elseif special_address == Player.offset.has_codebot then
+        self.has_codebot = true
+        toastMessage = "You received the \x0cCodebot\x08"
+    elseif special_address == Player.offset.has_premium_nanotech then
+        self.has_premium_nanotech = true
+        toastMessage = "You received the \x0cPremium Nanotech\x08"
+    elseif special_address == Player.offset.has_ultra_nanotech then
+        self.has_ultra_nanotech = true
+        toastMessage = "You received the \x0cUltra Nanotech\x08"
+    end
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
-        if special_address == Player.offset.has_zoomerator then
-            self.has_zoomerator = true
-            player:ToastMessage("You received the \x0cZoomerator\x08")
-        elseif special_address == Player.offset.has_raritanium then
-            self.has_raritanium = true
-            player:ToastMessage("You received the \x0cRaritanium\x08")
-        elseif special_address == Player.offset.has_codebot then
-            self.has_codebot = true
-            player:ToastMessage("You received the \x0cCodebot\x08")
-        elseif special_address == Player.offset.has_premium_nanotech then
-            self.has_premium_nanotech = true
-            player:UpdateHPAmount()
-            player:ToastMessage("You received the \x0cPremium Nanotech\x08")
-        elseif special_address == Player.offset.has_ultra_nanotech then
-            self.has_ultra_nanotech = true
-            player:UpdateHPAmount()
-            player:ToastMessage("You received the \x0cUltra Nanotech\x08")
-        end
-
         if player.fullySpawnedIn then
+            player:ToastMessage(toastMessage)
             player:SetAddressValue(special_address, 1, 1)
+            player:UpdateHPAmount()
         end
 
         if player.gameState == 6 then
@@ -137,6 +139,7 @@ end
 
 function RandoUniverse:DistributeUnlockPlanet(planet_id)
     table.insert(self.level_unlock_queue, planet_id)
+    self:AddPlanetVendorItem(planet_id)
     planet_name = self:GetLevelByGameID(planet_id):GetName()
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if player.fullySpawnedIn then
@@ -200,13 +203,13 @@ end
 
 function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     print("OnPlayerGetPlanet: " .. tostring(planet_id))
-    if (player.gameState == 6 or -- PlanetLoading
-        not player.fullySpawnedIn) then
-        print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
-        self:AddPlanetVendorItem(planet_id)
-       player:UnlockLevel(planet_id)
-       return
-    end
+    --if (player.gameState == 6 or -- PlanetLoading
+    --    not player.fullySpawnedIn) then
+    --    print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
+    --    
+    --   player:UnlockLevel(planet_id)
+    --   return
+    --end
     location_id = PlanetToLocation(planet_id)
     self:OnPlayerGetLocation(player, location_id)
     self:NotifyPlayersLocationCollected(location_id, player)

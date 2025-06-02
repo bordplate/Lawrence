@@ -165,7 +165,7 @@ function RandoPlayer:OnRespawned()
         end
         for _, item in ipairs(self.item_unlock_queue) do
             print("Delayed unlocking item: " .. tostring(item))
-            self:GiveItem(item, Item.GetById(item_id).isWeapon)
+            self:GiveItem(item, Item.GetById(item).isWeapon)
         end
         for _, special in ipairs(self.special_unlock_queue) do
             print("Delayed unlocking special: " .. tostring(special))
@@ -185,6 +185,7 @@ function RandoPlayer:OnRespawned()
     end
     self:UpdateVendorContents()
     FixPlanetsForPlayer(self.lobby.universe, self)
+    self:UpdateHPAmount()
 end
 
 --function RandoPlayer:OnLevelFlagChanged(flag_type, level, size, index, value)
