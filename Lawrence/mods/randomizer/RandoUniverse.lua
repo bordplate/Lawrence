@@ -139,6 +139,7 @@ end
 
 function RandoUniverse:DistributeUnlockPlanet(planet_id)
     table.insert(self.level_unlock_queue, planet_id)
+    self:AddPlanetVendorItem(planet_id)
     planet_name = self:GetLevelByGameID(planet_id):GetName()
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if player.fullySpawnedIn then
@@ -202,13 +203,13 @@ end
 
 function RandoUniverse:OnPlayerGetPlanet(player, planet_id)
     print("OnPlayerGetPlanet: " .. tostring(planet_id))
-    if (player.gameState == 6 or -- PlanetLoading
-        not player.fullySpawnedIn) then
-        print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
-        self:AddPlanetVendorItem(planet_id)
-       player:UnlockLevel(planet_id)
-       return
-    end
+    --if (player.gameState == 6 or -- PlanetLoading
+    --    not player.fullySpawnedIn) then
+    --    print("Planet " .. planet_id .. " unlock_level called during planet loading. (ignoring)")
+    --    
+    --   player:UnlockLevel(planet_id)
+    --   return
+    --end
     location_id = PlanetToLocation(planet_id)
     self:OnPlayerGetLocation(player, location_id)
     self:NotifyPlayersLocationCollected(location_id, player)
