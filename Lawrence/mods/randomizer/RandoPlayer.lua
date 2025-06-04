@@ -45,9 +45,13 @@ end
 
 function RandoPlayer:Start()
     if self.lobby.options.cheats.value then
-        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 340, 0xC0FFA888, {GameState.Menu})
+        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 360, 0xC0FFA888, {GameState.Menu})
         self:AddLabel(self.GhostRatchetLabel)
     end
+    
+    self.TeleportToShipLabel = Label:new("Select: Teleport to ship", 250, 340, 0xC0FFA888, {GameState.Menu})
+    self:AddLabel(self.TeleportToShipLabel)
+    
     self.lobby.universe:AddEntity(self)
     self:LoadLevel(self.lobby.startPlanet)
 end
@@ -87,33 +91,17 @@ function RandoPlayer:OnGameStateChanged(state)
 end
 
 function RandoPlayer:OnControllerInputTapped(input)
-    if self.gameState == 3 and input & 0x20 ~= 0 then
-        --if self:Username() == "panad" then
-        --    print("Moving player")
-        --    self:SetPosition(251, 278, 55.5)
-        --end
-    end
-
     if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats.value then
         self:SetGhostRatchet(200)
     end
     
-    if self.gameState == 3 and input & 0x80 ~= 0 then
-        if self:Username() == "panad" then
-            print("Moving players")
-            local z_pos = self.z + 1
-            for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-                if player:GUID() ~= self:GUID() then
-                    print("Moved player " .. player:Username() .. " to " .. self.x .. ", " .. self.y .. ", " .. z_pos)
-                    player:SetPosition(self.x, self.y, z_pos)
-                    z_pos = z_pos + 1
-                end
-            end
-        end
-    end
     
     if input & 0x10 ~= 0 and self.fullySpawnedIn then
         self.lobby.universe.replacedMobys:Triangle(self)
+    end
+
+    if self.gameState == 3 and input & 0x100 ~= 0  then -- select
+        self:TeleportToShip()
     end
 end
 
@@ -216,6 +204,50 @@ function RandoPlayer:UpdateHPAmount()
     if self.lobby.universe.has_premium_nanotech then hp = hp + 1 end
     if self.lobby.universe.has_ultra_nanotech then hp = hp + 3 end
     self:SetAddressValue(0x71fb28, hp, 4)
+end
+
+function RandoPlayer:TeleportToShip()
+    level = self:Level():GetName()
+
+    if level == "Veldin1" then
+        self:SetPosition(132.09, 115.480, 31.430)
+    elseif level == "Novalis" then
+        self:SetPosition(162.530, 136.393, 60.5)
+    elseif level == "Aridia" then
+        self:SetPosition(210.41, 170.35, 25.35)
+    elseif level == "Kerwan" then
+        self:SetPosition(263.982, 102.092, 54.5)
+    elseif level == "Eudora" then
+        self:SetPosition(220.250, 162.04, 56)
+    elseif level == "Rilgar" then
+        self:SetPosition(338.32, 110.8, 62.7)
+    elseif level == "BlargStation" then
+        self:SetPosition(247.950, 148.68, 138.3)
+    elseif level == "Umbris" then
+        self:SetPosition(264.55, 72.13, 45.77)
+    elseif level == "Batalia" then
+        self:SetPosition(151.52, 196.72, 37.83)
+    elseif level == "Gaspar" then
+        self:SetPosition(291.3, 392.3, 36.25)
+    elseif level == "Orxon" then
+        self:SetPosition(229.65, 203.13, 49.22)
+    elseif level == "Pokitaru" then
+        self:SetPosition(498.82, 406, 230)
+    elseif level == "Hoven" then
+        self:SetPosition(304.1, 303.24, 31.83)
+    elseif level == "GemlikStation" then
+        self:SetPosition(508.551, 391.111, 315.02)
+    elseif level == "Oltanis" then
+        self:SetPosition(255.79, 155.22, 47)
+    elseif level == "Quartu" then
+        self:SetPosition(308.6, 190, 32)
+    elseif level == "KaleboIII" then
+        self:SetPosition(146.43, 113.23, 128.3)
+    elseif level == "DreksFleet" then
+        self:SetPosition(500.833, 609.732, 152.5)
+    elseif level == "Veldin2" then
+        self:SetPosition(341.5, 632.7, 87.250)
+    end
 end
 
 function RandoPlayer:OnDisconnect()
