@@ -250,9 +250,6 @@ function RandoUniverse:AddPlanetVendorItem(planet_id)
 end
 
 function RandoUniverse:DistributeVendorContents()
-    print("buyable weapons: " .. table.concat(self.buyable_weapons, ", "))
-    print("buyable ammo: " .. table.concat(self.buyable_ammo, ", "))
-    print("bought weapons: " .. table.concat(self.already_bought_weapons, ", "))
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         _player:UpdateVendorContents()
     end
