@@ -70,17 +70,6 @@ function RandoUniverse:DistributeGiveItem(item_id)
     if equip == nil then
         equip = false
     end
-
-    if Item.GetById(item_id).isWeapon and item_id ~= 0x0e and item_id ~= 0x12 and item_id ~= 0x09 and item_id ~= 0x15 then -- is weapon that uses ammo
-        for k, v in ipairs(self.buyable_ammo) do
-            if v == item_id then break end -- if item already in list, do nothing
-            if k == #self.buyable_ammo then -- if we have just checked the last item in the list and reached here, insert new item
-                table.insert(self.buyable_ammo, item_id)
-                self:DistributeVendorContents()
-                break
-            end
-        end
-    end
     
     item_name = Item.GetById(item_id).name
         if item_id == Item.GetByName("Hoverboard").id then
@@ -98,6 +87,22 @@ function RandoUniverse:DistributeGiveItem(item_id)
         if player.gameState == 6 then
             table.insert(player.item_unlock_queue, item_id)
             player.receivedItemsWhileLoading = true
+        end
+    end
+
+    if Item.GetById(item_id).isWeapon and item_id ~= 0x0e and item_id ~= 0x12 and item_id ~= 0x09 and item_id ~= 0x15 then -- is weapon that uses ammo
+        if #self.buyable_weapons == 1 then
+            table.insert(self.buyable_ammo, item_id)
+            self:DistributeVendorContents()
+        else
+            for k, v in ipairs(self.buyable_ammo) do
+                if v == item_id then break end -- if item already in list, do nothing
+                if k == #self.buyable_ammo then -- if we have just checked the last item in the list and reached here, insert new item
+                    table.insert(self.buyable_ammo, item_id)
+                    self:DistributeVendorContents()
+                    break
+                end
+            end
         end
     end
 end
@@ -245,6 +250,9 @@ function RandoUniverse:AddPlanetVendorItem(planet_id)
 end
 
 function RandoUniverse:DistributeVendorContents()
+    print("buyable weapons: " .. table.concat(self.buyable_weapons, ", "))
+    print("buyable ammo: " .. table.concat(self.buyable_ammo, ", "))
+    print("bought weapons: " .. table.concat(self.already_bought_weapons, ", "))
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         _player:UpdateVendorContents()
     end
