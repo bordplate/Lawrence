@@ -129,10 +129,6 @@ end
 function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
 
-    if address == Player.offset.has_raritanium then
-        print("has_raritanium changed from " .. tostring(oldValue) .. " to " .. tostring(newValue))
-    end
-
     if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.hasCollectedKaleboGrindrailBolt then
         self:OnCollectedGoldBolt(16, 1)
         self.hasCollectedKaleboGrindrailBolt = true
@@ -222,7 +218,9 @@ function RandoPlayer:TeleportToShip()
     elseif level == "Rilgar" then
         self:SetPosition(338.32, 110.8, 62.7)
     elseif level == "BlargStation" then
-        self:SetPosition(247.950, 148.68, 138.3)
+        if self.oClass == 0 then -- if not clank
+            self:SetPosition(247.950, 148.68, 138.3)
+        end
     elseif level == "Umbris" then
         self:SetPosition(264.55, 72.13, 45.77)
     elseif level == "Batalia" then
