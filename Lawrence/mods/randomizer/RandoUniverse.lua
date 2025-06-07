@@ -58,9 +58,7 @@ function RandoUniverse:Connect()
     end
 
     local uuid = "5"
-
-    print(string.format("host: %s, slot: %s, password: %s", tostring(self.host), tostring(self.lobby.slot), tostring(self.lobby.ap_password)))
-
+    
     self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
     self.ap_client_initialized = true
 end
