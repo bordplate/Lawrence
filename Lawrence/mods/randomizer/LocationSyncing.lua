@@ -73,8 +73,8 @@ local locationToActionMap = {
     [53] = function (universe, player) universe.replacedMobys:GetMoby('Magneboots'):Disable() player:SetLevelFlags(1, 10, 1, {0xff}) player:SetLevelFlags(2, 10, 35, {2}) player:SetLevelFlags(1, 10, 1, {0xff}) end, -- magneboots
     [54] = function (universe, player) universe.replacedMobys:GetMoby('NanotechVendor'):Progress() player:SetLevelFlags(2, 10, 31, {1}) player:SetLevelFlags(2, 10, 87, {2}) player:SetLevelFlags(1, 10, 0, {0xff}) end, -- premium nanotech
     [55] = function (universe, player) universe.replacedMobys:GetMoby('NanotechVendor'):Disable() end, -- ultra nanotech
-    [56] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 0, 1, 1) end, -- clank gold bolt
-    [57] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 1, 1, 1) end, -- visibomb gold bolt
+    [56] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 1, 1, 1) end, -- clank gold bolt
+    [57] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 10 * 4 + 0, 1, 1) end, -- visibomb gold bolt
     
     -- Pokitaru
     [58] = function (universe, player) universe:RemoveVendorItem(0x19) end, -- decoy glove

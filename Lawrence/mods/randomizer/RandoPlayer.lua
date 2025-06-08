@@ -49,7 +49,7 @@ function RandoPlayer:Start()
         self:AddLabel(self.GhostRatchetLabel)
     end
     
-    self.TeleportToShipLabel = Label:new("Select: Teleport to ship", 250, 340, 0xC0FFA888, {GameState.Menu})
+    self.TeleportToShipLabel = Label:new("\x13: Teleport to ship", 250, 340, 0xC0FFA888, {GameState.Menu})
     self:AddLabel(self.TeleportToShipLabel)
     
     self.lobby.universe:AddEntity(self)
@@ -91,7 +91,7 @@ function RandoPlayer:OnGameStateChanged(state)
 end
 
 function RandoPlayer:OnControllerInputTapped(input)
-    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats.value then
+    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats.value then -- R1
         self:SetGhostRatchet(200)
     end
     
@@ -100,7 +100,7 @@ function RandoPlayer:OnControllerInputTapped(input)
         self.lobby.universe.replacedMobys:Triangle(self)
     end
 
-    if self.gameState == 3 and input & 0x100 ~= 0  then -- select
+    if self.gameState == 3 and input & 0x80 ~= 0  then -- square
         self:TeleportToShip()
     end
 end
@@ -128,10 +128,6 @@ end
 
 function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
-
-    if address == Player.offset.has_raritanium then
-        print("has_raritanium changed from " .. tostring(oldValue) .. " to " .. tostring(newValue))
-    end
 
     if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.hasCollectedKaleboGrindrailBolt then
         self:OnCollectedGoldBolt(16, 1)
@@ -222,7 +218,9 @@ function RandoPlayer:TeleportToShip()
     elseif level == "Rilgar" then
         self:SetPosition(338.32, 110.8, 62.7)
     elseif level == "BlargStation" then
-        self:SetPosition(247.950, 148.68, 138.3)
+        if self.oClass == 0 then -- if not clank
+            self:SetPosition(247.950, 148.68, 138.3)
+        end
     elseif level == "Umbris" then
         self:SetPosition(264.55, 72.13, 45.77)
     elseif level == "Batalia" then
