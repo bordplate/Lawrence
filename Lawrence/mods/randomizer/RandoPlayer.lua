@@ -49,7 +49,7 @@ function RandoPlayer:Start()
         self:AddLabel(self.GhostRatchetLabel)
     end
     
-    self.TeleportToShipLabel = Label:new("Select: Teleport to ship", 250, 340, 0xC0FFA888, {GameState.Menu})
+    self.TeleportToShipLabel = Label:new("\x13: Teleport to ship", 250, 340, 0xC0FFA888, {GameState.Menu})
     self:AddLabel(self.TeleportToShipLabel)
     
     self.lobby.universe:AddEntity(self)
@@ -91,7 +91,7 @@ function RandoPlayer:OnGameStateChanged(state)
 end
 
 function RandoPlayer:OnControllerInputTapped(input)
-    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats.value then
+    if self.gameState == 3 and input & 0x8 ~= 0 and self.lobby.options.cheats.value then -- R1
         self:SetGhostRatchet(200)
     end
     
@@ -100,7 +100,7 @@ function RandoPlayer:OnControllerInputTapped(input)
         self.lobby.universe.replacedMobys:Triangle(self)
     end
 
-    if self.gameState == 3 and input & 0x100 ~= 0  then -- select
+    if self.gameState == 3 and input & 0x80 ~= 0  then -- square
         self:TeleportToShip()
     end
 end
