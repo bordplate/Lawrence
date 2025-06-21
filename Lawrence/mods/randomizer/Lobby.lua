@@ -122,6 +122,9 @@ function Lobby:Leave(player)
             self.host = self.players[1]
             self.host:ToastMessage("You are now the host.", 300)
         else
+            self.universe.ap_client.running = false
+            self.universe.ap_client.ap = nil
+            collectgarbage("collect")
             lobbyUniverse:RemoveLobby(self)
         end
     end
