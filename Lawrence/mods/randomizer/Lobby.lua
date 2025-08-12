@@ -122,6 +122,7 @@ function Lobby:Leave(player)
             self.host = self.players[1]
             self.host:ToastMessage("You are now the host.", 300)
         else
+            self.universe.ap_client_initialized = false
             if self.universe.ap_client ~= nil then
                 if self.universe.ap_client.ap ~= nil then
                     self.universe.ap_client.ap = nil
