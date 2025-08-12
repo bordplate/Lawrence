@@ -101,7 +101,6 @@ end
 
 function LobbyListView:SelectedLobby(lobby)
     self.textArea.Text = "Host: " .. lobby.host:Username()
-    self.gamemodeTextArea.Text = "Friendly fire: " .. (lobby.options.friendlyFire and "On" or "Off")
 end
 
 function LobbyListView:OnControllerInputPressed(input)

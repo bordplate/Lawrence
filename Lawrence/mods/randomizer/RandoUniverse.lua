@@ -89,7 +89,7 @@ function RandoUniverse:DistributeGiveItem(item_id)
     end
 
     if Item.GetById(item_id).isWeapon and item_id ~= 0x0e and item_id ~= 0x12 and item_id ~= 0x09 and item_id ~= 0x15 then -- is weapon that uses ammo
-        if #self.buyable_weapons == 1 then
+        if #self.buyable_ammo == 0 then
             table.insert(self.buyable_ammo, item_id)
             self:DistributeVendorContents()
         else
