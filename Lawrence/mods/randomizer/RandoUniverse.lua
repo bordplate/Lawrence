@@ -57,7 +57,7 @@ function RandoUniverse:Connect()
         self.host = self.lobby.address .. ":" .. self.lobby.port
     end
 
-    local uuid = "5"
+    local uuid = "ee4ff193-f687-45f4-806d-c7ad6778c743"
     
     self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
     self.ap_client_initialized = true
