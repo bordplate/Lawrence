@@ -33,7 +33,7 @@ local locationToActionMap = {
     
     -- Rilgar
     [25] = function (universe, player) universe.replacedMobys:GetMoby('Bouncer'):Disable() end, -- Bouncer
-    [26] = function (universe, player) universe.replacedMobys:GetMoby('Zoomerator'):Disable() end, -- zoomerator
+    [26] = function (universe, player)  end, -- zoomerator
     [27] = function (universe, player) universe:RemoveVendorItem(0x11) end, -- mine glove
     [28] = function (universe, player) universe.replacedMobys:GetMoby('Salesman'):Disable() end, -- ryno
     [29] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 5 * 4 + 0, 1, 1) end, -- maze gold bolt

@@ -8,6 +8,7 @@ require 'ReplacementMobys.AlMoby'
 require 'ReplacementMobys.SuckCannonMoby'
 require 'ReplacementMobys.BouncerMoby'
 require 'ReplacementMobys.ZoomeratorMoby'
+require 'ReplacementMobys.HoverboardLadyMoby'
 require 'ReplacementMobys.SalesmanMoby'
 require 'ReplacementMobys.HydrodisplacerMoby'
 require 'ReplacementMobys.ScientistMoby'
@@ -45,8 +46,9 @@ function ReplacementMobys:initialize(universe)
         SuckCannon = self.universe:GetLevelByName("Eudora"):SpawnMoby(SuckCannonMoby),
         -- Rilgar
         Bouncer = self.universe:GetLevelByName("Rilgar"):SpawnMoby(BouncerMoby),
-        Zoomerator = self.universe:GetLevelByName("Rilgar"):SpawnMoby(ZoomeratorMoby),
+        --Zoomerator = self.universe:GetLevelByName("Rilgar"):SpawnMoby(ZoomeratorMoby),
         Salesman = self.universe:GetLevelByName("Rilgar"):SpawnMoby(SalesmanMoby),
+        HoverboardLady = HoverboardLadyMoby(self.universe:GetLevelByName("Rilgar"), 662, self.universe),
         -- Blarg
         Hydrodisplacer = self.universe:GetLevelByName("BlargStation"):SpawnMoby(HydrodisplacerMoby),
         Scientist = self.universe:GetLevelByName("BlargStation"):SpawnMoby(ScientistMoby),

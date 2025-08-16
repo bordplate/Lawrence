@@ -40,6 +40,7 @@ function RandoPlayer:Made()
 --     end
     
     self:MonitorAddress(Player.offset.goldBolts + 16 * 4 + 1, 1)
+    self:MonitorAddress(Player.offset.has_zoomerator, 1)
     self.hasCollectedKaleboGrindrailBolt = false
 end
 
@@ -132,6 +133,10 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.hasCollectedKaleboGrindrailBolt then
         self:OnCollectedGoldBolt(16, 1)
         self.hasCollectedKaleboGrindrailBolt = true
+    end
+    
+    if address == Player.offset.has_zoomerator and newValue == 1 and self.lobby.universe.has_zoomerator == false then
+        self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
     end
 end
 
