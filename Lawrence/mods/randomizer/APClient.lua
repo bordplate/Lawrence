@@ -43,6 +43,14 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
 
     function on_slot_connected(slot_data)
         print("Slot connected")
+        if slot_data["starting_planet"] ~= nil then
+            starting_planet = slot_data["starting_planet"] - 100
+            if starting_planet < 1 or starting_planet > 18 then
+                print(string.format("starting planet %d is not a valid planet. defaulting to Novalis.", starting_planet))
+                starting_planet = 1 -- novalis
+            end
+            universe.lobby.startPlanet = starting_planet
+        end
         for k,v in ipairs(slot_data) do
           print(string.format("%s: %d", k ,v))
         end
