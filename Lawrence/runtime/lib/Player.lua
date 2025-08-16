@@ -19,6 +19,8 @@ Player.offset = {
     has_codebot = 0x96bff2,
     has_premium_nanotech = 0x96bff4,
     has_ultra_nanotech = 0x96bff5,
+    
+    challenge_mode = 0x96c9fc,
 }
 
 Player.communicationFlags = {

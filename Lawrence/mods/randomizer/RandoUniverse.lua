@@ -46,6 +46,10 @@ function RandoUniverse:initialize(lobby)
     self.level_unlock_queue = {}
     self.item_unlock_queue = {}
     self.special_unlock_queue = {}
+
+    self.received_gold_bolts = {}
+    self.num_received_gold_bolts = 0
+    self.used_gold_bolts = 0
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
@@ -168,7 +172,7 @@ function RandoUniverse:DistributeSetLevelFlags(_type, level, index, value)
     end
 end
 
-function RandoUniverse:GiveAPItemToPlayers(ap_item)
+function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
     print("RandoUniverse:GiveAPItemToPlayers. item: " .. tostring(ap_item))
     ap_item_type = GetAPItemType(ap_item)
     
@@ -178,6 +182,10 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item)
         self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
     elseif ap_item_type == "planet" then
         self:DistributeUnlockPlanet(APItemToPlanet(ap_item))
+    elseif ap_item_type == "gold bolt" then
+        if self.received_gold_bolts[ap_location] == nil then
+            self.received_gold_bolts[ap_location] = ap_location
+        end
     else
 --         APItemToGoldBolt(ap_item)
 --        self:DistributeGiveBolts(15000)

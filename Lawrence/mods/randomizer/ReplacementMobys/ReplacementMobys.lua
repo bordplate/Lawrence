@@ -1,4 +1,5 @@
 require 'ReplacementMobys.InfobotMoby'
+require 'ReplacementMobys.GoldWeaponCaseMoby'
 require 'ReplacementMobys.PlumberMoby'
 require 'ReplacementMobys.TrespasserMoby'
 require 'ReplacementMobys.AgentMoby'
@@ -35,6 +36,11 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys = {
         -- Novalis
         Plumber = self.universe:GetLevelByName("Novalis"):SpawnMoby(PlumberMoby),
+        BombGloveCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        PyrocitorCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        BlasterCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        GloveOfDoomCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        SuckCannonCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
         -- Aridia
         Trespasser = self.universe:GetLevelByName("Aridia"):SpawnMoby(TrespasserMoby),
         Agent = self.universe:GetLevelByName("Aridia"):SpawnMoby(AgentMoby),
@@ -70,6 +76,12 @@ function ReplacementMobys:initialize(universe)
         -- Hoven
         Miner = self.universe:GetLevelByName("Hoven"):SpawnMoby(MinerMoby),
         Edwina = self.universe:GetLevelByName("Hoven"):SpawnMoby(EdwinaMoby),
+        -- Gemlik
+        TeslaClawCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
+        DevastatorCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
+        MineGloveCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
+        MorphORayCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
+        DecoyGloveCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
         -- Oltanis
         Steve = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SteveMoby),
         Sam = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SamMoby),
@@ -84,6 +96,76 @@ function ReplacementMobys:initialize(universe)
     }
 
     -- change values of generic mobys
+    self.replacedMobys.BombGloveCase:SetPosition(241.223, 128.536, 54.497)
+    self.replacedMobys.BombGloveCase.rotZ = -0.475
+    self.replacedMobys.BombGloveCase.bolt_cost = 20000
+    self.replacedMobys.BombGloveCase.gold_bolt_cost = 4
+    self.replacedMobys.BombGloveCase.item_name = "Golden Bomb Glove"
+    self.replacedMobys.BombGloveCase.item_id = 400
+
+    self.replacedMobys.PyrocitorCase:SetPosition(239.557, 139.003, 54.497)
+    self.replacedMobys.PyrocitorCase.rotZ = -0.475
+    self.replacedMobys.PyrocitorCase.bolt_cost = 30000
+    self.replacedMobys.PyrocitorCase.gold_bolt_cost = 4
+    self.replacedMobys.PyrocitorCase.item_name = "Golden Pyrocitor"
+    self.replacedMobys.PyrocitorCase.item_id = 401
+
+    self.replacedMobys.BlasterCase:SetPosition(247.015, 145.090, 54.497)
+    self.replacedMobys.BlasterCase.rotZ = -0.475
+    self.replacedMobys.BlasterCase.bolt_cost = 20000
+    self.replacedMobys.BlasterCase.gold_bolt_cost = 4
+    self.replacedMobys.BlasterCase.item_name = "Golden Blaster"
+    self.replacedMobys.BlasterCase.item_id = 402
+
+    self.replacedMobys.GloveOfDoomCase:SetPosition(257.627, 144.131, 54.497)
+    self.replacedMobys.GloveOfDoomCase.rotZ = -0.475
+    self.replacedMobys.GloveOfDoomCase.bolt_cost = 10000
+    self.replacedMobys.GloveOfDoomCase.gold_bolt_cost = 4
+    self.replacedMobys.GloveOfDoomCase.item_name = "Golden Glove Of Doom"
+    self.replacedMobys.GloveOfDoomCase.item_id = 403
+
+    self.replacedMobys.SuckCannonCase:SetPosition(261.73, 134.362, 54.497)
+    self.replacedMobys.SuckCannonCase.rotZ = -0.475
+    self.replacedMobys.SuckCannonCase.bolt_cost = 10000
+    self.replacedMobys.SuckCannonCase.gold_bolt_cost = 4
+    self.replacedMobys.SuckCannonCase.item_name = "Golden Suck Cannon"
+    self.replacedMobys.SuckCannonCase.item_id = 404
+    
+    self.replacedMobys.TeslaClawCase:SetPosition(425.060, 580.726, 401.992)
+    self.replacedMobys.TeslaClawCase.rotZ = -0.475
+    self.replacedMobys.TeslaClawCase.bolt_cost = 60000
+    self.replacedMobys.TeslaClawCase.gold_bolt_cost = 4
+    self.replacedMobys.TeslaClawCase.item_name = "Golden Tesla Claw"
+    self.replacedMobys.TeslaClawCase.item_id = 405
+
+    self.replacedMobys.DevastatorCase:SetPosition(418.738, 589.229, 401.992)
+    self.replacedMobys.DevastatorCase.rotZ = -0.475
+    self.replacedMobys.DevastatorCase.bolt_cost = 60000
+    self.replacedMobys.DevastatorCase.gold_bolt_cost = 4
+    self.replacedMobys.DevastatorCase.item_name = "Golden Devastator"
+    self.replacedMobys.DevastatorCase.item_id = 406
+
+    self.replacedMobys.MineGloveCase:SetPosition(422.145, 599.232, 401.992)
+    self.replacedMobys.MineGloveCase.rotZ = -0.475
+    self.replacedMobys.MineGloveCase.bolt_cost = 10000
+    self.replacedMobys.MineGloveCase.gold_bolt_cost = 4
+    self.replacedMobys.MineGloveCase.item_name = "Golden Mine Glove"
+    self.replacedMobys.MineGloveCase.item_id = 407
+
+    self.replacedMobys.MorphORayCase:SetPosition(432.337, 602.158, 401.992)
+    self.replacedMobys.MorphORayCase.rotZ = -0.475
+    self.replacedMobys.MorphORayCase.bolt_cost = 60000
+    self.replacedMobys.MorphORayCase.gold_bolt_cost = 4
+    self.replacedMobys.MorphORayCase.item_name = "Golden Morph O Ray"
+    self.replacedMobys.MorphORayCase.item_id = 408
+
+    self.replacedMobys.DecoyGloveCase:SetPosition(440.510, 595.414, 401.992)
+    self.replacedMobys.DecoyGloveCase.rotZ = -0.475
+    self.replacedMobys.DecoyGloveCase.bolt_cost = 10000
+    self.replacedMobys.DecoyGloveCase.gold_bolt_cost = 4
+    self.replacedMobys.DecoyGloveCase.item_name = "Golden Decoy Glove"
+    self.replacedMobys.DecoyGloveCase.item_id = 409
+    
     self.replacedMobys.KerwanInfobot:SetPosition(288.260, 127.805, 65.109)
     self.replacedMobys.KerwanInfobot.rotZ = 1.571
     self.replacedMobys.KerwanInfobot.planet_id = 0x04
@@ -91,7 +173,6 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.UmbrisInfobot:SetPosition(216, 455, 36.5)
     self.replacedMobys.UmbrisInfobot.rotZ = 1.571
     self.replacedMobys.UmbrisInfobot.planet_id = 0x08
-
 
     self.replacedMobys.OrxonClankInfobot:SetPosition(238, 190, 59.5)
     self.replacedMobys.OrxonClankInfobot.rotZ = 1.571
@@ -125,6 +206,28 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     levelName = player:Level():GetName()
     if levelName == "Novalis" then
         player:DeleteAllChildrenWithUID(558) -- Plumber
+        
+        player:DeleteAllChildrenWithUID(909) -- Gold Tesla Claw Case
+        player:DeleteAllChildrenWithUID(908) -- Gold Bomb Glove Case
+        player:DeleteAllChildrenWithUID(907) -- Gold Devastator Case
+        player:DeleteAllChildrenWithUID(906) -- Gold Pyrocitor Case
+        player:DeleteAllChildrenWithUID(905) -- Gold Mine Glove Case
+        player:DeleteAllChildrenWithUID(904) -- Gold Blaster Case
+        player:DeleteAllChildrenWithUID(903) -- Gold Morph-O-Ray Case
+        player:DeleteAllChildrenWithUID(902) -- Gold Glove Of Doom Case
+        player:DeleteAllChildrenWithUID(901) -- Gold Decoy Glove Case
+        player:DeleteAllChildrenWithUID(900) -- Gold Suck Cannon Case
+        
+        player:DeleteAllChildrenWithUID(897) -- Gold Tesla Claw
+        player:DeleteAllChildrenWithUID(1222) -- Gold Bomb Glove
+        player:DeleteAllChildrenWithUID(899) -- Gold Devastator
+        player:DeleteAllChildrenWithUID(893) -- Gold Pyrocitor
+        player:DeleteAllChildrenWithUID(898) -- Gold Mine Glove
+        player:DeleteAllChildrenWithUID(894) -- Gold Blaster
+        player:DeleteAllChildrenWithUID(910) -- Gold Morph-O-Ray
+        player:DeleteAllChildrenWithUID(895) -- Gold Glove Of Doom
+        player:DeleteAllChildrenWithUID(911) -- Gold Decoy Glove
+        player:DeleteAllChildrenWithUID(896) -- Gold Suck Cannon
     elseif levelName == "Aridia" then
         player:DeleteAllChildrenWithUID(564) -- Trespasser
         player:DeleteAllChildrenWithUID(419) -- Skid's Agent
@@ -158,6 +261,28 @@ function ReplacementMobys:RemoveReplacedMobys(player)
     elseif levelName == "Hoven" then
         player:DeleteAllChildrenWithUID(649) -- Miner
         player:DeleteAllChildrenWithUID(67) -- Edwina
+    elseif levelName == "GemlikStation" then
+        player:DeleteAllChildrenWithUID(909) -- Gold Tesla Claw Case
+        player:DeleteAllChildrenWithUID(908) -- Gold Bomb Glove Case
+        player:DeleteAllChildrenWithUID(907) -- Gold Devastator Case
+        player:DeleteAllChildrenWithUID(906) -- Gold Pyrocitor Case
+        player:DeleteAllChildrenWithUID(905) -- Gold Mine Glove Case
+        player:DeleteAllChildrenWithUID(904) -- Gold Blaster Case
+        player:DeleteAllChildrenWithUID(903) -- Gold Morph-O-Ray Case
+        player:DeleteAllChildrenWithUID(902) -- Gold Glove Of Doom Case
+        player:DeleteAllChildrenWithUID(901) -- Gold Decoy Glove Case
+        player:DeleteAllChildrenWithUID(900) -- Gold Suck Cannon Case
+
+        player:DeleteAllChildrenWithUID(897) -- Gold Tesla Claw
+        player:DeleteAllChildrenWithUID(265) -- Gold Bomb Glove
+        player:DeleteAllChildrenWithUID(899) -- Gold Devastator
+        player:DeleteAllChildrenWithUID(893) -- Gold Pyrocitor
+        player:DeleteAllChildrenWithUID(898) -- Gold Mine Glove
+        player:DeleteAllChildrenWithUID(894) -- Gold Blaster
+        player:DeleteAllChildrenWithUID(910) -- Gold Morph-O-Ray
+        player:DeleteAllChildrenWithUID(895) -- Gold Glove Of Doom
+        player:DeleteAllChildrenWithUID(911) -- Gold Decoy Glove
+        player:DeleteAllChildrenWithUID(896) -- Gold Suck Cannon
     elseif levelName == "Oltanis" then
         player:DeleteAllChildrenWithUID(360) -- Steve
         player:DeleteAllChildrenWithUID(25) -- Sam

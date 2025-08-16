@@ -6,6 +6,11 @@ local locationToActionMap = {
     [4] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 0, 1, 1) end, -- sewer gold bolt
     [5] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 2, 1, 1) end, -- caves gold bolt
     [6] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 1, 1, 1) end, -- underwater caves gold bolt
+    [95] = function (universe, player) universe.replacedMobys:GetMoby('BombGloveCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, -- Plumber
+    [96] = function (universe, player) universe.replacedMobys:GetMoby('PyrocitorCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, -- Plumber
+    [97] = function (universe, player) universe.replacedMobys:GetMoby('BlasterCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, -- Plumber
+    [98] = function (universe, player) universe.replacedMobys:GetMoby('GloveOfDoomCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, -- Plumber
+    [99] = function (universe, player) universe.replacedMobys:GetMoby('SuckCannonCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, -- Plumber
     
     -- Aridia
      [7] = function (universe, player) player:SetAddressValue(0xB00001, 0, 1) end, -- Skid
@@ -92,8 +97,13 @@ local locationToActionMap = {
     [68] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 12 * 4 + 0, 1, 1) end, -- walljump gold bolt
     
     -- Gemlik
-    [69] = function (universe, player) print("probably level flags?") end, -- qwark infobot
+    [69] = function (universe, player) player:SetLevelFlags(2,13,113,{3}) end, -- qwark infobot
     [70] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 13 * 4 + 0, 1, 1) end, -- gold bolt
+    [100] = function (universe, player) universe.replacedMobys:GetMoby('TeslaClawCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, 
+    [101] = function (universe, player) universe.replacedMobys:GetMoby('DevastatorCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end,
+    [102] = function (universe, player) universe.replacedMobys:GetMoby('MineGloveCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, 
+    [103] = function (universe, player) universe.replacedMobys:GetMoby('MorphORayCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end, 
+    [104] = function (universe, player) universe.replacedMobys:GetMoby('DecoyGloveCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 end,
     
     -- Oltanis
     [71] = function (universe, player) universe:RemoveVendorItem(0x13) end, -- tesla claw

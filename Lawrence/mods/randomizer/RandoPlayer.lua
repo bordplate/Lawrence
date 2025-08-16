@@ -46,11 +46,11 @@ end
 
 function RandoPlayer:Start()
     if self.lobby.options.cheats.value then
-        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 360, 0xC0FFA888, {GameState.Menu})
+        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 390, 0xC0FFA888, {GameState.Menu})
         self:AddLabel(self.GhostRatchetLabel)
     end
     
-    self.TeleportToShipLabel = Label:new("\x13: Teleport to ship", 250, 340, 0xC0FFA888, {GameState.Menu})
+    self.TeleportToShipLabel = Label:new("\x13: Teleport to ship", 250, 370, 0xC0FFA888, {GameState.Menu})
     self:AddLabel(self.TeleportToShipLabel)
     
     self.lobby.universe:AddEntity(self)
@@ -168,7 +168,7 @@ function RandoPlayer:OnRespawned()
     
     if not self.fullySpawnedIn then
         self.fullySpawnedIn = true
-        
+        self:SetAddressValue(Player.offset.challenge_mode, 1, 1)
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
         self:UpdateHPAmount()
     end

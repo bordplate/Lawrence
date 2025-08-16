@@ -69,7 +69,7 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     function on_items_received(items)
        print("Archipelago Items received:")
        for _,v in ipairs(items) do
-           universe:GiveAPItemToPlayers(v["item"])
+           universe:GiveAPItemToPlayers(v["item"], v["location"])
        end
     end
   
