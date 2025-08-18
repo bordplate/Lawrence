@@ -47,6 +47,9 @@ function RandoUniverse:initialize(lobby)
     self.item_unlock_queue = {}
     self.special_unlock_queue = {}
     
+    self.totalBolts = 0
+    self.boltMultiplier = 1
+    
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
 
@@ -156,9 +159,9 @@ function RandoUniverse:DistributeUnlockPlanet(planet_id)
     end
 end
 
-function RandoUniverse:DistributeGiveBolts(bolts)
+function RandoUniverse:DistributeSetBolts(bolts)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
-        player:GiveBolts(bolts)
+        player:SetBolts(bolts)
     end
 end
 
@@ -259,6 +262,21 @@ function RandoUniverse:RemoveVendorItem(item_id)
     end
     table.insert(self.already_bought_weapons, item_id)
     self:DistributeVendorContents()
+end
+
+function RandoUniverse:GiveBolts(boltDiff)
+    if boltDiff > 0 then
+        boltDiff = boltDiff * self.boltMultiplier
+    end
+    self.totalBolts = self.totalBolts + boltDiff
+    self:DistributeSetBolts(self.totalBolts)
+    self.ap_client:SetBolts(self.totalBolts)
+    --print(string.format("new total bolt count: %d", self.totalBolts))
+end
+
+function RandoUniverse:SetBolts(bolts)
+    self.totalBolts = bolts
+    self:DistributeSetBolts(self.totalBolts)
 end
 
 function RandoUniverse:OnTick()

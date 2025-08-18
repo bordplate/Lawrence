@@ -98,6 +98,7 @@ end
 
 function Lobby:ap_connected()
     self.connected = true
+    self.universe.ap_client:GetBolts()
 end
 
 function Lobby:ap_refused()

@@ -26,7 +26,7 @@ end
 
 function DeserterMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 1000 then
+        if player.lobby.universe.totalBolts >= 1000 then
             player:ToastMessage("\x12 Buy \x0cInfobot\x08 for 2,000 bolts ", 1)
         else
             player:ToastMessage("You need 2,000 bolts for the \x0cInfobot\x08", 1)
@@ -35,8 +35,8 @@ function DeserterMoby:ToastMessage(player)
 end
 
 function DeserterMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 2000 then
-        player:GiveBolts(-2000)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 2000 then
+        universe:GiveBolts(-2000)
         player:OnUnlockLevel(0x09)
     end
 end

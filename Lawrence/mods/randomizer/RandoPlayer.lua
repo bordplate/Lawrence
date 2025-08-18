@@ -11,8 +11,6 @@ function RandoPlayer:Made()
     self.helga = null
     
     self.gameState = 0
-    
-    self.totalBolts = 0
 
     self.level_unlock_queue = {}
     self.item_unlock_queue = {}
@@ -141,7 +139,7 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
 end
 
 function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
-    self.totalBolts = totalBolts
+    self.lobby.universe:GiveBolts(boltDiff)
 end
 
 function RandoPlayer:OnRespawned()
@@ -172,6 +170,7 @@ function RandoPlayer:OnRespawned()
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
         self:UpdateHPAmount()
     end
+    self:SetBolts(self.lobby.universe.totalBolts)
     self:UpdateVendorContents()
     FixPlanetsForPlayer(self.lobby.universe, self)
     self:UpdateHPAmount()

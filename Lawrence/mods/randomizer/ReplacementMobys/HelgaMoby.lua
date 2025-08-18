@@ -24,7 +24,7 @@ end
 
 function HelgaMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 1000 then
+        if player.lobby.universe.totalBolts >= 1000 then
             player:ToastMessage("\x12 Buy \x0cSwingshot\x08 for 1,000 bolts ", 1)
         else
             player:ToastMessage("You need 1,000 bolts for the \x0cSwingshot\x08", 1)
@@ -33,8 +33,8 @@ function HelgaMoby:ToastMessage(player)
 end
 
 function HelgaMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 1000 then
-        player:GiveBolts(-1000)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 1000 then
+        universe:GiveBolts(-1000)
         player:OnUnlockItem(Item.GetByName("Swingshot").id, true)
     end
 end
