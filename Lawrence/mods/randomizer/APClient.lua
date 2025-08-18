@@ -105,6 +105,10 @@ function APClient:GetBolts()
     self.ap:Get({"bolts"})
 end
 
+function APClient:SendHint(location_id)
+    self.ap:LocationScouts({location_id}, 2)
+end
+
 function APClient:WinGame()
     self.ap:StatusUpdate(30)
 end

@@ -246,6 +246,7 @@ function RandoUniverse:AddPlanetVendorItem(planet_id)
         for _, v in ipairs(self.buyable_weapons) do if v == item_id then return end end -- end early if item already in list
         for _, v in ipairs(self.already_bought_weapons) do if v == item_id then return end end -- end early if item location was already bought
         table.insert(self.buyable_weapons, item_id)
+        self.ap_client:SendHint(ItemToLocation(item_id))
         self:DistributeVendorContents()
     end
 end
