@@ -27,13 +27,13 @@ end
 function NanotechVendorMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
         if self.selling == "premium" then
-            if player.totalBolts >= 4000 then
+            if player.lobby.universe.totalBolts >= 4000 then
                 player:ToastMessage("\x12 Buy \x0cPremium Nanotech\x08 for 4,000 bolts", 1)
             else
                 player:ToastMessage("You need 4,000 Bolts for \x0cPremium Nanotech\x08", 1)
             end
         elseif self.selling == "ultra" then
-            if player.totalBolts >= 30000 then
+            if player.lobby.universe.totalBolts >= 30000 then
                 player:ToastMessage("\x12 Buy \x0cUltra Nanotech\x08 for 30,000 bolts", 1)
             else
                 player:ToastMessage("You need 30,000 Bolts for \x0cUltra Nanotech\x08", 1)
@@ -44,11 +44,11 @@ end
 
 function NanotechVendorMoby:Triangle(player, universe)
     if not self.disabled and self:closeToPlayer(player) then
-        if self.selling == "premium" and player.totalBolts >= 4000 then
-            player:GiveBolts(-4000)
+        if self.selling == "premium" and universe.totalBolts >= 4000 then
+            universe:GiveBolts(-4000)
             player:OnUnlockItem(Item.GetByName("Premium Nanotech").id, true)
-        elseif self.selling == "ultra" and player.totalBolts >= 30000 then
-            player:GiveBolts(-30000)
+        elseif self.selling == "ultra" and universe.totalBolts >= 30000 then
+            universe:GiveBolts(-30000)
             player:OnUnlockItem(Item.GetByName("Ultra Nanotech").id, true)
         end
     end

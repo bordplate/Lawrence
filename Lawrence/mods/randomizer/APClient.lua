@@ -72,7 +72,15 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
            universe:GiveAPItemToPlayers(v["item"], v["location"])
        end
     end
-  
+
+    function on_retrieved(map)
+        if map["bolts"] ~= nil then
+            print(string.format("got %d bolts from datastore", map["bolts"]))
+            universe:SetBolts(map["bolts"])
+        end
+    end
+
+
     print("before AP create. uuid: " .. tostring(uuid) .. " game_name: " .. tostring(game_name) .. " host: " .. tostring(host))
     self.ap = AP(uuid, game_name, host)
     self.ap:set_socket_connected_handler(on_socket_connected)
@@ -82,10 +90,23 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     self.ap:set_slot_connected_handler(on_slot_connected)
     self.ap:set_slot_refused_handler(on_slot_refused)
     self.ap:set_items_received_handler(on_items_received)
+    self.ap:set_retrieved_handler(on_retrieved)
 end
 
 function APClient:getLocation(location_id)
     self.ap:LocationChecks({location_id})
+end
+
+function APClient:SetBolts(totalBolts)
+    self.ap:Set("bolts", 0, false, {{"replace", totalBolts}})
+end
+
+function APClient:GetBolts()
+    self.ap:Get({"bolts"})
+end
+
+function APClient:SendHint(location_id)
+    self.ap:LocationScouts({location_id}, 2)
 end
 
 function APClient:WinGame()
