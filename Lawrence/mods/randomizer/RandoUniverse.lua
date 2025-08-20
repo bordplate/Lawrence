@@ -50,9 +50,11 @@ function RandoUniverse:initialize(lobby)
     self.received_gold_bolts = {}
     self.num_received_gold_bolts = 0
     self.used_gold_bolts = 0
+    self.gold_bolt_pack_size = 1
     
     self.totalBolts = 0
     self.boltMultiplier = 1
+    self.boltPackSize = 0
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
@@ -188,10 +190,12 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
     elseif ap_item_type == "gold bolt" then
         if self.received_gold_bolts[ap_location] == nil then
             self.received_gold_bolts[ap_location] = ap_location
+            self.num_received_gold_bolts = self.num_received_gold_bolts + self.gold_bolt_pack_size
         end
+    elseif ap_item_type == "bolt pack" then
+        self:GiveBolts(self.boltPackSize)
     else
---         APItemToGoldBolt(ap_item)
---        self:DistributeGiveBolts(15000)
+        print("Unknown item: " .. tostring(ap_item))
     end
 end
 

@@ -51,6 +51,12 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
             end
             universe.lobby.startPlanet = starting_planet
         end
+        if slot_data["pack_size_gold_bolts"] ~= nil then
+            universe.gold_bolt_pack_size = slot_data["pack_size_gold_bolts"]
+        end
+        if slot_data["pack_size_bolts"] ~= nil then
+            universe.boltPackSize = slot_data["pack_size_bolts"]
+        end
         for k,v in ipairs(slot_data) do
           print(string.format("%s: %d", k ,v))
         end

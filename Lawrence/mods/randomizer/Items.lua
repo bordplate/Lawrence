@@ -9,6 +9,8 @@ function GetAPItemType(ap_item)
         return "skill point"
     elseif ap_item == 301 then
         return "gold bolt"
+    elseif ap_item == 302 then
+        return "bolt pack"
     elseif ap_item < 500 then
         return "special"
     else

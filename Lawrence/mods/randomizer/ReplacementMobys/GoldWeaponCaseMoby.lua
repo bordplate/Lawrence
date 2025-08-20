@@ -30,7 +30,7 @@ end
 function GoldWeaponCaseMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
         universe = player.lobby.universe
-        if player.totalBolts >= self.bolt_cost and universe.num_received_gold_bolts - universe.used_gold_bolts >= self.gold_bolt_cost then
+        if universe.totalBolts >= self.bolt_cost and universe.num_received_gold_bolts - universe.used_gold_bolts >= self.gold_bolt_cost then
             player:ToastMessage(string.format("\x12 Buy \x0c%s\x08 for %d bolts and %d gold bolts", self.item_name, self.bolt_cost, self.gold_bolt_cost), 1)
         else
             player:ToastMessage(string.format("\x0c%s\x08: %d bolts %d gold bolts (%d gold bolts)", self.item_name, self.bolt_cost, self.gold_bolt_cost, universe.num_received_gold_bolts - universe.used_gold_bolts), 1)
@@ -39,8 +39,8 @@ function GoldWeaponCaseMoby:ToastMessage(player)
 end
 
 function GoldWeaponCaseMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= self.bolt_cost and universe.num_received_gold_bolts - universe.used_gold_bolts >= self.gold_bolt_cost then
-        player:GiveBolts(-self.bolt_cost)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= self.bolt_cost and universe.num_received_gold_bolts - universe.used_gold_bolts >= self.gold_bolt_cost then
+        universe:GiveBolts(-self.bolt_cost)
         universe:OnPlayerGetItem(player, self.item_id)
     end
 end
