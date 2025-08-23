@@ -261,6 +261,18 @@ function RandoUniverse:AddPlanetVendorItem(planet_id)
         self.ap_client:SendHint(ItemToLocation(item_id))
         self:DistributeVendorContents()
     end
+    if planet_id == 1 then -- Novalis, add gold weapon hints
+        self.ap_client:SendHint(95)
+        self.ap_client:SendHint(96)
+        self.ap_client:SendHint(97)
+        self.ap_client:SendHint(98)
+        self.ap_client:SendHint(99)
+        self.ap_client:SendHint(100)
+        self.ap_client:SendHint(101)
+        self.ap_client:SendHint(102)
+        self.ap_client:SendHint(103)
+        self.ap_client:SendHint(104)
+    end
 end
 
 function RandoUniverse:DistributeVendorContents()

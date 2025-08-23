@@ -41,6 +41,11 @@ function ReplacementMobys:initialize(universe)
         BlasterCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
         GloveOfDoomCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
         SuckCannonCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        TeslaClawCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        DevastatorCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        MineGloveCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        MorphORayCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
+        DecoyGloveCase = self.universe:GetLevelByName("Novalis"):SpawnMoby(GoldWeaponCaseMoby),
         -- Aridia
         Trespasser = self.universe:GetLevelByName("Aridia"):SpawnMoby(TrespasserMoby),
         Agent = self.universe:GetLevelByName("Aridia"):SpawnMoby(AgentMoby),
@@ -76,12 +81,6 @@ function ReplacementMobys:initialize(universe)
         -- Hoven
         Miner = self.universe:GetLevelByName("Hoven"):SpawnMoby(MinerMoby),
         Edwina = self.universe:GetLevelByName("Hoven"):SpawnMoby(EdwinaMoby),
-        -- Gemlik
-        TeslaClawCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
-        DevastatorCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
-        MineGloveCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
-        MorphORayCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
-        DecoyGloveCase = self.universe:GetLevelByName("GemlikStation"):SpawnMoby(GoldWeaponCaseMoby),
         -- Oltanis
         Steve = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SteveMoby),
         Sam = self.universe:GetLevelByName("Oltanis"):SpawnMoby(SamMoby),
@@ -131,35 +130,35 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.SuckCannonCase.item_name = "Golden Suck Cannon"
     self.replacedMobys.SuckCannonCase.item_id = 404
     
-    self.replacedMobys.TeslaClawCase:SetPosition(425.060, 580.726, 401.992)
+    self.replacedMobys.TeslaClawCase:SetPosition(245.432, 125.064, 54.497)
     self.replacedMobys.TeslaClawCase.rotZ = -0.475
     self.replacedMobys.TeslaClawCase.bolt_cost = 60000
     self.replacedMobys.TeslaClawCase.gold_bolt_cost = 4
     self.replacedMobys.TeslaClawCase.item_name = "Golden Tesla Claw"
     self.replacedMobys.TeslaClawCase.item_id = 405
 
-    self.replacedMobys.DevastatorCase:SetPosition(418.738, 589.229, 401.992)
+    self.replacedMobys.DevastatorCase:SetPosition(239.110, 133.567, 54.497)
     self.replacedMobys.DevastatorCase.rotZ = -0.475
     self.replacedMobys.DevastatorCase.bolt_cost = 60000
     self.replacedMobys.DevastatorCase.gold_bolt_cost = 4
     self.replacedMobys.DevastatorCase.item_name = "Golden Devastator"
     self.replacedMobys.DevastatorCase.item_id = 406
 
-    self.replacedMobys.MineGloveCase:SetPosition(422.145, 599.232, 401.992)
+    self.replacedMobys.MineGloveCase:SetPosition(242.517, 143.600, 54.497)
     self.replacedMobys.MineGloveCase.rotZ = -0.475
     self.replacedMobys.MineGloveCase.bolt_cost = 10000
     self.replacedMobys.MineGloveCase.gold_bolt_cost = 4
     self.replacedMobys.MineGloveCase.item_name = "Golden Mine Glove"
     self.replacedMobys.MineGloveCase.item_id = 407
 
-    self.replacedMobys.MorphORayCase:SetPosition(432.337, 602.158, 401.992)
+    self.replacedMobys.MorphORayCase:SetPosition(252.468, 145.282, 54.497)
     self.replacedMobys.MorphORayCase.rotZ = -0.475
     self.replacedMobys.MorphORayCase.bolt_cost = 60000
     self.replacedMobys.MorphORayCase.gold_bolt_cost = 4
     self.replacedMobys.MorphORayCase.item_name = "Golden Morph O Ray"
     self.replacedMobys.MorphORayCase.item_id = 408
 
-    self.replacedMobys.DecoyGloveCase:SetPosition(440.510, 595.414, 401.992)
+    self.replacedMobys.DecoyGloveCase:SetPosition(260.882, 139.753, 54.497)
     self.replacedMobys.DecoyGloveCase.rotZ = -0.475
     self.replacedMobys.DecoyGloveCase.bolt_cost = 10000
     self.replacedMobys.DecoyGloveCase.gold_bolt_cost = 4
