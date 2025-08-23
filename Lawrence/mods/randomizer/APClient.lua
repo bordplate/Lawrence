@@ -57,6 +57,12 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
         if slot_data["pack_size_bolts"] ~= nil then
             universe.boltPackSize = slot_data["pack_size_bolts"]
         end
+        if slot_data["metal_bolt_multiplier"] ~= nil then
+            universe.metal_bolt_multiplier = slot_data["metal_bolt_multiplier"]
+        end
+        if slot_data["enable_bolt_multiplier"] ~= nil then
+            universe.boltMultiplier = slot_data["enable_bolt_multiplier"]
+        end
         for k,v in ipairs(slot_data) do
           print(string.format("%s: %d", k ,v))
         end
@@ -82,7 +88,7 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     function on_retrieved(map)
         if map["bolts"] ~= nil then
             print(string.format("got %d bolts from datastore", map["bolts"]))
-            universe:SetBolts(map["bolts"])
+            universe:GiveBolts(map["bolts"], false)
         end
     end
 

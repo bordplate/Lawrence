@@ -55,6 +55,9 @@ function RandoUniverse:initialize(lobby)
     self.totalBolts = 0
     self.boltMultiplier = 1
     self.boltPackSize = 0
+    self.num_used_bolt_packs = 0
+    
+    self.metal_detector_multiplier = 50
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
@@ -193,6 +196,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
             self.num_received_gold_bolts = self.num_received_gold_bolts + self.gold_bolt_pack_size
         end
     elseif ap_item_type == "bolt pack" then
+        self.num_used_bolt_packs = self.num_used_bolt_packs + 1
         self:GiveBolts(self.boltPackSize)
     else
         print("Unknown item: " .. tostring(ap_item))
@@ -201,7 +205,7 @@ end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
+    player:SetAddressValue(0xB00000, self.metal_detector_multiplier, 1) -- metal detector multiplier
     player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
     player.level_unlock_queue = self.level_unlock_queue
     player.item_unlock_queue = self.item_unlock_queue
@@ -289,19 +293,18 @@ function RandoUniverse:RemoveVendorItem(item_id)
     self:DistributeVendorContents()
 end
 
-function RandoUniverse:GiveBolts(boltDiff)
-    if boltDiff > 0 then
+function RandoUniverse:GiveBolts(boltDiff, enableMultiply)
+    if enableMultiply == nil then
+        enableMultiply = true
+    end
+    if enableMultiply and boltDiff > 0 then
         boltDiff = boltDiff * self.boltMultiplier
     end
     self.totalBolts = self.totalBolts + boltDiff
     self:DistributeSetBolts(self.totalBolts)
-    self.ap_client:SetBolts(self.totalBolts)
+    local pureBolts = self.totalBolts - (self.num_used_bolt_packs * self.boltPackSize)
+    self.ap_client:SetBolts(pureBolts)
     --print(string.format("new total bolt count: %d", self.totalBolts))
-end
-
-function RandoUniverse:SetBolts(bolts)
-    self.totalBolts = bolts
-    self:DistributeSetBolts(self.totalBolts)
 end
 
 function RandoUniverse:OnTick()
