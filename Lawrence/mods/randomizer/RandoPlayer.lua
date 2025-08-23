@@ -16,6 +16,8 @@ function RandoPlayer:Made()
     self.item_unlock_queue = {}
     self.special_unlock_queue = {}
     
+    self.race_position = 5
+    
     self.skillpointCounters = {
         Player.offset.aridiaShipsKilled,
         Player.offset.eudoraShipsKilled,
@@ -39,6 +41,8 @@ function RandoPlayer:Made()
     
     self:MonitorAddress(Player.offset.goldBolts + 16 * 4 + 1, 1)
     self:MonitorAddress(Player.offset.has_zoomerator, 1)
+    self:MonitorAddress(Player.offset.rilgar_race_pb, 4)
+    self:MonitorAddress(Player.offset.race_position, 4)
     self.hasCollectedKaleboGrindrailBolt = false
 end
 
@@ -135,6 +139,19 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     
     if address == Player.offset.has_zoomerator and newValue == 1 and self.lobby.universe.has_zoomerator == false then
         self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
+    end
+
+    if address == Player.offset.rilgar_race_pb and newValue ~= 0 and self.lobby.has_zoomerator == true then
+        if self.race_position == 1 then
+            self:OnUnlockItem(0x30, false)
+        else
+            print("finished race but did not win... setting PB back to 0")
+            self:SetAddressValue(Player.offset.rilgar_race_pb, 0, 4)
+        end
+    end
+
+    if address == Player.offset.race_position then
+        self.race_position = newValue
     end
 end
 

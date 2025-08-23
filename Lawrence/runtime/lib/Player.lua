@@ -20,6 +20,9 @@ Player.offset = {
     has_premium_nanotech = 0x96bff4,
     has_ultra_nanotech = 0x96bff5,
     
+    rilgar_race_pb = 0xa0cd04,
+    race_position = 0x96a5a0,
+    
     challenge_mode = 0x96c9fc,
 }
 
