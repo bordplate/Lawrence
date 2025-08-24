@@ -43,6 +43,7 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
 
     function on_slot_connected(slot_data)
         print("Slot connected")
+        universe.slot_data = slot_data
         if slot_data["starting_planet"] ~= nil then
             starting_planet = slot_data["starting_planet"] - 100
             if starting_planet < 1 or starting_planet > 18 then
@@ -63,6 +64,12 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
         if slot_data["enable_bolt_multiplier"] ~= nil then
             universe.boltMultiplier = slot_data["enable_bolt_multiplier"]
         end
+
+        if slot_data["progressive_weapons"] ~= nil then
+            print("progressive weapons:" .. tostring(slot_data["progressive_weapons"]))
+            universe.progressive_weapons = slot_data["progressive_weapons"]
+        end
+                
         for k,v in ipairs(slot_data) do
           print(string.format("%s: %d", k ,v))
         end

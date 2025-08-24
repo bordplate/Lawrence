@@ -59,6 +59,9 @@ function RandoUniverse:initialize(lobby)
     
     self.metal_detector_multiplier = 50
     
+    self.slot_data = nil
+    self.unlock_count = {}
+    
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
 
@@ -187,6 +190,9 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
     if ap_item_type == "item" then
         self:DistributeGiveItem(APItemToItem(ap_item))
     elseif ap_item_type == "special" then
+        if self.progressive_weapons == 1 then -- normal (give both base and gold)
+            self:GiveAPItemToPlayers(APGoldWeaponToAPBaseWeapon(ap_item), ap_location)
+        end
         self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
     elseif ap_item_type == "planet" then
         self:DistributeUnlockPlanet(APItemToPlanet(ap_item))
@@ -197,7 +203,9 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
         end
     elseif ap_item_type == "bolt pack" then
         self.num_used_bolt_packs = self.num_used_bolt_packs + 1
-        self:GiveBolts(self.boltPackSize)
+        self:GiveBolts(self.boltPackSize, false)
+    elseif ap_item_type == "progressive" then
+        self:GiveAPItemToPlayers(ProgressiveAPItemToNormalAPItem(ap_item, self.slot_data, self.unlock_count), ap_location)
     else
         print("Unknown item: " .. tostring(ap_item))
     end
