@@ -130,7 +130,7 @@ end
 -- end
 
 function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
-    print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
+    --print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
 
     if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.hasCollectedKaleboGrindrailBolt then
         self:OnCollectedGoldBolt(16, 1)
@@ -141,7 +141,7 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
         self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
     end
 
-    if address == Player.offset.rilgar_race_pb and newValue ~= 0 and self.lobby.has_zoomerator == true then
+    if address == Player.offset.rilgar_race_pb and newValue ~= 0 and self.lobby.universe.has_zoomerator == true then
         if self.race_position == 1 then
             self:OnUnlockItem(0x30, false)
         else
@@ -169,7 +169,7 @@ function RandoPlayer:OnRespawned()
         end
         for _, item in ipairs(self.item_unlock_queue) do
             print("Delayed unlocking item: " .. tostring(item))
-            self:GiveItem(item, Item.GetById(item).isWeapon)
+            self:GiveItem(item, IsGameItemStartingItem(item))
         end
         for _, special in ipairs(self.special_unlock_queue) do
             print("Delayed unlocking special: " .. tostring(special))
@@ -183,7 +183,9 @@ function RandoPlayer:OnRespawned()
     
     if not self.fullySpawnedIn then
         self.fullySpawnedIn = true
-        self:SetAddressValue(Player.offset.challenge_mode, 1, 1)
+        if not self.lobby.universe.using_outdated_AP then
+            self:SetAddressValue(Player.offset.challenge_mode, 1, 1)
+        end
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
         self:UpdateHPAmount()
     end
@@ -205,14 +207,21 @@ end
 
 function RandoPlayer:UpdateVendorContents()
     num_buyable_weapons = #self.lobby.universe.buyable_weapons
+    local any_items_in_vendor = false
     for i = 0, 11 do
         if i+1 <= num_buyable_weapons then
             self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_weapons[i+1], 1)
+            any_items_in_vendor = true
         elseif i-num_buyable_weapons+1 <= #self.lobby.universe.buyable_ammo then
             self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_ammo[i-num_buyable_weapons+1]+64, 1)
+            any_items_in_vendor = true
         else
             self:SetAddressValue(Player.offset.vendorItems + i, 0xff, 1)
         end
+    end
+    if any_items_in_vendor == false or -- literally nothing in the vendor
+            num_buyable_weapons >= 12 then -- too many items, no room left for any ammo
+        self:SetAddressValue(Player.offset.vendorItems + 0, 0x4a, 1) -- place bomb glove ammo to prevent crashes
     end
 end
 

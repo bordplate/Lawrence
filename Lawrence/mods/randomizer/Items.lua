@@ -7,16 +7,16 @@ function GetAPItemType(ap_item)
         return "progressive"
     elseif ap_item < 200 then
         return "planet"
-    elseif ap_item < 300 then
+    elseif ap_item <= 229 then
         return "skill point"
-    elseif ap_item == 301 then
+    elseif ap_item >= 261 and ap_item <= 301 then
         return "gold bolt"
-    elseif ap_item == 302 then
+    elseif ap_item == 302 or ap_item >= 400 and ap_item <= 426 then
         return "bolt pack"
-    elseif ap_item < 500 then
+    elseif ap_item >= 309 and ap_item <= 325 then -- gold weapons
         return "special"
     else
-        return "gold bolt"
+        return ""
     end
 end
 
@@ -125,4 +125,18 @@ function APGoldWeaponToAPBaseWeapon(ap_item)
         print("gold weapon: " .. tostring(ap_item) .. " not found...")
         return 0
     end
+end
+
+function IsGameItemStartingItem(game_item_id)
+    item = Item.GetById(game_item_id)
+    if (item.isWeapon and item.name ~= "Drone Device") or
+            item.name == "Hydrodisplacer" or
+            item.name == "Trespasser" or
+            item.name == "Metal Detector" or
+            item.name == "Hologuise" or
+            item.name == "PDA" or
+            item.name == "Swingshot" then
+        return true
+    end
+    return false
 end

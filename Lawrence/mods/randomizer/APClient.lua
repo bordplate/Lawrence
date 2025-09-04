@@ -68,6 +68,8 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
         if slot_data["progressive_weapons"] ~= nil then
             print("progressive weapons:" .. tostring(slot_data["progressive_weapons"]))
             universe.progressive_weapons = slot_data["progressive_weapons"]
+        else
+            universe.using_outdated_AP = true
         end
                 
         for k,v in ipairs(slot_data) do

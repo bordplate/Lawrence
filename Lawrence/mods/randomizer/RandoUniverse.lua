@@ -26,7 +26,8 @@ function RandoUniverse:initialize(lobby)
     self.ap_client_initialized = false
     
     self.buyable_weapons = {}
-    self.buyable_ammo = {} -- list weapons, +64 is performed to turn it into ammo
+    self.buyable_ammo = {0x0a} -- list weapons, +64 is performed to turn it into ammo (if we truly have no ammo for sale, PDA will crash the game)
+    self.gotten_first_ammo_weapon = false
     self.already_bought_weapons = {}
 
     self.has_hoverboard = false
@@ -56,11 +57,15 @@ function RandoUniverse:initialize(lobby)
     self.boltMultiplier = 1
     self.boltPackSize = 0
     self.num_used_bolt_packs = 0
+
+    self.progressive_weapons = 0
     
     self.metal_detector_multiplier = 50
     
     self.slot_data = nil
     self.unlock_count = {}
+    
+    self.using_outdated_AP = false
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
@@ -93,7 +98,7 @@ function RandoUniverse:DistributeGiveItem(item_id)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if player.fullySpawnedIn then
             player:ToastMessage("You received the \x0c" .. item_name .. "\x08")
-            player:GiveItem(item_id, Item.GetById(item_id).isWeapon)
+            player:GiveItem(item_id, IsGameItemStartingItem(item_id))
             FixPlanetsForPlayer(self, player)
         end
 
@@ -104,6 +109,10 @@ function RandoUniverse:DistributeGiveItem(item_id)
     end
 
     if Item.GetById(item_id).isWeapon and item_id ~= 0x0e and item_id ~= 0x12 and item_id ~= 0x09 and item_id ~= 0x15 then -- is weapon that uses ammo
+        if self.gotten_first_ammo_weapon == false then -- empty vendor protection
+            self.gotten_first_ammo_weapon = true
+            self.buyable_ammo = {}
+        end
         if #self.buyable_ammo == 0 then
             table.insert(self.buyable_ammo, item_id)
             self:DistributeVendorContents()
@@ -223,7 +232,9 @@ end
 
 function RandoUniverse:OnPlayerGetItem(player, item_id)
     if item_id == 10 then -- bomb glove
-        player:GiveItem(10)
+        if self.using_outdated_AP then
+            player:GiveItem(10)
+        end
         return
     end
     location_id = ItemToLocation(item_id)
@@ -273,7 +284,7 @@ function RandoUniverse:AddPlanetVendorItem(planet_id)
         self.ap_client:SendHint(ItemToLocation(item_id))
         self:DistributeVendorContents()
     end
-    if planet_id == 1 then -- Novalis, add gold weapon hints
+    if planet_id == 1 and not self.using_outdated_AP then -- Novalis, add gold weapon hints
         self.ap_client:SendHint(95)
         self.ap_client:SendHint(96)
         self.ap_client:SendHint(97)
