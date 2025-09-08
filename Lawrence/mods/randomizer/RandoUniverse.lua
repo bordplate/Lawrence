@@ -199,7 +199,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
     if ap_item_type == "item" then
         self:DistributeGiveItem(APItemToItem(ap_item))
     elseif ap_item_type == "special" then
-        if self.progressive_weapons == 1 then -- normal (give both base and gold)
+        if self.progressive_weapons == 1 and not (ap_item == 48 or ap_item == 49 or ap_item == 50 or ap_item == 52 or ap_item == 53) then -- normal (give both base and gold)
             self:GiveAPItemToPlayers(APGoldWeaponToAPBaseWeapon(ap_item), ap_location)
         end
         self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
