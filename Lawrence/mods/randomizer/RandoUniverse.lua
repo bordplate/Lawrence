@@ -193,6 +193,9 @@ function RandoUniverse:DistributeSetLevelFlags(_type, level, index, value)
 end
 
 function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
+    if ap_item == nil then
+        return
+    end
     print("RandoUniverse:GiveAPItemToPlayers. item: " .. tostring(ap_item))
     ap_item_type = GetAPItemType(ap_item)
     
