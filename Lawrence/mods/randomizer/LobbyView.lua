@@ -44,7 +44,7 @@ function LobbyView:initialize(player, lobby)
     self.archipelagoPasswordInput = InputElement()
     self.archipelagoPasswordInput.Prompt = "Enter Archipelago Password}"
     self.archipelagoPasswordInput.InputCallback = function(input)
-        self.lobby.ap_pass = input
+        self.lobby.ap_password = input
         if input == "" then
             self.optionsListMenu:GetItem(4).Accessory = "Not set"
         else
