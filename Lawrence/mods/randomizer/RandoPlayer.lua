@@ -44,6 +44,8 @@ function RandoPlayer:Made()
     self:MonitorAddress(Player.offset.rilgar_race_pb, 4)
     self:MonitorAddress(Player.offset.race_position, 4)
     self.hasCollectedKaleboGrindrailBolt = false
+    
+    self.syncItemsDebounce = false
 end
 
 function RandoPlayer:Start()
@@ -108,6 +110,21 @@ function RandoPlayer:OnControllerInputTapped(input)
     end
 end
 
+function RandoPlayer:OnControllerInputHeld(input)
+
+    syncButtonCombo = 0x8 | 0x4 | 0x2 | 0x1 | 0x80 -- R1 + L1 + R2 + L2 + Square
+    if self.gameState == 0 and input & (syncButtonCombo) == syncButtonCombo then
+        if not self.syncItemsDebounce then
+            self.syncItemsDebounce = true
+            print("force syncing items")
+            self.lobby.universe:PlayerForceSyncItems(self)
+            self:UnlockQueuedItems()
+        end
+    else
+        self.syncItemsDebounce = false
+    end
+end
+
 function RandoPlayer:OnUnlockItem(item_id, equip)
     item = Item.GetById(item_id)
     
@@ -159,25 +176,29 @@ function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
     self.lobby.universe:GiveBolts(boltDiff)
 end
 
+function RandoPlayer:UnlockQueuedItems()
+    for _, planet in ipairs(self.level_unlock_queue) do
+        print("Delayed unlocking planet: " .. tostring(planet))
+        self:UnlockLevel(planet)
+    end
+    for _, item in ipairs(self.item_unlock_queue) do
+        print("Delayed unlocking item: " .. tostring(item))
+        self:GiveItem(item, IsGameItemStartingItem(item))
+    end
+    for _, special in ipairs(self.special_unlock_queue) do
+        print("Delayed unlocking special: " .. tostring(special))
+        self:SetAddressValue(special, 1, 1)
+    end
+    self.level_unlock_queue = {}
+    self.item_unlock_queue = {}
+    self.special_unlock_queue = {}
+end
+
 function RandoPlayer:OnRespawned()
     self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
 
     if self.receivedItemsWhileLoading then
-        for _, planet in ipairs(self.level_unlock_queue) do
-            print("Delayed unlocking planet: " .. tostring(planet))
-            self:UnlockLevel(planet)
-        end
-        for _, item in ipairs(self.item_unlock_queue) do
-            print("Delayed unlocking item: " .. tostring(item))
-            self:GiveItem(item, IsGameItemStartingItem(item))
-        end
-        for _, special in ipairs(self.special_unlock_queue) do
-            print("Delayed unlocking special: " .. tostring(special))
-            self:SetAddressValue(special, 1, 1)
-        end
-        self.level_unlock_queue = {}
-        self.item_unlock_queue = {}
-        self.special_unlock_queue = {}
+        self:UnlockQueuedItems()
         self.receivedItemsWhileLoading = false
     end
     

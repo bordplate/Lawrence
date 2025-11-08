@@ -233,6 +233,12 @@ function RandoUniverse:OnPlayerJoin(player)
     player.receivedItemsWhileLoading = true
 end
 
+function RandoUniverse:PlayerForceSyncItems(player)
+    player.level_unlock_queue = self.level_unlock_queue
+    player.item_unlock_queue = self.item_unlock_queue
+    player.special_unlock_queue = self.special_unlock_queue
+end
+
 function RandoUniverse:OnPlayerGetItem(player, item_id)
     if item_id == 10 then -- bomb glove
         if self.using_outdated_AP then
