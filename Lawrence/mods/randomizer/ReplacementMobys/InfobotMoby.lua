@@ -16,7 +16,7 @@ function InfobotMoby:closeToPlayer(player)
     if self:Level():GetName() == player:Level():GetName() and
             self.x - 3 <= player.x and player.x <= self.x + 3 and
             self.y - 3 <= player.y and player.y <= self.y + 3 and
-            self.z - 3 <= player.z and player.z <= self.z + 3 then
+            self.z - 1 <= player.z and player.z <= self.z + 3 then
         return true
     end
     return false

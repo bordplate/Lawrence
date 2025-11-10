@@ -2,7 +2,6 @@ RandoPlayer = class("RandoPlayer", Player)
 
 function RandoPlayer:Made()
     self.damageCooldown = 0
-    self.goldBoltCount = 0
     self.ready = false
     self.ingame = false
     
@@ -57,8 +56,12 @@ function RandoPlayer:Start()
     self.TeleportToShipLabel = Label:new("\x13: Teleport to ship", 250, 370, 0xC0FFA888, {GameState.Menu})
     self:AddLabel(self.TeleportToShipLabel)
     
+    self.GoldBoltCountLabel = Label:new("Gold Bolts: 0", 10, 370, 0xC0FFA888, {GameState.Menu})
+    self.AddLabel(self, self.GoldBoltCountLabel)
+    
     self.lobby.universe:AddEntity(self)
-    self:LoadLevel(self.lobby.startPlanet)
+    --self:LoadLevel(self.lobby.startPlanet)
+    self:LoadLevel(1)
 end
 
 function RandoPlayer:OnCollectedGoldBolt(planet, number)
@@ -93,6 +96,11 @@ function RandoPlayer:OnGameStateChanged(state)
     if self.fullySpawnedIn and state == 0 and self.lobby.universe.got_novalis_mayor and self:Level():GetName() == "Novalis" then
         self:SetLevelFlags(1,1,0,{0xff})
     end
+
+    if state == 5 then -- vendor
+        self.lobby.universe:SendVendorHints()
+    end
+    
 end
 
 function RandoPlayer:OnControllerInputTapped(input)

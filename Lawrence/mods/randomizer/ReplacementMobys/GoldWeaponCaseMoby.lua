@@ -33,7 +33,7 @@ function GoldWeaponCaseMoby:ToastMessage(player)
         if universe.totalBolts >= self.bolt_cost and universe.num_received_gold_bolts - universe.used_gold_bolts >= self.gold_bolt_cost then
             player:ToastMessage(string.format("\x12 Buy \x0c%s\x08 for %d bolts and %d gold bolts", self.item_name, self.bolt_cost, self.gold_bolt_cost), 1)
         else
-            player:ToastMessage(string.format("\x0c%s\x08: %d bolts %d gold bolts (%d gold bolts)", self.item_name, self.bolt_cost, self.gold_bolt_cost, universe.num_received_gold_bolts - universe.used_gold_bolts), 1)
+            player:ToastMessage(string.format("\x0c%s\x08: %d bolts %d gold bolts", self.item_name, self.bolt_cost, self.gold_bolt_cost, 1))
         end
     end
 end
@@ -56,6 +56,6 @@ end
 function GoldWeaponCaseMoby:AttachWeapon(weapon_oclass, level)
     self.weapon = level:SpawnMoby(weapon_oclass)
     self.weapon:SetOClass(weapon_oclass)
-    self.weapon.scale = 0.12
-    self.weapon:SetPosition(self.x, self.y, self.z + 0.5)
+    self.weapon.scale = 0.03
+    self.weapon:SetPosition(self.x, self.y, self.z + 1.8)
 end 

@@ -213,6 +213,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
             self.received_gold_bolts[ap_location] = ap_location
             self.num_received_gold_bolts = self.num_received_gold_bolts + self.gold_bolt_pack_size
         end
+        self:DistributeGoldBoltValue()
     elseif ap_item_type == "bolt pack" then
         self.num_used_bolt_packs = self.num_used_bolt_packs + 1
         self:GiveBolts(self.boltPackSize, false)
@@ -290,26 +291,31 @@ function RandoUniverse:AddPlanetVendorItem(planet_id)
         for _, v in ipairs(self.buyable_weapons) do if v == item_id then return end end -- end early if item already in list
         for _, v in ipairs(self.already_bought_weapons) do if v == item_id then return end end -- end early if item location was already bought
         table.insert(self.buyable_weapons, item_id)
-        self.ap_client:SendHint(ItemToLocation(item_id))
         self:DistributeVendorContents()
     end
-    if planet_id == 1 and not self.using_outdated_AP then -- Novalis, add gold weapon hints
-        self.ap_client:SendHint(95)
-        self.ap_client:SendHint(96)
-        self.ap_client:SendHint(97)
-        self.ap_client:SendHint(98)
-        self.ap_client:SendHint(99)
-        self.ap_client:SendHint(100)
-        self.ap_client:SendHint(101)
-        self.ap_client:SendHint(102)
-        self.ap_client:SendHint(103)
-        self.ap_client:SendHint(104)
-    end
+    --if planet_id == 1 and not self.using_outdated_AP then -- Novalis, add gold weapon hints
+    --    self.ap_client:SendHint(95)
+    --    self.ap_client:SendHint(96)
+    --    self.ap_client:SendHint(97)
+    --    self.ap_client:SendHint(98)
+    --    self.ap_client:SendHint(99)
+    --    self.ap_client:SendHint(100)
+    --    self.ap_client:SendHint(101)
+    --    self.ap_client:SendHint(102)
+    --    self.ap_client:SendHint(103)
+    --    self.ap_client:SendHint(104)
+    --end
 end
 
 function RandoUniverse:DistributeVendorContents()
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         _player:UpdateVendorContents()
+    end
+end
+
+function RandoUniverse:DistributeGoldBoltValue()
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        player.GoldBoltCountLabel:SetText("Gold Bolts: "..tostring(self.num_received_gold_bolts - self.used_gold_bolts))
     end
 end
 
@@ -338,6 +344,13 @@ end
 function RandoUniverse:APMessageReceived(msg)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         player:ToastMessage(msg, 300)
+    end
+end
+
+function RandoUniverse:SendVendorHints()
+    for _, item_id in ipairs(self.buyable_weapons) do
+        location_id = ItemToLocation(item_id)
+        self.ap_client:SendHint(location_id)
     end
 end
 
