@@ -19,9 +19,9 @@ end
 
 function GoldWeaponCaseMoby:closeToPlayer(player)
     if self:Level():GetName() == player:Level():GetName() and
-            self.x - 3 <= player.x and player.x <= self.x + 3 and
-            self.y - 3 <= player.y and player.y <= self.y + 3 and
-            self.z - 3 <= player.z and player.z <= self.z + 3 then
+            self.x - 2.5 <= player.x and player.x <= self.x + 2.5 and
+            self.y - 2.5 <= player.y and player.y <= self.y + 2.5 and
+            self.z - 2.5 <= player.z and player.z <= self.z + 2.5 then
         return true
     end
     return false
@@ -47,5 +47,15 @@ end
 
 function GoldWeaponCaseMoby:Disable()
     self.disabled = true
-    self:Delete()
+    if self.weapon then
+        self.weapon:Delete()
+        self.weapon = nil
+    end
+end 
+
+function GoldWeaponCaseMoby:AttachWeapon(weapon_oclass, level)
+    self.weapon = level:SpawnMoby(weapon_oclass)
+    self.weapon:SetOClass(weapon_oclass)
+    self.weapon.scale = 0.12
+    self.weapon:SetPosition(self.x, self.y, self.z + 0.5)
 end 

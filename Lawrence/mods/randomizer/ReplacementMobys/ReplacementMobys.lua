@@ -101,6 +101,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.BombGloveCase.gold_bolt_cost = 4
     self.replacedMobys.BombGloveCase.item_name = "Golden Bomb Glove"
     self.replacedMobys.BombGloveCase.item_id = 400
+    self.replacedMobys.BombGloveCase:AttachWeapon(1456, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.PyrocitorCase:SetPosition(239.557, 139.003, 54.497)
     self.replacedMobys.PyrocitorCase.rotZ = -0.475
@@ -108,6 +109,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.PyrocitorCase.gold_bolt_cost = 4
     self.replacedMobys.PyrocitorCase.item_name = "Golden Pyrocitor"
     self.replacedMobys.PyrocitorCase.item_id = 401
+    self.replacedMobys.PyrocitorCase:AttachWeapon(1457, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.BlasterCase:SetPosition(247.015, 145.090, 54.497)
     self.replacedMobys.BlasterCase.rotZ = -0.475
@@ -115,6 +117,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.BlasterCase.gold_bolt_cost = 4
     self.replacedMobys.BlasterCase.item_name = "Golden Blaster"
     self.replacedMobys.BlasterCase.item_id = 402
+    self.replacedMobys.BlasterCase:AttachWeapon(1458, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.GloveOfDoomCase:SetPosition(257.627, 144.131, 54.497)
     self.replacedMobys.GloveOfDoomCase.rotZ = -0.475
@@ -122,6 +125,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.GloveOfDoomCase.gold_bolt_cost = 4
     self.replacedMobys.GloveOfDoomCase.item_name = "Golden Glove Of Doom"
     self.replacedMobys.GloveOfDoomCase.item_id = 403
+    self.replacedMobys.GloveOfDoomCase:AttachWeapon(1459, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.SuckCannonCase:SetPosition(261.73, 134.362, 54.497)
     self.replacedMobys.SuckCannonCase.rotZ = -0.475
@@ -129,6 +133,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.SuckCannonCase.gold_bolt_cost = 4
     self.replacedMobys.SuckCannonCase.item_name = "Golden Suck Cannon"
     self.replacedMobys.SuckCannonCase.item_id = 404
+    self.replacedMobys.SuckCannonCase:AttachWeapon(1464, self.universe:GetLevelByName("Novalis"))
     
     self.replacedMobys.TeslaClawCase:SetPosition(245.432, 125.064, 54.497)
     self.replacedMobys.TeslaClawCase.rotZ = -0.475
@@ -136,6 +141,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.TeslaClawCase.gold_bolt_cost = 4
     self.replacedMobys.TeslaClawCase.item_name = "Golden Tesla Claw"
     self.replacedMobys.TeslaClawCase.item_id = 405
+    self.replacedMobys.TeslaClawCase:AttachWeapon(1463, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.DevastatorCase:SetPosition(239.110, 133.567, 54.497)
     self.replacedMobys.DevastatorCase.rotZ = -0.475
@@ -143,6 +149,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.DevastatorCase.gold_bolt_cost = 4
     self.replacedMobys.DevastatorCase.item_name = "Golden Devastator"
     self.replacedMobys.DevastatorCase.item_id = 406
+    self.replacedMobys.DevastatorCase:AttachWeapon(1461, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.MineGloveCase:SetPosition(242.517, 143.600, 54.497)
     self.replacedMobys.MineGloveCase.rotZ = -0.475
@@ -150,6 +157,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.MineGloveCase.gold_bolt_cost = 4
     self.replacedMobys.MineGloveCase.item_name = "Golden Mine Glove"
     self.replacedMobys.MineGloveCase.item_id = 407
+    self.replacedMobys.MineGloveCase:AttachWeapon(1460, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.MorphORayCase:SetPosition(252.468, 145.282, 54.497)
     self.replacedMobys.MorphORayCase.rotZ = -0.475
@@ -157,6 +165,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.MorphORayCase.gold_bolt_cost = 4
     self.replacedMobys.MorphORayCase.item_name = "Golden Morph O Ray"
     self.replacedMobys.MorphORayCase.item_id = 408
+    self.replacedMobys.MorphORayCase:AttachWeapon(1465, self.universe:GetLevelByName("Novalis"))
 
     self.replacedMobys.DecoyGloveCase:SetPosition(260.882, 139.753, 54.497)
     self.replacedMobys.DecoyGloveCase.rotZ = -0.475
@@ -164,6 +173,7 @@ function ReplacementMobys:initialize(universe)
     self.replacedMobys.DecoyGloveCase.gold_bolt_cost = 4
     self.replacedMobys.DecoyGloveCase.item_name = "Golden Decoy Glove"
     self.replacedMobys.DecoyGloveCase.item_id = 409
+    self.replacedMobys.DecoyGloveCase:AttachWeapon(1462, self.universe:GetLevelByName("Novalis"))
     
     self.replacedMobys.KerwanInfobot:SetPosition(288.260, 127.805, 65.109)
     self.replacedMobys.KerwanInfobot.rotZ = 1.571
