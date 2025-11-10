@@ -1,6 +1,11 @@
 local itemLocations = {
     -- Novalis
     [16]=3, -- pyrocitor
+    [400]=95, -- gold bomb glove
+    [401]=96, -- gold pyrocitor
+    [402]=97, -- gold blaster
+    [403]=98, -- gold glove of doom
+    [404]=99, -- gold suck cannon
     
     -- Aridia
     [30]=7, -- hoverboard
@@ -59,6 +64,11 @@ local itemLocations = {
     [19]=71, -- tesla claw
     [32]=73, -- PDA
     [21]=74, -- morph o ray
+    [405]=100, -- gold tesla claw
+    [406]=101, -- gold devastator
+    [407]=102, -- gold mine glove
+    [408]=103, -- gold morph o ray
+    [409]=104, -- gold decoy glove
     
     -- Quartu
     [34]=80, -- bolt grabber

@@ -24,7 +24,7 @@ end
 
 function SteveMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 1000 then
+        if player.lobby.universe.totalBolts >= 1000 then
             player:ToastMessage("\x12 Buy \x0cPDA\x08 for 1,000 bolts", 1)
         else
             player:ToastMessage("You need 1,000 Bolts for the \x0cPDA\x08", 1)
@@ -33,8 +33,8 @@ function SteveMoby:ToastMessage(player)
 end
 
 function SteveMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 1000 then
-        player:GiveBolts(-1000)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 1000 then
+        universe:GiveBolts(-1000)
         player:OnUnlockItem(Item.GetByName("PDA").id, true)
     end
 end

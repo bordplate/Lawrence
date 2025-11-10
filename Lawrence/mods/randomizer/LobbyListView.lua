@@ -25,7 +25,9 @@ function LobbyListView:initialize(player, lobbyUniverse)
     end
     self.lobbyListMenu.ItemSelected = function(index)
         local lobby = self.lobbyUniverse.lobbies[index+1]
-        self:SelectedLobby(lobby)
+        if lobby ~= nil then
+            self:SelectedLobby(lobby)
+        end
     end
     
     for i, lobby in ipairs(self.lobbyUniverse.lobbies) do

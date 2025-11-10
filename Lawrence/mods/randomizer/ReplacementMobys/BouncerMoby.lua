@@ -24,7 +24,7 @@ end
 
 function BouncerMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 1000 then
+        if player.lobby.universe.totalBolts >= 1000 then
             player:ToastMessage("\x12 Bribe Bouncer with 4,000 bolts ", 1)
         else
             player:ToastMessage("You need 4,000 bolts to see Captain Qwark", 1)
@@ -33,8 +33,8 @@ function BouncerMoby:ToastMessage(player)
 end
 
 function BouncerMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 4000 then
-        player:GiveBolts(-4000)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 4000 then
+        universe:GiveBolts(-4000)
         player:OnUnlockLevel(0x07)
     end
 end

@@ -26,7 +26,8 @@ function RandoUniverse:initialize(lobby)
     self.ap_client_initialized = false
     
     self.buyable_weapons = {}
-    self.buyable_ammo = {} -- list weapons, +64 is performed to turn it into ammo
+    self.buyable_ammo = {0x0a} -- list weapons, +64 is performed to turn it into ammo (if we truly have no ammo for sale, PDA will crash the game)
+    self.gotten_first_ammo_weapon = false
     self.already_bought_weapons = {}
 
     self.has_hoverboard = false
@@ -46,6 +47,25 @@ function RandoUniverse:initialize(lobby)
     self.level_unlock_queue = {}
     self.item_unlock_queue = {}
     self.special_unlock_queue = {}
+
+    self.received_gold_bolts = {}
+    self.num_received_gold_bolts = 0
+    self.used_gold_bolts = 0
+    self.gold_bolt_pack_size = 1
+    
+    self.totalBolts = 0
+    self.boltMultiplier = 1
+    self.boltPackSize = 0
+    self.num_used_bolt_packs = 0
+
+    self.progressive_weapons = 0
+    
+    self.metal_detector_multiplier = 50
+    
+    self.slot_data = nil
+    self.unlock_count = {}
+    
+    self.using_outdated_AP = false
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
@@ -57,7 +77,7 @@ function RandoUniverse:Connect()
         self.host = self.lobby.address .. ":" .. self.lobby.port
     end
 
-    local uuid = "5"
+    local uuid = "ee4ff193-f687-45f4-806d-c7ad6778c743"
     
     self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
     self.ap_client_initialized = true
@@ -78,7 +98,7 @@ function RandoUniverse:DistributeGiveItem(item_id)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if player.fullySpawnedIn then
             player:ToastMessage("You received the \x0c" .. item_name .. "\x08")
-            player:GiveItem(item_id, Item.GetById(item_id).isWeapon)
+            player:GiveItem(item_id, IsGameItemStartingItem(item_id))
             FixPlanetsForPlayer(self, player)
         end
 
@@ -89,6 +109,10 @@ function RandoUniverse:DistributeGiveItem(item_id)
     end
 
     if Item.GetById(item_id).isWeapon and item_id ~= 0x0e and item_id ~= 0x12 and item_id ~= 0x09 and item_id ~= 0x15 then -- is weapon that uses ammo
+        if self.gotten_first_ammo_weapon == false then -- empty vendor protection
+            self.gotten_first_ammo_weapon = true
+            self.buyable_ammo = {}
+        end
         if #self.buyable_ammo == 0 then
             table.insert(self.buyable_ammo, item_id)
             self:DistributeVendorContents()
@@ -156,9 +180,9 @@ function RandoUniverse:DistributeUnlockPlanet(planet_id)
     end
 end
 
-function RandoUniverse:DistributeGiveBolts(bolts)
+function RandoUniverse:DistributeSetBolts(bolts)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
-        player:GiveBolts(bolts)
+        player:SetBolts(bolts)
     end
 end
 
@@ -168,25 +192,41 @@ function RandoUniverse:DistributeSetLevelFlags(_type, level, index, value)
     end
 end
 
-function RandoUniverse:GiveAPItemToPlayers(ap_item)
+function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
+    if ap_item == nil then
+        return
+    end
     print("RandoUniverse:GiveAPItemToPlayers. item: " .. tostring(ap_item))
     ap_item_type = GetAPItemType(ap_item)
     
     if ap_item_type == "item" then
         self:DistributeGiveItem(APItemToItem(ap_item))
     elseif ap_item_type == "special" then
+        if self.progressive_weapons == 1 and not (ap_item == 48 or ap_item == 49 or ap_item == 50 or ap_item == 52 or ap_item == 53) then -- normal (give both base and gold)
+            self:GiveAPItemToPlayers(APGoldWeaponToAPBaseWeapon(ap_item), ap_location)
+        end
         self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
     elseif ap_item_type == "planet" then
         self:DistributeUnlockPlanet(APItemToPlanet(ap_item))
+    elseif ap_item_type == "gold bolt" then
+        if self.received_gold_bolts[ap_location] == nil then
+            self.received_gold_bolts[ap_location] = ap_location
+            self.num_received_gold_bolts = self.num_received_gold_bolts + self.gold_bolt_pack_size
+        end
+        self:DistributeGoldBoltValue()
+    elseif ap_item_type == "bolt pack" then
+        self.num_used_bolt_packs = self.num_used_bolt_packs + 1
+        self:GiveBolts(self.boltPackSize, false)
+    elseif ap_item_type == "progressive" then
+        self:GiveAPItemToPlayers(ProgressiveAPItemToNormalAPItem(ap_item, self.slot_data, self.unlock_count), ap_location)
     else
---         APItemToGoldBolt(ap_item)
---        self:DistributeGiveBolts(15000)
+        print("Unknown item: " .. tostring(ap_item))
     end
 end
 
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
-    player:SetAddressValue(0xB00000, 50, 1) -- metal detector multiplier
+    player:SetAddressValue(0xB00000, self.metal_detector_multiplier, 1) -- metal detector multiplier
     player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
     player.level_unlock_queue = self.level_unlock_queue
     player.item_unlock_queue = self.item_unlock_queue
@@ -194,9 +234,17 @@ function RandoUniverse:OnPlayerJoin(player)
     player.receivedItemsWhileLoading = true
 end
 
+function RandoUniverse:PlayerForceSyncItems(player)
+    player.level_unlock_queue = self.level_unlock_queue
+    player.item_unlock_queue = self.item_unlock_queue
+    player.special_unlock_queue = self.special_unlock_queue
+end
+
 function RandoUniverse:OnPlayerGetItem(player, item_id)
     if item_id == 10 then -- bomb glove
-        player:GiveItem(10)
+        if self.using_outdated_AP then
+            player:GiveItem(10)
+        end
         return
     end
     location_id = ItemToLocation(item_id)
@@ -245,11 +293,29 @@ function RandoUniverse:AddPlanetVendorItem(planet_id)
         table.insert(self.buyable_weapons, item_id)
         self:DistributeVendorContents()
     end
+    --if planet_id == 1 and not self.using_outdated_AP then -- Novalis, add gold weapon hints
+    --    self.ap_client:SendHint(95)
+    --    self.ap_client:SendHint(96)
+    --    self.ap_client:SendHint(97)
+    --    self.ap_client:SendHint(98)
+    --    self.ap_client:SendHint(99)
+    --    self.ap_client:SendHint(100)
+    --    self.ap_client:SendHint(101)
+    --    self.ap_client:SendHint(102)
+    --    self.ap_client:SendHint(103)
+    --    self.ap_client:SendHint(104)
+    --end
 end
 
 function RandoUniverse:DistributeVendorContents()
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         _player:UpdateVendorContents()
+    end
+end
+
+function RandoUniverse:DistributeGoldBoltValue()
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        player.GoldBoltCountLabel:SetText("Gold Bolts: "..tostring(self.num_received_gold_bolts - self.used_gold_bolts))
     end
 end
 
@@ -259,6 +325,36 @@ function RandoUniverse:RemoveVendorItem(item_id)
     end
     table.insert(self.already_bought_weapons, item_id)
     self:DistributeVendorContents()
+end
+
+function RandoUniverse:GiveBolts(boltDiff, enableMultiply)
+    if enableMultiply == nil then
+        enableMultiply = true
+    end
+    if enableMultiply and boltDiff > 0 then
+        boltDiff = boltDiff * self.boltMultiplier
+    end
+    self.totalBolts = self.totalBolts + boltDiff
+    self:DistributeSetBolts(self.totalBolts)
+    local pureBolts = self.totalBolts - (self.num_used_bolt_packs * self.boltPackSize)
+    self.ap_client:SetBolts(pureBolts)
+    --print(string.format("new total bolt count: %d", self.totalBolts))
+end
+
+function RandoUniverse:APMessageReceived(msg)
+    print("APMessageReceived: " .. msg)
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        if player ~= nil then
+            player:ToastMessage(msg)
+        end
+    end
+end
+
+function RandoUniverse:SendVendorHints()
+    for _, item_id in ipairs(self.buyable_weapons) do
+        location_id = ItemToLocation(item_id)
+        self.ap_client:SendHint(location_id)
+    end
 end
 
 function RandoUniverse:OnTick()

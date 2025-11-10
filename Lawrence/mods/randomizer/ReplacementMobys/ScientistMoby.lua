@@ -24,7 +24,7 @@ end
 
 function ScientistMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 1000 then
+        if player.lobby.universe.totalBolts >= 1000 then
             player:ToastMessage("\x12 Buy \x0cGrindboots\x08 for 2,000 bolts", 1)
         else
             player:ToastMessage("You need 2,000 Bolts for the \x0cGrindboots\x08", 1)
@@ -33,8 +33,8 @@ function ScientistMoby:ToastMessage(player)
 end
 
 function ScientistMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 2000 then
-        player:GiveBolts(-2000)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 2000 then
+        universe:GiveBolts(-2000)
         player:OnUnlockItem(Item.GetByName("Grindboots").id, true)
     end
 end

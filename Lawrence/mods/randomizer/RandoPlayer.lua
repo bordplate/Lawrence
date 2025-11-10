@@ -2,7 +2,6 @@ RandoPlayer = class("RandoPlayer", Player)
 
 function RandoPlayer:Made()
     self.damageCooldown = 0
-    self.goldBoltCount = 0
     self.ready = false
     self.ingame = false
     
@@ -11,12 +10,12 @@ function RandoPlayer:Made()
     self.helga = null
     
     self.gameState = 0
-    
-    self.totalBolts = 0
 
     self.level_unlock_queue = {}
     self.item_unlock_queue = {}
     self.special_unlock_queue = {}
+    
+    self.race_position = 5
     
     self.skillpointCounters = {
         Player.offset.aridiaShipsKilled,
@@ -40,20 +39,29 @@ function RandoPlayer:Made()
 --     end
     
     self:MonitorAddress(Player.offset.goldBolts + 16 * 4 + 1, 1)
+    self:MonitorAddress(Player.offset.has_zoomerator, 1)
+    self:MonitorAddress(Player.offset.rilgar_race_pb, 4)
+    self:MonitorAddress(Player.offset.race_position, 4)
     self.hasCollectedKaleboGrindrailBolt = false
+    
+    self.syncItemsDebounce = false
 end
 
 function RandoPlayer:Start()
     if self.lobby.options.cheats.value then
-        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 360, 0xC0FFA888, {GameState.Menu})
+        self.GhostRatchetLabel = Label:new("R1: Set Ghost Ratchet for 1 second", 250, 390, 0xC0FFA888, {GameState.Menu})
         self:AddLabel(self.GhostRatchetLabel)
     end
     
-    self.TeleportToShipLabel = Label:new("\x13: Teleport to ship", 250, 340, 0xC0FFA888, {GameState.Menu})
+    self.TeleportToShipLabel = Label:new("\x13: Teleport to ship", 250, 370, 0xC0FFA888, {GameState.Menu})
     self:AddLabel(self.TeleportToShipLabel)
     
+    self.GoldBoltCountLabel = Label:new("Gold Bolts: 0", 10, 370, 0xC0FFA888, {GameState.Menu})
+    self.AddLabel(self, self.GoldBoltCountLabel)
+    
     self.lobby.universe:AddEntity(self)
-    self:LoadLevel(self.lobby.startPlanet)
+    --self:LoadLevel(self.lobby.startPlanet)
+    self:LoadLevel(1)
 end
 
 function RandoPlayer:OnCollectedGoldBolt(planet, number)
@@ -88,6 +96,11 @@ function RandoPlayer:OnGameStateChanged(state)
     if self.fullySpawnedIn and state == 0 and self.lobby.universe.got_novalis_mayor and self:Level():GetName() == "Novalis" then
         self:SetLevelFlags(1,1,0,{0xff})
     end
+
+    if state == 5 then -- vendor
+        self.lobby.universe:SendVendorHints()
+    end
+    
 end
 
 function RandoPlayer:OnControllerInputTapped(input)
@@ -102,6 +115,21 @@ function RandoPlayer:OnControllerInputTapped(input)
 
     if self.gameState == 3 and input & 0x80 ~= 0  then -- square
         self:TeleportToShip()
+    end
+end
+
+function RandoPlayer:OnControllerInputHeld(input)
+
+    syncButtonCombo = 0x8 | 0x4 | 0x2 | 0x1 | 0x80 -- R1 + L1 + R2 + L2 + Square
+    if self.gameState == 0 and input & (syncButtonCombo) == syncButtonCombo then
+        if not self.syncItemsDebounce then
+            self.syncItemsDebounce = true
+            print("force syncing items")
+            self.lobby.universe:PlayerForceSyncItems(self)
+            self:UnlockQueuedItems()
+        end
+    else
+        self.syncItemsDebounce = false
     end
 end
 
@@ -127,46 +155,70 @@ end
 -- end
 
 function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
-    print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
+    --print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
 
     if address == Player.offset.goldBolts + 16 * 4 + 1 and newValue == 1 and not self.hasCollectedKaleboGrindrailBolt then
         self:OnCollectedGoldBolt(16, 1)
         self.hasCollectedKaleboGrindrailBolt = true
     end
+    
+    if address == Player.offset.has_zoomerator and newValue == 1 and self.lobby.universe.has_zoomerator == false then
+        self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
+    end
+
+    if address == Player.offset.rilgar_race_pb and newValue ~= 0 and self.lobby.universe.has_zoomerator == true then
+        if self.race_position == 1 then
+            self:OnUnlockItem(0x30, false)
+        else
+            print("finished race but did not win... setting PB back to 0")
+            self:SetAddressValue(Player.offset.rilgar_race_pb, 0, 4)
+        end
+    end
+
+    if address == Player.offset.race_position then
+        self.race_position = newValue
+    end
 end
 
 function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
-    self.totalBolts = totalBolts
+    self.lobby.universe:GiveBolts(boltDiff)
+end
+
+function RandoPlayer:UnlockQueuedItems()
+    for _, planet in ipairs(self.level_unlock_queue) do
+        print("Delayed unlocking planet: " .. tostring(planet))
+        self:UnlockLevel(planet)
+    end
+    for _, item in ipairs(self.item_unlock_queue) do
+        print("Delayed unlocking item: " .. tostring(item))
+        self:GiveItem(item, IsGameItemStartingItem(item))
+    end
+    for _, special in ipairs(self.special_unlock_queue) do
+        print("Delayed unlocking special: " .. tostring(special))
+        self:SetAddressValue(special, 1, 1)
+    end
+    self.level_unlock_queue = {}
+    self.item_unlock_queue = {}
+    self.special_unlock_queue = {}
 end
 
 function RandoPlayer:OnRespawned()
     self.lobby.universe.replacedMobys:RemoveReplacedMobys(self)
 
     if self.receivedItemsWhileLoading then
-        for _, planet in ipairs(self.level_unlock_queue) do
-            print("Delayed unlocking planet: " .. tostring(planet))
-            self:UnlockLevel(planet)
-        end
-        for _, item in ipairs(self.item_unlock_queue) do
-            print("Delayed unlocking item: " .. tostring(item))
-            self:GiveItem(item, Item.GetById(item).isWeapon)
-        end
-        for _, special in ipairs(self.special_unlock_queue) do
-            print("Delayed unlocking special: " .. tostring(special))
-            self:SetAddressValue(special, 1, 1)
-        end
-        self.level_unlock_queue = {}
-        self.item_unlock_queue = {}
-        self.special_unlock_queue = {}
+        self:UnlockQueuedItems()
         self.receivedItemsWhileLoading = false
     end
     
     if not self.fullySpawnedIn then
         self.fullySpawnedIn = true
-        
+        if not self.lobby.universe.using_outdated_AP then
+            self:SetAddressValue(Player.offset.challenge_mode, 1, 1)
+        end
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
         self:UpdateHPAmount()
     end
+    self:SetBolts(self.lobby.universe.totalBolts)
     self:UpdateVendorContents()
     FixPlanetsForPlayer(self.lobby.universe, self)
     self:UpdateHPAmount()
@@ -184,14 +236,21 @@ end
 
 function RandoPlayer:UpdateVendorContents()
     num_buyable_weapons = #self.lobby.universe.buyable_weapons
+    local any_items_in_vendor = false
     for i = 0, 11 do
         if i+1 <= num_buyable_weapons then
             self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_weapons[i+1], 1)
+            any_items_in_vendor = true
         elseif i-num_buyable_weapons+1 <= #self.lobby.universe.buyable_ammo then
             self:SetAddressValue(Player.offset.vendorItems + i, self.lobby.universe.buyable_ammo[i-num_buyable_weapons+1]+64, 1)
+            any_items_in_vendor = true
         else
             self:SetAddressValue(Player.offset.vendorItems + i, 0xff, 1)
         end
+    end
+    if any_items_in_vendor == false or -- literally nothing in the vendor
+            num_buyable_weapons >= 12 then -- too many items, no room left for any ammo
+        self:SetAddressValue(Player.offset.vendorItems + 0, 0x4a, 1) -- place bomb glove ammo to prevent crashes
     end
 end
 

@@ -24,7 +24,7 @@ end
 
 function EdwinaMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 2000 then
+        if player.lobby.universe.totalBolts >= 2000 then
             player:ToastMessage("\x12 Pay 2,000 for the \x0cHydro-Pack\x08", 1)
         else
             player:ToastMessage("You need 2,000 Bolts for the \x0cHydro-Pack\x08", 1)
@@ -33,8 +33,8 @@ function EdwinaMoby:ToastMessage(player)
 end
 
 function EdwinaMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 2000 then
-        player:GiveBolts(-2000)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 2000 then
+        universe:GiveBolts(-2000)
         player:OnUnlockItem(Item.GetByName("Hydro-pack").id, true)
     end
 end
