@@ -120,7 +120,7 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     self.ap:set_slot_refused_handler(on_slot_refused)
     self.ap:set_items_received_handler(on_items_received)
     self.ap:set_retrieved_handler(on_retrieved)
-    self.ap:set_print_json_handler(on_print_json)
+    --self.ap:set_print_json_handler(on_print_json)
 end
 
 function APClient:getLocation(location_id)
