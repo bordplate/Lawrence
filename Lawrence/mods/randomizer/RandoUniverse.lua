@@ -335,6 +335,12 @@ function RandoUniverse:GiveBolts(boltDiff, enableMultiply)
     --print(string.format("new total bolt count: %d", self.totalBolts))
 end
 
+function RandoUniverse:APMessageReceived(msg)
+    for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
+        player:ToastMessage(msg, 300)
+    end
+end
+
 function RandoUniverse:OnTick()
     if self.ap_client_initialized then
         self.ap_client:poll()

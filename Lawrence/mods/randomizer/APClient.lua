@@ -101,6 +101,13 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
         end
     end
 
+    function on_print_json(msg, extra)
+        if extra['type'] == "ItemSend" or extra['type'] == "ItemCheat" then
+            universe:APMessageReceived(self.ap:render_json(msg, AP.RenderFormat.TEXT))
+        end
+    end
+    
+
 
     print("before AP create. uuid: " .. tostring(uuid) .. " game_name: " .. tostring(game_name) .. " host: " .. tostring(host))
     self.ap = AP(uuid, game_name, host)
@@ -112,6 +119,7 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     self.ap:set_slot_refused_handler(on_slot_refused)
     self.ap:set_items_received_handler(on_items_received)
     self.ap:set_retrieved_handler(on_retrieved)
+    self.ap:set_print_json_handler(on_print_json)
 end
 
 function APClient:getLocation(location_id)
