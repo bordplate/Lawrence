@@ -60,8 +60,7 @@ function RandoPlayer:Start()
     self.AddLabel(self, self.GoldBoltCountLabel)
     
     self.lobby.universe:AddEntity(self)
-    --self:LoadLevel(self.lobby.startPlanet)
-    self:LoadLevel(1)
+    self:LoadLevel(self.lobby.startPlanet)
 end
 
 function RandoPlayer:OnCollectedGoldBolt(planet, number)
