@@ -342,8 +342,11 @@ function RandoUniverse:GiveBolts(boltDiff, enableMultiply)
 end
 
 function RandoUniverse:APMessageReceived(msg)
+    print("APMessageReceived: " .. msg)
     for _, player in ipairs(self:LuaEntity():FindChildren("Player")) do
-        player:ToastMessage(msg, 300)
+        if player ~= nil then
+            player:ToastMessage(msg)
+        end
     end
 end
 

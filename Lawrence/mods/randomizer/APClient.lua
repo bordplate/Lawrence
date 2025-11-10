@@ -102,8 +102,9 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     end
 
     function on_print_json(msg, extra)
-        if extra['type'] == "ItemSend" or extra['type'] == "ItemCheat" then
-            universe:APMessageReceived(self.ap:render_json(msg, AP.RenderFormat.TEXT))
+        local msg_str = self.ap:render_json(msg, AP.RenderFormat.TEXT)
+        if extra ~= nil and (extra['type'] == "ItemSend" or extra['type'] == "ItemCheat") then
+            universe:APMessageReceived(msg_str)
         end
     end
     
