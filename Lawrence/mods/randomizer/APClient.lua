@@ -43,6 +43,35 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
 
     function on_slot_connected(slot_data)
         print("Slot connected")
+        universe.slot_data = slot_data
+        if slot_data["starting_planet"] ~= nil then
+            starting_planet = slot_data["starting_planet"] - 100
+            if starting_planet < 1 or starting_planet > 18 then
+                print(string.format("starting planet %d is not a valid planet. defaulting to Novalis.", starting_planet))
+                starting_planet = 1 -- novalis
+            end
+            universe.lobby.startPlanet = starting_planet
+        end
+        if slot_data["pack_size_gold_bolts"] ~= nil then
+            universe.gold_bolt_pack_size = slot_data["pack_size_gold_bolts"]
+        end
+        if slot_data["pack_size_bolts"] ~= nil then
+            universe.boltPackSize = slot_data["pack_size_bolts"]
+        end
+        if slot_data["metal_bolt_multiplier"] ~= nil then
+            universe.metal_bolt_multiplier = slot_data["metal_bolt_multiplier"]
+        end
+        if slot_data["enable_bolt_multiplier"] ~= nil then
+            universe.boltMultiplier = slot_data["enable_bolt_multiplier"]
+        end
+
+        if slot_data["progressive_weapons"] ~= nil then
+            print("progressive weapons:" .. tostring(slot_data["progressive_weapons"]))
+            universe.progressive_weapons = slot_data["progressive_weapons"]
+        else
+            universe.using_outdated_AP = true
+        end
+                
         for k,v in ipairs(slot_data) do
           print(string.format("%s: %d", k ,v))
         end
@@ -61,10 +90,26 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     function on_items_received(items)
        print("Archipelago Items received:")
        for _,v in ipairs(items) do
-           universe:GiveAPItemToPlayers(v["item"])
+           universe:GiveAPItemToPlayers(v["item"], v["location"])
        end
     end
-  
+
+    function on_retrieved(map)
+        if map["bolts"] ~= nil then
+            print(string.format("got %d bolts from datastore", map["bolts"]))
+            universe:GiveBolts(map["bolts"], false)
+        end
+    end
+
+    function on_print_json(msg, extra)
+        local msg_str = self.ap:render_json(msg, AP.RenderFormat.TEXT)
+        if extra ~= nil and (extra['type'] == "ItemSend" or extra['type'] == "ItemCheat") then
+            universe:APMessageReceived(msg_str)
+        end
+    end
+    
+
+
     print("before AP create. uuid: " .. tostring(uuid) .. " game_name: " .. tostring(game_name) .. " host: " .. tostring(host))
     self.ap = AP(uuid, game_name, host)
     self.ap:set_socket_connected_handler(on_socket_connected)
@@ -74,10 +119,24 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     self.ap:set_slot_connected_handler(on_slot_connected)
     self.ap:set_slot_refused_handler(on_slot_refused)
     self.ap:set_items_received_handler(on_items_received)
+    self.ap:set_retrieved_handler(on_retrieved)
+    --self.ap:set_print_json_handler(on_print_json)
 end
 
 function APClient:getLocation(location_id)
     self.ap:LocationChecks({location_id})
+end
+
+function APClient:SetBolts(totalBolts)
+    self.ap:Set("bolts", 0, false, {{"replace", totalBolts}})
+end
+
+function APClient:GetBolts()
+    self.ap:Get({"bolts"})
+end
+
+function APClient:SendHint(location_id)
+    self.ap:LocationScouts({location_id}, 2)
 end
 
 function APClient:WinGame()

@@ -62,8 +62,8 @@ public partial class Client {
     };
     
     // Which API version we're currently on and which is the minimum version we support. 
-    private uint API_VERSION = 8;
-    private uint API_VERSION_MIN = 8;
+    private uint API_VERSION = 9;
+    private uint API_VERSION_MIN = 9;
     
     /// <summary>
     /// When true, this client is waiting to connect, and is not yet part of the regular OnTick loop

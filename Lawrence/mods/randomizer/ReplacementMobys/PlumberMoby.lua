@@ -25,7 +25,7 @@ end
 
 function PlumberMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 500 then
+        if player.lobby.universe.totalBolts >= 500 then
             player:ToastMessage("\x12 Buy \x0cInfobot\x08 for 500 bolts ", 1)
         else
             player:ToastMessage("You need 500 bolts to buy the \x0cInfobot\x08", 1)
@@ -34,8 +34,8 @@ function PlumberMoby:ToastMessage(player)
 end
 
 function PlumberMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 500 then
-        player:GiveBolts(-500)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 500 then
+        universe:GiveBolts(-500)
         player:OnUnlockLevel(0x02)
     end
 end

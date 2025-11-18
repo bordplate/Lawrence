@@ -25,7 +25,9 @@ function LobbyListView:initialize(player, lobbyUniverse)
     end
     self.lobbyListMenu.ItemSelected = function(index)
         local lobby = self.lobbyUniverse.lobbies[index+1]
-        self:SelectedLobby(lobby)
+        if lobby ~= nil then
+            self:SelectedLobby(lobby)
+        end
     end
     
     for i, lobby in ipairs(self.lobbyUniverse.lobbies) do
@@ -101,7 +103,6 @@ end
 
 function LobbyListView:SelectedLobby(lobby)
     self.textArea.Text = "Host: " .. lobby.host:Username()
-    self.gamemodeTextArea.Text = "Friendly fire: " .. (lobby.options.friendlyFire and "On" or "Off")
 end
 
 function LobbyListView:OnControllerInputPressed(input)

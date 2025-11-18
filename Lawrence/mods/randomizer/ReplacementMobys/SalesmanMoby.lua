@@ -24,7 +24,7 @@ end
 
 function SalesmanMoby:ToastMessage(player)
     if not self.disabled and self:closeToPlayer(player) then
-        if player.totalBolts >= 1000 then
+        if player.lobby.universe.totalBolts >= 1000 then
             player:ToastMessage("\x12 Buy \x0cR.Y.N.O\x08 for 150,000 bolts", 1)
         else
             player:ToastMessage("You need 150,000 Bolts for the \x0cR.Y.N.O\x08", 1)
@@ -33,8 +33,8 @@ function SalesmanMoby:ToastMessage(player)
 end
 
 function SalesmanMoby:Triangle(player, universe)
-    if not self.disabled and self:closeToPlayer(player) and player.totalBolts >= 150000 then
-        player:GiveBolts(-150000)
+    if not self.disabled and self:closeToPlayer(player) and universe.totalBolts >= 150000 then
+        universe:GiveBolts(-150000)
         player:OnUnlockItem(Item.GetByName("R.Y.N.O.").id, true)
     end
 end
