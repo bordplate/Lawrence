@@ -58,11 +58,14 @@ public class ViewAttribute<T> : IViewAttribute {
         
         switch (this) {
             case ViewAttribute<Vector2> vector2Attribute: {
-                var x = BitConverter.GetBytes((ushort)vector2Attribute.Value.X).Reverse().ToArray();
-                var y = BitConverter.GetBytes((ushort)vector2Attribute.Value.Y).Reverse().ToArray();
+                var x = BitConverter.GetBytes((ushort)vector2Attribute.Value.X);
+                var y = BitConverter.GetBytes((ushort)vector2Attribute.Value.Y);
                 
-                packet.Write(x);
-                packet.Write(y);
+                x.Reverse();
+                y.Reverse();
+                
+                packet.Write(x.ToArray());
+                packet.Write(y.ToArray());
                 break;
             }
             case ViewAttribute<Vector3?> vector3Attribute: {
@@ -70,13 +73,17 @@ public class ViewAttribute<T> : IViewAttribute {
                     return null; // No packet if the value is null
                 }
                 
-                var x = BitConverter.GetBytes(vector3Attribute.Value.Value.X).Reverse().ToArray();
-                var y = BitConverter.GetBytes(vector3Attribute.Value.Value.Y).Reverse().ToArray();
-                var z = BitConverter.GetBytes(vector3Attribute.Value.Value.Z).Reverse().ToArray();
+                var x = BitConverter.GetBytes(vector3Attribute.Value.Value.X);
+                var y = BitConverter.GetBytes(vector3Attribute.Value.Value.Y);
+                var z = BitConverter.GetBytes(vector3Attribute.Value.Value.Z);
                 
-                packet.Write(x);
-                packet.Write(y);
-                packet.Write(z);
+                x.Reverse();
+                y.Reverse();
+                z.Reverse();
+                
+                packet.Write(x.ToArray());
+                packet.Write(y.ToArray());
+                packet.Write(z.ToArray());
                 
                 break;
             }
@@ -87,21 +94,24 @@ public class ViewAttribute<T> : IViewAttribute {
                 break;
             }
             case ViewAttribute<uint> uintAttribute: {
-                var value = BitConverter.GetBytes(uintAttribute.Value).Reverse().ToArray();
+                var value = BitConverter.GetBytes(uintAttribute.Value);
+                value.Reverse();
                 
-                packet.Write(value);
+                packet.Write(value.ToArray());
                 break;
             }
             case ViewAttribute<int> intAttribute: {
-                var value = BitConverter.GetBytes(intAttribute.Value).Reverse().ToArray();
+                var value = BitConverter.GetBytes(intAttribute.Value);
+                value.Reverse();
                 
-                packet.Write(value);
+                packet.Write(value.ToArray());
                 break;
             }
             case ViewAttribute<float> floatAttribute: {
-                var value = BitConverter.GetBytes(floatAttribute.Value).Reverse().ToArray();
+                var value = BitConverter.GetBytes(floatAttribute.Value);
+                value.Reverse();
                 
-                packet.Write(value);
+                packet.Write(value.ToArray());
                 break;
             }
             case ViewAttribute<string> stringAttribute: {
