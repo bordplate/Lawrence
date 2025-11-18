@@ -123,7 +123,7 @@ public partial class Client {
 
     // Amount of seconds since we last saw activity on this client.
     public long GetInactiveSeconds() {
-        return DateTimeOffset.Now.ToUnixTimeSeconds() - this._lastContact;
+        return DateTimeOffset.Now.ToUnixTimeSeconds() - _lastContact;
     }
 
     public int UnackedPacketsCount() {
@@ -155,7 +155,7 @@ public partial class Client {
     private const int BufferSize = 1024;
 
     public void SendPacket(MPPacketHeader packetHeader, byte[]? packetBody, Action? ackCallback = null) {
-        packetHeader.TimeSent = (long)Game.Game.Shared().Time();
+        packetHeader.TimeSent = (long)Server.Time();
 
         var bodyLen = 0;
         if (packetBody != null) {
@@ -468,7 +468,7 @@ public partial class Client {
                 case MPPacketType.MP_PACKET_TIME_SYNC: {
                     MPPacketTimeResponse response = new MPPacketTimeResponse() {
                         ClientSendTime = (ulong)packetHeader.TimeSent,
-                        ServerSendTime = Game.Game.Shared().Time()
+                        ServerSendTime = Server.Time()
                     };
 
                     MPPacketHeader header = new MPPacketHeader {
@@ -646,7 +646,7 @@ public partial class Client {
 
                             packetHeader.PacketType = MPPacketType.MP_PACKET_ACK;
                             packetHeader.Size = 0x2d;
-                            packetHeader.TimeSent = (long)Game.Game.Shared().Time();
+                            packetHeader.TimeSent = (long)Server.Time();
                             
                             // We didn't use to have a version field on the query packet, and also no way to tell a
                             // querying client that it is outdated. The byte array is a query response with 1 server named
@@ -669,6 +669,8 @@ public partial class Client {
                         Logger.Error(
                             $"(Player {ID}) tried to query us as directory, but we're not a directory server.");
                     }
+
+                    Disconnect();
 
                     break;
                 }
@@ -695,6 +697,8 @@ public partial class Client {
                             serverInfo.GetOwner(packetBody)
                         );
                     }
+                    
+                    Disconnect();
 
                     break;
                 }
@@ -805,7 +809,7 @@ public partial class Client {
             return;
         }
 
-        long timeNow = (long)Game.Game.Shared().Time();
+        long timeNow = (long)Server.Time();
 
         _lastContact = timeNow / 1000;
 

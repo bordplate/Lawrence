@@ -320,7 +320,7 @@ class Lawrence {
             _server = new Server(listenAddress, serverPort, serverName!, maxPlayers);
             _server.Start();
             
-            Logger.Log($"Started Lawrence on {_server.ListenAddress()}");
+            Logger.Log($"Started Lawrence on {_server.ListenAddress()}:{_server.ListenPort()}");
             
             if (advertise) {
                 string directoryIP = Settings.Default().Get("Server.directory_server", "172.104.144.15", true)!;

@@ -31,6 +31,8 @@ public class Server {
 
     private bool _processTicks = true;
 
+    private static ulong _time;
+
     public Server(string listenAddress, int port, string serverName = "<Empty server name>", int maxPlayers = 20) {
         IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), port);
         _udpServer = new UdpClient(ipep);
@@ -78,21 +80,17 @@ public class Server {
     /// Accepts new clients and adds them to the clients list.
     /// </summary>
     private void AcceptClients() {
-        while (true)
-        {
-            if (_udpServer.Available <= 0)
-            {
+        while (true) {
+            if (_udpServer.Available <= 0) {
                 Thread.Sleep(1);
                 continue;
             }
 
-            try
-            {
+            try {
                 IPEndPoint? clientEndpoint = null;
                 var data = _udpServer.Receive(ref clientEndpoint);
 
-                if (data.Length <= 0)
-                {
+                if (data.Length <= 0) {
                     Logger.Error("Hey, why is it 0?");
                     continue;
                 }
@@ -101,18 +99,22 @@ public class Server {
                  
                 for (int i = _clients.Count - 1; i >= 0; i--) {
                     Client p = _clients[i];
-                    
-                    // FIXME: Check if client is disconnected and remove them from clients list.
 
-                    if (!p.IsDisconnected() && p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port)
-                    {
+                    if (p.IsDisconnected()) {
+                        _clientMutex.WaitOne();
+                        _clients.RemoveAt(i);
+                        _clientMutex.ReleaseMutex();
+                        
+                        continue;
+                    }
+
+                    if (!p.IsDisconnected() && p.GetEndpoint().Address.Equals(clientEndpoint.Address) && p.GetEndpoint().Port == clientEndpoint.Port) {
                         p.ReceiveData(data);
                         existingPlayer = true;
                     }
                 }
 
-                if (!existingPlayer)
-                {
+                if (!existingPlayer) {
                     NewClient(clientEndpoint, data);
                 }
             }
@@ -131,6 +133,10 @@ public class Server {
         watch.Start();
         
         while (true) {
+            DateTimeOffset unixEpoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            TimeSpan timeSinceEpoch = DateTimeOffset.UtcNow - unixEpoch;
+            _time = (ulong)timeSinceEpoch.TotalMilliseconds;
+            
             _clientMutex.WaitOne();
                 
             // Clients that are waiting to connect aren't part of a `Player` tick loop so the Client tick 
@@ -138,6 +144,11 @@ public class Server {
             //   packets can be processed like they should on the right thread. 
             foreach (Client client in _clients) {
                 if (client.WaitingToConnect) {
+                    if (client.GetInactiveSeconds() > 10) {
+                        client.Disconnect();
+                        continue;
+                    }
+                    
                     client.Tick();
                 }
             }
@@ -181,17 +192,14 @@ public class Server {
     /// </summary>
     /// <param name="endpoint"></param>
     /// <param name="data"></param>
-    void NewClient(IPEndPoint endpoint, byte[]? data = null)
-    {
+    void NewClient(IPEndPoint endpoint, byte[]? data = null) {
         Logger.Log($"Connection from {endpoint}");
 
         _clientMutex.WaitOne();
         
         int index = _clients.Count;
-        for (int i = 0; i < _clients.Count; i++) 
-        {
-            if (_clients[i].IsDisconnected())
-            {
+        for (int i = 0; i < _clients.Count; i++) {
+            if (_clients[i].IsDisconnected()) {
                 index = i;
                 break;
             }
@@ -199,53 +207,37 @@ public class Server {
 
         Client client = new Client(endpoint, (uint)index, this);
 
-        if (index >= _clients.Count)
-        {
+        if (index >= _clients.Count) {
             _clients.Add(client);
-        }
-        else {
+        } else {
             _clients[index] = client;
         }
 
         // Receive their first packet
-        if (data != null)
-        {
+        if (data != null) {
             client.ReceiveData(data);
         }
         
         _clientMutex.ReleaseMutex();
     }
 
-    public void SendTo(byte[] bytes, EndPoint endpoint)
-    {
-        try
-        {
+    public void SendTo(byte[] bytes, EndPoint endpoint) {
+        try {
             _udpServer.Client.SendTo(bytes, endpoint);
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             Logger.Error($"Error sending packet: {e.Message}");
         }
     }
 
-    public Client? GetClient(int id)
-    {
-        foreach(Client client in _clients)
-        {
-            if (client.ID == id)
-            {
-                return client;
-            }
-        }
-
-        return null;
-    }
-
-    public List<Client> Clients()
-    {
+    public List<Client> Clients() {
         return _clients;
     }
     
     public long TicksPerSecond() {
         return _ticksPerSecond + 1;
+    }
+
+    public static ulong Time() {
+        return _time;
     }
 }
