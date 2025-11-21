@@ -57,4 +57,13 @@ public class View() : Entity(null) {
         Close?.Invoke();
         Delete();
     }
+
+    public override void Delete() {
+        foreach (var element in _elements) {
+            element.View = null;
+            element.Delete();
+        }
+        
+        base.Delete();
+    }
 }

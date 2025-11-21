@@ -44,10 +44,17 @@ public class Universe : Entity
     }
 
     public override void Delete() {
-        Game.Shared().NotificationCenter().Unsubscribe<PrimaryUniverseChangedNotification>(OnPrimaryUniverseChanged);
-        Game.Shared().NotificationCenter().Unsubscribe<PlayerJoinedNotification>(OnPlayerJoined);
+        foreach (var level in _levels) {
+            level.Delete();
+        }
         
         base.Delete();
+        
+        Game.Shared().RemoveUniverse(this);
+    }
+
+    public void OnPlayerLeave(Player player) {
+        CallLuaFunction("OnPlayerLeave", LuaEntity(), player.LuaEntity());
     }
 
     public override void Add(Entity entity, bool reparent = true) {
@@ -112,5 +119,13 @@ public class Universe : Entity
     public override void OnTick(TickNotification notification)
     {
         base.OnTick(notification);
+    }
+
+    public override void Remove(Entity entity, bool unparent = true) {
+        base.Remove(entity, unparent);
+        
+        if (entity is Player player) {
+            OnPlayerLeave(player);
+        }
     }
 }

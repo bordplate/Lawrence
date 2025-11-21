@@ -113,6 +113,24 @@ public class NotificationCenter {
         }
     }
 
+    public void UnsubscribeAll(Entity entity) {
+        var callbacksToRemove = new List<(string, Delegate)>();
+        
+        foreach (var subscriber in _subscribers) {
+            foreach (var callback in subscriber.Value) {
+                if (callback.Target == entity) {
+                    callbacksToRemove.Add((subscriber.Key, callback));
+                }
+            }
+        }
+
+        foreach (var callback in callbacksToRemove) {
+            if (_subscribers.TryGetValue(callback.Item1, out var callbacks)) {
+                callbacks.Remove(callback.Item2);
+            }
+        }
+    }
+
     /// <summary>
     /// Method to post a notification to all subscribers of the given type
     /// </summary>

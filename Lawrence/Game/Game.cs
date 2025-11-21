@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using KeraLua;
 using NLua;
 
 using Lawrence.Core;
 using Lawrence.Game.UI;
+using Lua = NLua.Lua;
 
 namespace Lawrence.Game;
 
@@ -431,6 +433,11 @@ public class Game {
         NotificationCenter().Post(new PreTickNotification());
         NotificationCenter().Post(new TickNotification());
         NotificationCenter().Post(new PostTickNotification());
+
+        if (_ticks % 3600 == 0) {
+            // Garbage collect every 1 mintues
+            _state?.State.GarbageCollector(LuaGC.Collect, 0);
+        }
     }
 
     /// <summary>
@@ -483,6 +490,10 @@ public class Game {
         _universes.Add(universe);
         
         return universe;
+    }
+
+    public void RemoveUniverse(Universe universe) {
+        _universes.Remove(universe);
     }
 
     public int PlayerCount()

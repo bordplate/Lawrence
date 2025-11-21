@@ -212,4 +212,14 @@ public class Level : Entity {
             }
         }
     }
+
+    public override void Delete() {
+        foreach (var hybridMoby in _hybridMobys) {
+            hybridMoby.Delete();
+        }
+
+        _levelView.Delete();
+        
+        base.Delete();
+    }
 }

@@ -138,8 +138,6 @@ public partial class Player : Moby {
         }
 
         base.Delete();
-        
-        Game.Shared().NotificationCenter().Unsubscribe<PostTickNotification>(OnPostTick);
     }
 
     public void GeneratePlayerColor() {

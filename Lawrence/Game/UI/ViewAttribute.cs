@@ -61,8 +61,8 @@ public class ViewAttribute<T> : IViewAttribute {
                 var x = BitConverter.GetBytes((ushort)vector2Attribute.Value.X);
                 var y = BitConverter.GetBytes((ushort)vector2Attribute.Value.Y);
                 
-                x.Reverse();
-                y.Reverse();
+                Array.Reverse(x);
+                Array.Reverse(y);
                 
                 packet.Write(x.ToArray());
                 packet.Write(y.ToArray());
@@ -77,9 +77,9 @@ public class ViewAttribute<T> : IViewAttribute {
                 var y = BitConverter.GetBytes(vector3Attribute.Value.Value.Y);
                 var z = BitConverter.GetBytes(vector3Attribute.Value.Value.Z);
                 
-                x.Reverse();
-                y.Reverse();
-                z.Reverse();
+                Array.Reverse(x);
+                Array.Reverse(y);
+                Array.Reverse(z);
                 
                 packet.Write(x.ToArray());
                 packet.Write(y.ToArray());
@@ -95,21 +95,24 @@ public class ViewAttribute<T> : IViewAttribute {
             }
             case ViewAttribute<uint> uintAttribute: {
                 var value = BitConverter.GetBytes(uintAttribute.Value);
-                value.Reverse();
+                
+                Array.Reverse(value);
                 
                 packet.Write(value.ToArray());
                 break;
             }
             case ViewAttribute<int> intAttribute: {
                 var value = BitConverter.GetBytes(intAttribute.Value);
-                value.Reverse();
+                
+                Array.Reverse(value);
                 
                 packet.Write(value.ToArray());
                 break;
             }
             case ViewAttribute<float> floatAttribute: {
                 var value = BitConverter.GetBytes(floatAttribute.Value);
-                value.Reverse();
+                
+                Array.Reverse(value);
                 
                 packet.Write(value.ToArray());
                 break;

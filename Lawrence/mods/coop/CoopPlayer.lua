@@ -135,7 +135,7 @@ function CoopPlayer:UnlockAllGoldBolts()
 end
 
 function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
-    print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
+    --print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
     
     local addressIsSkillpointCounter = false
     for _, counter in ipairs(self.skillpointCounters) do
@@ -204,36 +204,36 @@ function CoopPlayer:OnGameStateChanged(state)
 end
 
 function CoopPlayer:OnControllerInputTapped(input)
-    if (self.debugCam or self.gameState == 3) and input & 1024 ~= 0 then
-        if not self.debugCam then
-            self:SetAddressValue(0x95c5d4, 1, 4)
-            self:SetAddressValue(0x95c5c8, 7, 4)
-            self.debugCam = true
-        else
-            self:SetAddressValue(0x95c5d4, 0, 4)
-            self:SetAddressValue(0x95c5c8, 0xf, 4)
-            self.debugCam = false
-        end
-    end
+    --if (self.debugCam or self.gameState == 3) and input & 1024 ~= 0 then
+    --    if not self.debugCam then
+    --        self:SetAddressValue(0x95c5d4, 1, 4)
+    --        self:SetAddressValue(0x95c5c8, 6, 4)
+    --        self.debugCam = true
+    --    else
+    --        self:SetAddressValue(0x95c5d4, 0, 4)
+    --        self:SetAddressValue(0x95c5c8, 0xf, 4)
+    --        self.debugCam = false
+    --    end
+    --end
     
     --if self.gameState == 3 and input & 0x20 ~= 0 then
     --    self:SetPosition(0, 0, -10000)
     --    --self:SetAddressValue(0x969EAC, 100, 4)
     --end
     
-    if self.gameState == 3 and input & 0x80 ~= 0 then
-        if self:Username() == "bordplate3" then
-            print("Moving players")
-            local z_pos = self.z + 1
-            for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
-                if player:GUID() ~= self:GUID() then
-                    print("Moved player " .. player:Username() .. " to " .. self.x .. ", " .. self.y .. ", " .. z_pos)
-                    player:SetPosition(self.x, self.y, z_pos)
-                    z_pos = z_pos + 1
-                end
-            end
-        end
-    end
+    --if self.gameState == 3 and input & 0x80 ~= 0 then
+    --    if self:Username() == "bordplate3" then
+    --        print("Moving players")
+    --        local z_pos = self.z + 1
+    --        for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+    --            if player:GUID() ~= self:GUID() then
+    --                print("Moved player " .. player:Username() .. " to " .. self.x .. ", " .. self.y .. ", " .. z_pos)
+    --                player:SetPosition(self.x, self.y, z_pos)
+    --                z_pos = z_pos + 1
+    --            end
+    --        end
+    --    end
+    --end
 end
 
 function CoopPlayer:OnUnlockItem(item_id, equip)

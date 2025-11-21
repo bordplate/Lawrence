@@ -93,6 +93,11 @@ partial class Entity {
         var internalEntity = entityTable["_internalEntity"];
 
         if (internalEntity is Entity entity) {
+            if (entity.IsDeleted()) {
+                Logger.Error($"Tried to add a deleted {entity.GetType().Name} to {GetType().Name}\n{Game.Shared().State().GetDebugTraceback()}");
+                return;
+            }
+            
             Add(entity);
         }
     }
@@ -211,12 +216,45 @@ partial class Entity {
     private LuaFunction? _onTickFunction;
     
     public void ClearLuaCaches() {
+        _luaClass?.Dispose();
         _luaClass = null;
+
+        if (_declaredMethods is not null) {
+            foreach (var func in _declaredMethods.Values) {
+                func.Dispose();
+            }
+        }
         _declaredMethods = null;
+
+        _onTickFunction?.Dispose();
         _onTickFunction = null;
+
+        foreach (var cls in _superClasses) {
+            cls.Dispose();
+        }
         _superClasses.Clear();
+
+        foreach (var supe in _superDeclaredMethods.Values) {
+            foreach (var func in supe.Values) {
+                func.Dispose();
+            }
+        }
         _superDeclaredMethods.Clear();
+
+        foreach (var func in _luaFunctions.Values) {
+            func.Dispose();
+        }
         _luaFunctions.Clear();
+    }
+
+    public static T GetFrom<T>(LuaTable luaEntity) where T : Entity {
+        var typeName = typeof(T).Name;
+        
+        if (luaEntity["_internalEntity"] is not T entity) {
+            throw new ArgumentException($"LuaTable `{luaEntity}` does not have expected `_internalEntity` attribute or its type does not match `{typeName}`.");
+        }
+
+        return entity;
     }
 
     /// <summary>
@@ -445,18 +483,30 @@ public partial class Entity {
     /// Marks this Entity for deletion so that it's from parents next time they iterate their children.
     /// </summary>
     public virtual void Delete() {
+        if (_deleted) {
+            return;
+        }
+        
+        ClearLuaCaches();
+        
         if (_luaEntity != null) {
-            _luaEntity.Dispose();
+            _luaEntity.Dispose(true);
             _luaEntity = null;
         }
 
         _active = false;
         _deleted = true;
         
-        Game.Shared().NotificationCenter().Unsubscribe<TickNotification>(OnTick);
-        Game.Shared().NotificationCenter().Unsubscribe<DeleteEntityNotification>(OnDeleteEntity);
+        Game.Shared().NotificationCenter().UnsubscribeAll(this);
 
         Game.Shared().NotificationCenter().Post(new DeleteEntityNotification(this));
+        
+        // Delete children
+        foreach (var child in _children) {
+            if (child is not Player) {
+                child.Delete();
+            }
+        }
     }
 
     public virtual void OnDeleteEntity(DeleteEntityNotification notification) {
