@@ -131,6 +131,7 @@ function Lobby:Leave(player)
                 self.universe.ap_client.running = false
                 self.universe.ap_client = nil
             end
+            self.universe:Delete()
             collectgarbage("collect")
             lobbyUniverse:RemoveLobby(self)
         end
