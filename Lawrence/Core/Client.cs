@@ -1005,19 +1005,19 @@ partial class Client {
         }
         
         if (!_mobys[internalId].ClientCreated) {
-            if (Game.Game.Shared().Ticks() > _mobys[internalId].LastUpdate + 120) {
-                ushort parentInternalId = 0;
-                if (moby.AttachedTo != null) {
-                    parentInternalId = GetOrCreateInternalId(moby.AttachedTo);
-                    if (parentInternalId == 0) {
-                        Logger.Error($"Player({_clientHandler?.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
-                    }
+            ushort parentInternalId = 0;
+            if (moby.AttachedTo != null) {
+                parentInternalId = GetOrCreateInternalId(moby.AttachedTo);
+                if (parentInternalId == 0) {
+                    Logger.Error($"Player({_clientHandler?.Moby().GUID()}) trying to attach a moby to a parent that does not exist: {moby.AttachedTo.GUID()}");
                 }
-                
-                SendPacket(Packet.MakeCreateMobyPacket(internalId, moby, parentInternalId));
-                _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby, ClientCreated = false };
             }
             
+            SendPacket(Packet.MakeCreateMobyPacket(internalId, moby, parentInternalId));
+            _mobys[internalId] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby, ClientCreated = false };
+            SendPacket(Packet.MakeMobyUpdatePacket(internalId, moby));
+            SendPacket(Packet.MakeMobyUpdateExtended(internalId, [new Packet.UpdateMobyValue(0x38, moby.Color.ToUInt())]));
+        
             return;
         }
 
@@ -1054,6 +1054,14 @@ partial class Client {
                 _mobys[i] = new MobyData { Id = moby.GUID(), LastUpdate = Game.Game.Shared().Ticks(), MobyRef = moby };
                 return i;
             }
+        }
+
+        return 0;
+    }
+
+    public ushort GetInternalIdForMoby(Moby moby) {
+        if (_mobysTable.TryGetValue(moby.GUID(), out var internalId)) {
+            return internalId;
         }
 
         return 0;

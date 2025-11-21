@@ -1261,6 +1261,31 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         
         return packet;
     }
+    
+    public static Packet MakeChangeMobyValuePacketUUID(ushort uuid, MonitoredValueType type, ushort offset, ushort size,
+        uint value) {
+        var packet = new Packet(MPPacketType.MP_PACKET_CHANGE_MOBY_VALUE);
+        
+        ushort flags = type == MonitoredValueType.Attribute ? 
+            (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_CHANGE_ATTR : 
+            (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_CHANGE_PVAR;
+        
+        packet.AddBodyPart(
+            new MPPacketChangeMobyValue {
+                Id = uuid,
+                Flags = (ushort)(flags | (ushort)MPPacketChangeMobyValueFlags.MP_MOBY_FLAG_FIND_BY_UUID),
+                NumValues = 1
+            }
+        );
+        
+        packet.AddBodyPart(new MPPacketChangeMobyValuePayload {
+            Offset = offset,
+            Size = size,
+            Value = value
+        });
+        
+        return packet;
+    }
 
     public static Packet MakeChangeMobyValuePacket(ushort uid, MonitoredValueType type, ushort offset, ushort size,
         uint value) {
