@@ -159,6 +159,12 @@ public class Moby : Entity
 
     public bool HasChanged { get; protected set; }
 
+    /// <summary>
+    /// Typically we want to send periodic reminders to clients about the state of our moby. Sometimes we might not want
+    ///     that behavior, so we can disable it by setting this to false.
+    /// </summary>
+    public bool ShouldRefreshPeriodically = true;
+
     public void ResetChanged()
     {
         HasChanged = false;
@@ -323,7 +329,7 @@ public class Moby : Entity
 
 
     public void OnPreTick(PreTickNotification notification) {
-        if (Game.Shared().Ticks() % 60 == 0) {
+        if (ShouldRefreshPeriodically && Game.Shared().Ticks() % 60 == 0) {
             // Force sending updates every 60 ticks
             HasChanged = true;
         }

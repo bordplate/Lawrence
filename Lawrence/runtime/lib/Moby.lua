@@ -18,6 +18,7 @@ Moby.offset = {
     animationID = 0x53,
     animationFrameBlendT = 0x54,
     pManipulator1 = 0x64,
+    pUpdate = 0x74,
     pManipulator2 = 0x80,
 }
 

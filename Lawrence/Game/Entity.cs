@@ -487,6 +487,8 @@ public partial class Entity {
             return;
         }
         
+        Game.Shared().NotificationCenter().Post(new DeleteEntityNotification(this));
+        
         ClearLuaCaches();
         
         if (_luaEntity != null) {
@@ -498,8 +500,6 @@ public partial class Entity {
         _deleted = true;
         
         Game.Shared().NotificationCenter().UnsubscribeAll(this);
-
-        Game.Shared().NotificationCenter().Post(new DeleteEntityNotification(this));
         
         // Delete children
         foreach (var child in _children) {

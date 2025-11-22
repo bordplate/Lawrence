@@ -494,13 +494,17 @@ partial class Player {
         UpdateLabels();
         
         foreach (Moby moby in visibilityGroup.Find<Moby>()) {
+            if (moby == this || moby.SyncOwner == this) {
+                continue;
+            }
+            
             if (!moby.Visible) {
                 _client.DeleteMoby(moby);
                 continue;
             }
             
             if (!moby.HasChanged || (moby.IsInstanced() && !moby.HasParent(this)) || (!moby.IsInstanced() && moby.HasParent(this)) || updateMobys.Contains(moby.GUID())) {
-                continue;
+                if (_client.HasMoby(moby)) continue;
             }
 
             float mobyDistance = DistanceTo(moby);
@@ -575,7 +579,35 @@ partial class Player {
     public void Disconnect() {
         _client.Disconnect();
     }
-    
+
+    public void ChangeAttributeFor(LuaTable luaMoby, ushort offset, ushort size, object value, bool isFloat = false) {
+        uint val = !isFloat ? Convert.ToUInt32(value) : BitConverter.ToUInt32(BitConverter.GetBytes(Convert.ToSingle(value)), 0);
+
+        Moby moby = GetFrom<Moby>(luaMoby);
+
+        ushort uuid = _client.GetInternalIdForMoby(moby);
+        if (uuid == 0) {
+            Logger.Error($"Tried to change moby attribute, but it does not exist for the player.");
+            return;
+        }
+        
+        SendPacket(Packet.MakeChangeMobyValuePacketUUID(uuid, MonitoredValueType.Attribute, offset, size, val));
+    }
+
+    public void ChangePVarFor(LuaTable luaMoby, ushort offset, ushort size, object value, bool isFloat = false) {
+        uint val = !isFloat ? Convert.ToUInt32(value) : BitConverter.ToUInt32(BitConverter.GetBytes(Convert.ToSingle(value)), 0);
+
+        Moby moby = GetFrom<Moby>(luaMoby);
+        
+        ushort uuid = _client.GetInternalIdForMoby(moby);
+        if (uuid == 0) {
+            Logger.Error($"Tried to change moby variable, but it does not exist for the player.");
+            return;
+        }
+        
+        SendPacket(Packet.MakeChangeMobyValuePacketUUID(uuid, MonitoredValueType.PVar, offset, size, val));
+    }
+
     public void ChangeMobyAttribute(ushort uid, ushort offset, ushort size, object value, bool isFloat = false) {
         uint val = !isFloat ? Convert.ToUInt32(value) : BitConverter.ToUInt32(BitConverter.GetBytes(Convert.ToSingle(value)), 0);
         
