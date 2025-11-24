@@ -87,7 +87,6 @@ public partial class Player : Moby {
 
     // Some animations can cause crashes in other games, we filter those for the time being. 
     private List<int> _filteredAnimationIDs = new() {
-        95,   // Drowning
         130,  // Gold bolt collect animation
         128,  // Electricity dying animation
         131, 132, 133,  // Hydrodisplacer eject water animations
@@ -96,7 +95,9 @@ public partial class Player : Moby {
     public override int AnimationId {
         get => _animationID;
         set {
-            if (_animationID != value && !_filteredAnimationIDs.Contains(value)) {
+            // We filter drowning on levels after Pokitaru because the drowning animation doesn't exist in those levels
+            //   due to Insomniac assuming the player would always have O2 mask forced underwater after getting it. 
+            if (_animationID != value && !_filteredAnimationIDs.Contains(value) && !(_animationID == 95 && _levelId > 11)) {
                 _animationID = value;
                 HasChanged = true;
             }
