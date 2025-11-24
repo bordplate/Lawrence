@@ -87,6 +87,7 @@ public partial class Player : Moby {
 
     // Some animations can cause crashes in other games, we filter those for the time being. 
     private List<int> _filteredAnimationIDs = new() {
+        95,   // Drowning
         130,  // Gold bolt collect animation
         128,  // Electricity dying animation
         131, 132, 133,  // Hydrodisplacer eject water animations
