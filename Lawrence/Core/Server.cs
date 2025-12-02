@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Lawrence.Core; 
 
@@ -22,8 +24,10 @@ public class Server {
     private readonly List<Client> _clients = new();
 
     private readonly UdpClient _udpServer;
+    private readonly TcpListener _tcpListener;
 
     private Thread? _clientThread;
+    private Thread? _clientDataThread;
     private Thread? _runThread;
 
     private readonly string _serverName;
@@ -36,6 +40,7 @@ public class Server {
     public Server(string listenAddress, int port, string serverName = "<Empty server name>", int maxPlayers = 20) {
         IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), port);
         _udpServer = new UdpClient(ipep);
+        _tcpListener = new TcpListener(ipep);
         
         _serverName = serverName;
         _maxPlayers = maxPlayers;
@@ -71,6 +76,9 @@ public class Server {
     public void Start() {
         _clientThread = new Thread(AcceptClients);
         _clientThread.Start();
+
+        _clientDataThread = new Thread(AcceptDataClients);
+        _clientDataThread.Start();
         
         _runThread = new Thread(Run);
         _runThread.Start();
@@ -122,6 +130,59 @@ public class Server {
             {
                 Logger.Error($"Receive error", e);
             }
+        }
+    }
+
+    private async void AcceptDataClients() {
+        _tcpListener.Start();
+
+        while (true) {
+            var socket = await _tcpListener.AcceptTcpClientAsync();
+            _ = DistributeClient(socket);
+        }
+    }
+
+    private async Task DistributeClient(TcpClient socket) {
+        byte[] keyData = new byte[4];
+
+        var receiveLen = await socket.Client.ReceiveAsync(keyData);
+
+        if (receiveLen != 4) {
+            socket.Close();
+            return;
+        }
+
+        var key = BitConverter.ToUInt32(keyData.Reverse().ToArray(), 0);
+        if (socket.Client.RemoteEndPoint is not IPEndPoint endpoint) {
+            socket.Close();
+            return;
+        }
+
+        Client? client = null;
+
+        _clientMutex.WaitOne();
+
+        foreach (var c in _clients) {
+            if (c.GetEndpoint().Address.Equals(endpoint.Address) && key == c.DataStreamKey) {
+                client = c;
+                break;
+            }
+        }
+        
+        _clientMutex.ReleaseMutex();
+
+        if (client == null) {
+            socket.Close();
+            return;
+        }
+        
+        Logger.Log($"Opened data stream for {client.GetUsername()}");
+        
+        client.SetDataClient(socket);
+        try {
+            await client.ReceiveFromDataStream();
+        } catch {
+            socket.Close();
         }
     }
     

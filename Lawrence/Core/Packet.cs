@@ -43,6 +43,8 @@ public enum MPPacketType : ushort
     MP_PACKET_MOBY_CREATE_FAILURE = 28,
     MP_PACKET_UI = 29,
     MP_PACKET_UI_EVENT = 30,
+    MP_PACKET_OPEN_DATA_STREAM = 31,
+    MP_PACKET_UPLOAD_FILE = 32,
 }
 
 public enum MPStateType : ushort
@@ -65,6 +67,7 @@ public enum MPStateType : ushort
     MP_STATE_TYPE_UNLOCK_SKILLPOINT = 16,
     MP_STATE_SET_COMMUNICATION_FLAGS = 17,
     MP_STATE_START_IN_LEVEL_MOVIE = 18,
+    MP_STATE_SAVE_FILE_OPERATION = 19,
 }
 
 public enum MPDamageFlags : uint {
@@ -479,6 +482,17 @@ public struct MPPacketData () : MPPacket {
     }
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketOpenDataStream : MPPacket {
+    public uint Key;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketFileUpload : MPPacket {
+    public MPFileType FileType;
+    public uint FileSize;
+}
+
 [Flags]
 public enum MPUIOperationFlag : byte {
     Create = 1,
@@ -533,6 +547,10 @@ public enum MPUIElementEventType: ushort {
     MPUIElementEventTypeMakeFocused,
     MPUIElementEventTypeActivate,
     MPUIElementEventTypeInputCallback,
+}
+
+public enum MPFileType : byte {
+    MPFileTypeSaveFile = 0,
 }
 
 public struct PacketBodyPart<T> where T : MPPacket {
@@ -622,6 +640,24 @@ public partial class Packet {
 
         packet.AddBodyPart(bonkState);
         packet.AddBodyPart(damageState);
+
+        return packet;
+    }
+
+    public enum MPSaveFileOperation {
+        Save,
+        Load,
+    }
+
+    public static Packet MakeSaveFileOperationPacket(MPSaveFileOperation saveFileOperation) {
+        var packet = new Packet(MPPacketType.MP_PACKET_SET_STATE);
+
+        MPPacketSetState operationState = new MPPacketSetState {
+            StateType = MPStateType.MP_STATE_SAVE_FILE_OPERATION,
+            Value = (uint)(saveFileOperation == MPSaveFileOperation.Save ? 0 : 1)
+        };
+        
+        packet.AddBodyPart(operationState);
 
         return packet;
     }
@@ -1319,6 +1355,27 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
             Address = address,
             Size = size,
             Flags = flags
+        });
+        
+        return packet;
+    }
+
+    public static Packet MakeOpenDataStreamPacket(uint key) {
+        var packet = new Packet(MPPacketType.MP_PACKET_OPEN_DATA_STREAM);
+        
+        packet.AddBodyPart(new MPPacketOpenDataStream {
+            Key = key
+        });
+
+        return packet;
+    }
+
+    public static Packet MakeFileUploadPacket(MPFileType fileType, uint fileSize) {
+        var packet = new Packet(MPPacketType.MP_PACKET_UPLOAD_FILE);
+        
+        packet.AddBodyPart(new MPPacketFileUpload {
+            FileType = fileType,
+            FileSize = fileSize
         });
         
         return packet;

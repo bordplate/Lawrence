@@ -5,6 +5,7 @@ Lobby = class("Lobby")
 
 function Lobby:initialize(host, password)
     self.host = host
+    self.lobbyName = host:Username()
     self.password = password
     
     self.started = false
@@ -69,8 +70,13 @@ function Lobby:initialize(host, password)
     self.unlockedInfobots = {}
     self.unlockedSkillpoints = {}
     self.unlockedItems = {}
+
+    self.primarySaveFile = nil
+    self.saveFiles = {}
     
     self.universe = CoopUniverse(self)
+    
+    self.inactiveTimer = 0
 end
 
 function Lobby:AddReadyCallback(callback)
@@ -98,6 +104,8 @@ function Lobby:Join(player)
     self.universe:AddEntity(player)
     
     player:AddEntity(LobbyView(player, self))
+    
+    self.inactiveTimer = 0
 end
 
 function Lobby:Leave(player)
@@ -106,9 +114,8 @@ function Lobby:Leave(player)
     if player:GUID() == self.host:GUID() then
         if #self.players > 0 then
             self.host = self.players[1]
+            self.lobbyName = self.host:Username()
             self.host:ToastMessage("You are now the host.", 300)
-        else
-            lobbyUniverse:RemoveLobby(self)
         end
     end
 
@@ -143,4 +150,18 @@ end
 
 function Lobby:AddUnlockedSkillpoint(skillpoint_id)
     table.insert(self.unlockedSkillpoints, skillpoint_id)
+end
+
+function Lobby:PlayerSentSaveFile(player, saveFile)
+    self.saveFiles[player:Username()] = saveFile
+
+    if self.host:Username() == player:Username() then
+        print("Updated primary save file from " .. player:Username())
+        self.primarySaveFile = saveFile
+    end
+end
+
+function Lobby:Close()
+    lobbyUniverse:RemoveLobby(self)
+    self.universe:Delete()
 end

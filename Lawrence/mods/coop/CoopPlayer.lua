@@ -67,6 +67,7 @@ function CoopPlayer:Start()
         self:GiveItem(Item.GetByName("Suck Cannon").id)
         self:GiveItem(Item.GetByName("Morph-o-Ray").id)
         self:GiveItem(Item.GetByName("R.Y.N.O.").id)
+        self:GiveItem(Item.GetByName("Hoverboard").id)
         
         self:SetBolts(150000)
 
@@ -94,6 +95,23 @@ function CoopPlayer:Start()
     if not self.lobby.started then
         self:LoadLevel(self.lobby.options.startPlanet.value)
     else
+       -- Try to load an existing save file if it exists.
+        local saveFile = self.lobby.saveFiles[self:Username()]
+
+        if saveFile == nil then
+            saveFile = self.lobby.primarySaveFile
+        end
+
+        if saveFile ~= nil then
+            self:SendFile(saveFile)
+            self:LoadSaveFile()
+            
+            self:ToastMessage("Load from existing save", 60 * 5)
+        else
+            -- Load last unlocked level
+            self:LoadLevel(self.lobby.unlockedInfobots[#self.lobby.unlockedInfobots])
+        end
+
         self:SetBolts(self.lobby.bolts)
 
         for i, item in ipairs(self.lobby.unlockedItems) do
@@ -109,9 +127,6 @@ function CoopPlayer:Start()
         for i, skillpoint in ipairs(self.lobby.unlockedSkillpoints) do
             self:UnlockSkillpoint(skillpoint)
         end
-        
-        -- Load last unlocked level
-        self:LoadLevel(self.lobby.unlockedInfobots[#self.lobby.unlockedInfobots])
     end
 end
 
@@ -126,6 +141,10 @@ function CoopPlayer:OnCollectedGoldBolt(planet, number)
     end
 end
 
+function CoopPlayer:OnRespawned()
+    
+end
+
 function CoopPlayer:UnlockAllGoldBolts()
     for i = 0, 17 do
         for j = 0, 3 do
@@ -135,8 +154,6 @@ function CoopPlayer:UnlockAllGoldBolts()
 end
 
 function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
-    --print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)
-    
     local addressIsSkillpointCounter = false
     for _, counter in ipairs(self.skillpointCounters) do
         if address == counter then
@@ -155,7 +172,6 @@ function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     
     if address >= Player.offset.gildedItems and address <= Player.offset.gildedItems + 35 then
         local itemIndex = address - Player.offset.gildedItems + 2
-        print("Item " .. itemIndex .. " changed to " .. newValue)
         
         if newValue ~= 0 then
             for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
@@ -346,5 +362,15 @@ end
 function CoopPlayer:OnDisconnect()
     if self.lobby ~= null then
         self.lobby:Leave(self)
+    end
+end
+
+function CoopPlayer:DownloadedFile(file)
+    self:ToastMessage("Game saved", 300)
+    
+    self.lobby:PlayerSentSaveFile(self, file)
+    
+    for i, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+        player:SendFile(file)
     end
 end

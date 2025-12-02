@@ -27,7 +27,17 @@ function LobbyUniverse:RemoveLobby(lobby)
 end
 
 function LobbyUniverse:OnTick()
-    
+    for _, lobby in ipairs(self.lobbies) do
+        if #lobby.players <= 0 then
+            if lobby.inactiveTimer > 60 * 60 * 15 then  -- Keep lobbies open for 15 minutes
+                print("Deleting lobby " .. lobby.lobbyName .. " due to inactivity")
+                self:RemoveLobby(lobby)
+                lobby.universe:Delete()
+            end
+
+            lobby.inactiveTimer = lobby.inactiveTimer + 1
+        end
+    end
 end
 
 lobbyUniverse = LobbyUniverse:new()

@@ -71,7 +71,7 @@ function LobbyListView:initialize(player, lobbyUniverse)
         end
         if action == ObservableList.REMOVED then
             for i, listItem in ipairs(self.lobbyListMenu:GetItems()) do
-                if listItem.Title == item.host:Username() then
+                if listItem.Title == item.lobbyName then
                     self.lobbyListMenu:RemoveItem(i-1)
                     break
                 end
@@ -92,7 +92,7 @@ function LobbyListView:AddToLobbyList(lobby)
     local accessory = (lobby.started and "In game" or "In lobby") .. " - " ..
             (lobby.password == "" and "Open" or "Password protected")
     
-    self.lobbyListMenu:AddItem(lobby.host:Username(), accessory)
+    self.lobbyListMenu:AddItem(lobby.lobbyName, accessory)
 end
 
 function LobbyListView:OnPresent()
@@ -104,6 +104,10 @@ function LobbyListView:OnTick()
 end
 
 function LobbyListView:SelectedLobby(lobby)
+    if lobby == nil then
+        return
+    end
+    
     self.textArea.Text = "Host: " .. lobby.host:Username()
     self.gamemodeTextArea.Text = "Friendly fire: " .. (lobby.options.friendlyFire and "On" or "Off")
 end

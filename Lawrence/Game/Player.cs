@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -385,6 +386,10 @@ partial class Player {
     public void SetAddressValue(uint address, uint value, byte size) {
         SendPacket(Packet.MakeSetAddressValuePacket(address, value, size));
     }
+
+    public void LoadSaveFile() {
+        SendPacket(Packet.MakeSaveFileOperationPacket(Packet.MPSaveFileOperation.Load));
+    }
 }
 #endregion
 
@@ -398,6 +403,10 @@ partial class Player {
         }
         
         _nametagElement.SetWorldPosition(x, y, z+2);
+
+        if (_client.GetDownloadedFile() is { } file) {
+            CallLuaFunction("DownloadedFile", LuaEntity(), file);
+        }
         
         base.OnTick(notification);
     }
@@ -976,6 +985,23 @@ partial class Player : IClientHandler
         foreach (var deferredCall in deferredCalls) {
             deferredCall();
         }
+    }
+
+    public void SendFile(Client.File file) {
+        _client.SendFile(file);
+    }
+
+    public void SendFile(MPFileType fileType, List<byte> data) {
+        _client.SendFile(new Client.File(fileType, data));
+    }
+    
+    public void SendFile(MPFileType fileType, string filePath) {
+        var file = File.Open(filePath, FileMode.Open);
+        var data = new byte[file.Length];
+        
+        file.Read(data, 0, data.Length);
+        
+        _client.SendFile(new Client.File(fileType, data.ToList()));
     }
 }
 #endregion

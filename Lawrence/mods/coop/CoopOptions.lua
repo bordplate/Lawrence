@@ -36,8 +36,3 @@ function CoopOptions:__index(key)
     
     return obj
 end
-
---function CoopOptions:__newindex(key, value)
---    
---    self.options[key].value = value
---end

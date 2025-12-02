@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Force.Crc32;
 
 using Lawrence.Game;
@@ -62,13 +63,15 @@ public partial class Client {
     };
     
     // Which API version we're currently on and which is the minimum version we support. 
-    private uint API_VERSION = 9;
-    private uint API_VERSION_MIN = 9;
+    private uint API_VERSION = 10;
+    private uint API_VERSION_MIN = 10;
     
     /// <summary>
     /// When true, this client is waiting to connect, and is not yet part of the regular OnTick loop
     /// </summary>
     public bool WaitingToConnect = true;
+
+    public uint? DataStreamKey;
 
     IClientHandler? _clientHandler;
 
@@ -414,6 +417,9 @@ public partial class Client {
 
                     Logger.Log($"New player {username} connected!");
                     Lawrence.ForceDirectorySync();
+
+                    DataStreamKey = (uint)Guid.NewGuid().GetHashCode();
+                    SendPacket(Packet.MakeOpenDataStreamPacket(DataStreamKey.Value));
 
                     break;
                 }
@@ -935,6 +941,121 @@ public partial class Client {
 
     public void ShowErrorMessage(string message) {
         SendPacket(Packet.MakeErrorMessagePacket(message));
+    }
+}
+
+partial class Client {
+    public class File(MPFileType fileType, List<byte> data) {
+        public MPFileType FileType = fileType;
+        public List<byte> Data = data;
+    }
+    
+    private TcpClient? _tcpClient;
+    private List<byte>? _downloadedFile;
+    private bool _downloadedFileReady = false;
+    private MPFileType _downloadedFileType;
+
+    public File? GetDownloadedFile() {
+        if (_downloadedFileReady && _downloadedFile != null) {
+            _downloadedFileReady = false;
+            return new File(_downloadedFileType, _downloadedFile);
+        }
+
+        return null;
+    }
+
+    public void SetDataClient(TcpClient tcpClient) {
+        _tcpClient = tcpClient;
+    }
+
+    public async void SendFile(File file) {
+        if (_tcpClient == null) {
+            return;
+        }
+        
+        Logger.Log($"Sending file {file.FileType} with {file.Data.Count/1024}KB to {GetUsername()}");
+        
+        var packet = Packet.MakeFileUploadPacket(file.FileType, (uint)file.Data.Count);
+
+        var (header, body) = packet.GetBytes(_endianness);
+
+        var bytes = new List<byte>();
+        bytes.AddRange(Packet.StructToBytes(header, _endianness));
+        bytes.AddRange(body);
+
+        await _tcpClient.Client.SendAsync(bytes.ToArray());
+
+        int sent = 0;
+
+        while (sent < file.Data.Count) {
+            int chunkSize = 4096;
+            if (chunkSize > file.Data.Count - sent) {
+                chunkSize = file.Data.Count - sent;
+            }
+            
+            sent += await _tcpClient.Client.SendAsync(file.Data.Skip(sent).Take(chunkSize).ToArray());
+        }
+        
+        Logger.Log($"Sent {file.Data.Count/1024}KB to {GetUsername()}");
+    }
+
+    public async Task ReceiveFromDataStream() {
+        if (_tcpClient == null) {
+            return;
+        }
+
+        while (!_disconnected) {
+            var packetHeader = new byte[Marshal.SizeOf<MPPacketHeader>()];
+            if (await _tcpClient.Client.ReceiveAsync(packetHeader) > 0 && Packet.MakeHeader(packetHeader) is {} header) {
+                var bodyBytes = new byte[header.Size];
+                if (await _tcpClient.Client.ReceiveAsync(bodyBytes) < 0) {
+                    continue;
+                }
+
+                switch (header.PacketType) {
+                    case MPPacketType.MP_PACKET_UPLOAD_FILE: {
+                        if (Packet.BytesToStruct<MPPacketFileUpload>(bodyBytes, _endianness) is not { } fileUpload) {
+                            continue;
+                        }
+                        
+                        Logger.Log($"Receiving {fileUpload.FileSize/1024}KB file from {GetUsername()}");
+
+                        var file = new byte[fileUpload.FileSize];
+                        var received = 0;
+                        var chunk = 4096;
+
+                        do {
+                            if (chunk > fileUpload.FileSize - received) {
+                                chunk = (int)(fileUpload.FileSize - received);
+                            }
+
+                            var chunkArray = new byte[chunk];
+                            
+                            var r = await _tcpClient.Client.ReceiveAsync(chunkArray);
+                            
+                            Array.Copy(chunkArray, 0, file, received, r);
+
+                            received += r;
+                        } while (received < fileUpload.FileSize);
+
+                        _downloadedFile = file.ToList();
+                        _downloadedFileType = fileUpload.FileType;
+                        _downloadedFileReady = true;
+                        
+                        Logger.Log("File received maybe successfully!");
+                        
+                        break;
+                    }
+                    default: {
+                        Logger.Error($"{GetUsername()} sent invalid packet type {header.PacketType} over TCP.");
+                        break;
+                    }
+                }
+            }
+        }
+
+        Logger.Log($"Closing data stream for {GetUsername()}");
+        _tcpClient.Close();
     }
 }
 

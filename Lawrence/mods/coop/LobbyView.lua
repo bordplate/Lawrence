@@ -149,6 +149,10 @@ function LobbyView:OnControllerInputPressed(input)
     if IsButton(input, Gamepad.Triangle) then
         self.lobby:Leave(self.PlayerTable)
         self:CloseView()
+
+        if #self.lobby.players <= 0 then
+            self.lobby:Close()
+        end
     end
 end
 
