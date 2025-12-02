@@ -151,8 +151,10 @@ public class Server {
             socket.Close();
             return;
         }
+        
+        Array.Reverse(keyData);
 
-        var key = BitConverter.ToUInt32(keyData.Reverse().ToArray(), 0);
+        var key = BitConverter.ToUInt32(keyData.ToArray(), 0);
         if (socket.Client.RemoteEndPoint is not IPEndPoint endpoint) {
             socket.Close();
             return;
