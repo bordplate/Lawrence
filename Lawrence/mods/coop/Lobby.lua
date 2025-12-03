@@ -23,7 +23,14 @@ function Lobby:initialize(host, password)
             name = "Friendly fire",
             description = "When enabled lets players hurt each other with weapons and the wrench.",
             handler = function(option, view, item) option:set(not option.value) end,
-            value = true,
+            value = false,
+            accessory = {"On", "Off"}
+        },
+        deathLink = {
+            name = "Shared health",
+            description = "Everyone shares health. When 1 player takes damage, everyone takes damage. When 1 player dies, everyone dies.",
+            handler = function (option, view, item) option:set(not option.value) end,
+            value = false,
             accessory = {"On", "Off"}
         },
         debugStart = {
@@ -62,7 +69,13 @@ function Lobby:initialize(host, password)
         }
     })
     
-    self.optionsList = { self.options.password, self.options.friendlyFire, self.options.debugStart, self.options.startPlanet }
+    self.optionsList = { 
+        self.options.password, 
+        self.options.friendlyFire, 
+        self.options.deathLink, 
+        self.options.debugStart, 
+        self.options.startPlanet 
+    }
     
     self.readyCallbacks = {}
     

@@ -32,9 +32,15 @@ function CoopPlayer:Made()
         self:MonitorAddress(Player.offset.gildedItems + i, 1)
     end
     
+    self:MonitorAddress(0x96BF88, 4)
+    
     self:EnableManualSaveLoad()
     
     self.saveMessageCountdown = 0
+    
+    self.respawnsThisLevel = 0
+    self.lastRespawnLevel = -1
+    self.allowRespawn = false
 end
 
 function CoopPlayer:Save()
@@ -154,7 +160,19 @@ function CoopPlayer:OnCollectedGoldBolt(planet, number)
 end
 
 function CoopPlayer:OnRespawned()
-    
+    if self.lobby.options.deathLink.value then
+        if not self.allowRespawn then
+            print("Seems like a player died. Killing everyone.")
+            for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+                if player:GUID() ~= self:GUID() then
+                    player.allowRespawn = true
+                    player:SetAddressValue(0x96BF88, 0, 4)
+                end
+            end
+        end
+        
+        self.allowRespawn = false
+    end
 end
 
 function CoopPlayer:UnlockAllGoldBolts()
@@ -171,6 +189,21 @@ function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
         if address == counter then
             addressIsSkillpointCounter = true
             break
+        end
+    end
+
+    if address == 0x96BF88 then
+        if self.lobby.options.deathLink.value then
+            print("" .. self:Username() .. " went from " .. oldValue .. " to " .. newValue .. " nanotech")
+            for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+                if newValue == 0 then
+                    player.allowRespawn = true
+                end
+                
+                if player:GUID() ~= self:GUID() then
+                    player:SetAddressValue(0x96BF88, newValue, 4)
+                end
+            end
         end
     end
     
@@ -241,6 +274,10 @@ end
 
 function CoopPlayer:OnGameStateChanged(state)
     self.gameState = state
+
+    if state == 6 then
+        self.allowRespawn = true
+    end
 end
 
 function CoopPlayer:OnControllerInputTapped(input)
