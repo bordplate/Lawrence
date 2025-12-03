@@ -387,8 +387,16 @@ partial class Player {
         SendPacket(Packet.MakeSetAddressValuePacket(address, value, size));
     }
 
+    public void SaveGame() {
+        SendPacket(Packet.MakeSaveFileOperationPacket(Packet.MPSaveFileOperation.Save));
+    }
+
     public void LoadSaveFile() {
         SendPacket(Packet.MakeSaveFileOperationPacket(Packet.MPSaveFileOperation.Load));
+    }
+
+    public void EnableManualSaveLoad() {
+        SendPacket(Packet.MakeSaveFileOperationPacket(Packet.MPSaveFileOperation.EnableSaveLoad));
     }
 }
 #endregion

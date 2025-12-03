@@ -31,6 +31,16 @@ function CoopPlayer:Made()
     for i = 2, 26 do
         self:MonitorAddress(Player.offset.gildedItems + i, 1)
     end
+    
+    self:EnableManualSaveLoad()
+    
+    self.saveMessageCountdown = 0
+end
+
+function CoopPlayer:Save()
+    if self.ingame then
+        self:SaveGame()
+    end
 end
 
 function CoopPlayer:Start()
@@ -139,6 +149,8 @@ function CoopPlayer:OnCollectedGoldBolt(planet, number)
             player:ToastMessage("\x0cGold Bolt\x08 acquired", 60*5)
         end
     end
+    
+    self:Save()
 end
 
 function CoopPlayer:OnRespawned()
@@ -168,6 +180,8 @@ function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
                 player:SetAddressValue(address, newValue, 4)
             end
         end
+        
+        self:Save()
     end
     
     if address >= Player.offset.gildedItems and address <= Player.offset.gildedItems + 35 then
@@ -180,6 +194,8 @@ function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
                 end
             end
         end
+        
+        self:Save()
     end
 end
 
@@ -203,6 +219,14 @@ function CoopPlayer:Unfreeze()
 end
 
 function CoopPlayer:OnTick()
+    if self.saveMessageCountdown >= 0 then
+        self.saveMessageCountdown = self.saveMessageCountdown - 1
+
+        if self.saveMessageCountdown <= 0 then
+            self:ToastMessage("Game saved", 60 * 3)
+        end
+    end
+    
     --if self.clanky == null then
     --    self.clanky = self:SpawnInstanced(TestMoby)
     --    self.clanky:SetPosition(self.x, self.y, self.z + 2)
@@ -254,6 +278,7 @@ end
 
 function CoopPlayer:OnUnlockItem(item_id, equip)
     item = Item.GetById(item_id)
+    self:Save()
     
     print("Unlocking item " .. item.name)
 
@@ -308,6 +333,7 @@ end
 
 function CoopPlayer:OnUnlockLevel(level)
     Player.OnUnlockLevel(self, level)
+    self:Save()
     
     self.lobby:AddUnlockedInfobot(level)
     
@@ -342,6 +368,7 @@ end
 
 function CoopPlayer:OnUnlockSkillpoint(skillpoint)
     self.lobby:AddUnlockedSkillpoint(skillpoint)
+    self:Save()
     
     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
         player:UnlockSkillpoint(skillpoint)
@@ -366,7 +393,7 @@ function CoopPlayer:OnDisconnect()
 end
 
 function CoopPlayer:DownloadedFile(file)
-    self:ToastMessage("Game saved", 300)
+    self.saveMessageCountdown = 60 * 8
     
     self.lobby:PlayerSentSaveFile(self, file)
     

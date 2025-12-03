@@ -644,9 +644,10 @@ public partial class Packet {
         return packet;
     }
 
-    public enum MPSaveFileOperation {
-        Save,
-        Load,
+    public enum MPSaveFileOperation: uint {
+        Save = 0,
+        Load = 1,
+        EnableSaveLoad = 2,
     }
 
     public static Packet MakeSaveFileOperationPacket(MPSaveFileOperation saveFileOperation) {
@@ -654,7 +655,7 @@ public partial class Packet {
 
         MPPacketSetState operationState = new MPPacketSetState {
             StateType = MPStateType.MP_STATE_SAVE_FILE_OPERATION,
-            Value = (uint)(saveFileOperation == MPSaveFileOperation.Save ? 0 : 1)
+            Value = (uint)saveFileOperation
         };
         
         packet.AddBodyPart(operationState);
