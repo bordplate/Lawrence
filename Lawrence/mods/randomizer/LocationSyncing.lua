@@ -6,16 +6,16 @@ local locationToActionMap = {
     [4] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 0, 1, 1) end, -- sewer gold bolt
     [5] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 2, 1, 1) end, -- caves gold bolt
     [6] = function (universe, player) player:SetAddressValue(Player.offset.goldBolts + 1 * 4 + 1, 1, 1) end, -- underwater caves gold bolt
-    [95] = function (universe, player) universe.replacedMobys:GetMoby('BombGloveCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [96] = function (universe, player) universe.replacedMobys:GetMoby('PyrocitorCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [97] = function (universe, player) universe.replacedMobys:GetMoby('BlasterCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [98] = function (universe, player) universe.replacedMobys:GetMoby('GloveOfDoomCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [99] = function (universe, player) universe.replacedMobys:GetMoby('SuckCannonCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [100] = function (universe, player) universe.replacedMobys:GetMoby('TeslaClawCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [101] = function (universe, player) universe.replacedMobys:GetMoby('DevastatorCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [102] = function (universe, player) universe.replacedMobys:GetMoby('MineGloveCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [103] = function (universe, player) universe.replacedMobys:GetMoby('MorphORayCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
-    [104] = function (universe, player) universe.replacedMobys:GetMoby('DecoyGloveCase'):Disable() universe.used_gold_bolts = universe.used_gold_bolts + 4 universe:DistributeGoldBoltValue() end,
+    [95] = function (universe, player) universe.replacedMobys:GetMoby('BombGloveCase'):Disable(universe) end,
+    [96] = function (universe, player) universe.replacedMobys:GetMoby('PyrocitorCase'):Disable() end,
+    [97] = function (universe, player) universe.replacedMobys:GetMoby('BlasterCase'):Disable() end,
+    [98] = function (universe, player) universe.replacedMobys:GetMoby('GloveOfDoomCase'):Disable() end,
+    [99] = function (universe, player) universe.replacedMobys:GetMoby('SuckCannonCase'):Disable() end,
+    [100] = function (universe, player) universe.replacedMobys:GetMoby('TeslaClawCase'):Disable() end,
+    [101] = function (universe, player) universe.replacedMobys:GetMoby('DevastatorCase'):Disable() end,
+    [102] = function (universe, player) universe.replacedMobys:GetMoby('MineGloveCase'):Disable() end,
+    [103] = function (universe, player) universe.replacedMobys:GetMoby('MorphORayCase'):Disable() end,
+    [104] = function (universe, player) universe.replacedMobys:GetMoby('DecoyGloveCase'):Disable() end,
 
     -- Aridia
      [7] = function (universe, player) player:SetAddressValue(0xB00001, 0, 1) end, -- Skid
