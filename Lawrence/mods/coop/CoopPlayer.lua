@@ -404,10 +404,16 @@ function CoopPlayer:OnUnlockLevel(level)
 end
 
 function CoopPlayer:OnUnlockSkillpoint(skillpoint)
+    self:UnlockSkillpoint(skillpoint)
+    
+    if self.lobby:HasSkillpoint(skillpoint) then
+        return
+    end
+    
     self.lobby:AddUnlockedSkillpoint(skillpoint)
     self:Save()
     
-    for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
+    for _, player in ipairs(self.lobby.players) do
         player:UnlockSkillpoint(skillpoint)
     end
 end
