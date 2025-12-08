@@ -165,6 +165,16 @@ function Lobby:AddUnlockedSkillpoint(skillpoint_id)
     table.insert(self.unlockedSkillpoints, skillpoint_id)
 end
 
+function Lobby:HasSkillpoint(skillpointId)
+    for _, id in ipairs(self.unlockedSkillpoints) do
+        if id == skillpointId then
+            return true
+        end
+    end
+    
+    return false
+end
+
 function Lobby:PlayerSentSaveFile(player, saveFile)
     self.saveFiles[player:Username()] = saveFile
 

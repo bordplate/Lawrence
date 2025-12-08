@@ -968,41 +968,43 @@ partial class Client {
         _tcpClient = tcpClient;
     }
 
-    public async void SendFile(File file) {
-        if (_tcpClient == null) {
-            return;
-        }
-
-        try {
-
-            Logger.Log($"Sending file {file.FileType} with {file.Data.Count / 1024}KB to {GetUsername()}");
-
-            var packet = Packet.MakeFileUploadPacket(file.FileType, (uint)file.Data.Count);
-
-            var (header, body) = packet.GetBytes(_endianness);
-
-            var bytes = new List<byte>();
-            bytes.AddRange(Packet.StructToBytes(header, _endianness));
-            bytes.AddRange(body);
-
-            await _tcpClient.Client.SendAsync(bytes.ToArray());
-
-            int sent = 0;
-
-            while (sent < file.Data.Count) {
-                int chunkSize = 4096;
-                if (chunkSize > file.Data.Count - sent) {
-                    chunkSize = file.Data.Count - sent;
-                }
-
-                sent += await _tcpClient.Client.SendAsync(file.Data.Skip(sent).Take(chunkSize).ToArray());
+    public void SendFile(File file) {
+        Task.Run(() => {
+            if (_tcpClient == null) {
+                return;
             }
 
-            Logger.Log($"Sent {file.Data.Count / 1024}KB to {GetUsername()}");
-        } catch (SocketException e) {
-            _disconnected = true;
-            _tcpClient.Close();
-        }
+            try {
+
+                Logger.Log($"Sending file {file.FileType} with {file.Data.Count / 1024}KB to {GetUsername()}");
+
+                var packet = Packet.MakeFileUploadPacket(file.FileType, (uint)file.Data.Count);
+
+                var (header, body) = packet.GetBytes(_endianness);
+
+                var bytes = new List<byte>();
+                bytes.AddRange(Packet.StructToBytes(header, _endianness));
+                bytes.AddRange(body);
+
+                _tcpClient.Client.Send(bytes.ToArray());
+
+                int sent = 0;
+
+                while (sent < file.Data.Count) {
+                    int chunkSize = 4096;
+                    if (chunkSize > file.Data.Count - sent) {
+                        chunkSize = file.Data.Count - sent;
+                    }
+
+                    sent += _tcpClient.Client.Send(file.Data.Skip(sent).Take(chunkSize).ToArray());
+                }
+
+                Logger.Log($"Sent {file.Data.Count / 1024}KB to {GetUsername()}");
+            } catch (SocketException e) {
+                _disconnected = true;
+                _tcpClient.Close();
+            }
+        });
     }
 
     public async Task ReceiveFromDataStream() {
