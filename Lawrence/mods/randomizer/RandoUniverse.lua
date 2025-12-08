@@ -227,7 +227,7 @@ end
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
     player:SetAddressValue(0xB00000, self.metal_detector_multiplier, 1) -- metal detector multiplier
-    player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
+    --player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
     player.level_unlock_queue = self.level_unlock_queue
     player.item_unlock_queue = self.item_unlock_queue
     player.special_unlock_queue = self.special_unlock_queue
