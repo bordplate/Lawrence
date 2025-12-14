@@ -12,3 +12,7 @@ end
 function View:AddElement(element)
     self._internalEntity:AddElement(element._internalEntity)
 end
+
+function View:RemoveElement(element)
+    self._internalEntity:RemoveElement(element._internalEntity)
+end
