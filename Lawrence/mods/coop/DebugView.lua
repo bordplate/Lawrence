@@ -9,6 +9,8 @@ function DebugView:initialize(player)
     self.showCoords = true
     self.itemsMenuPage = 1
     
+    self.levelSelected = 1
+    
     self.debugCam = false
 
     self.giveBoltsInput = InputElement()
@@ -23,10 +25,9 @@ function DebugView:initialize(player)
         self.player:GiveBolts(bolts)
     end
 
-
     self.coordsTextArea = TextAreaElement(0, 350, 220, 60)
     self.mainMenu = ListMenuElement(0, 30, 250, 310)
-    self.levelsMenu = ListMenuElement(260, 10, 250, 390)
+    self.levelsMenu = ListMenuElement(260, 10, 250, 370)
     self.itemsMenu = ListMenuElement(260, 30, 250, 330)
     
     self.levelNames = {
@@ -57,6 +58,10 @@ function DebugView:initialize(player)
     self.levelsMenu.ItemActivated = function(index)
         self.player:UnlockLevel(index+1)
         self.player:ToastMessage("Unlocked level " .. self.levelNames[index+1], 60)
+    end
+    
+    self.levelsMenu.ItemSelected = function(index)
+        self.levelSelected = index+1
     end
     
     self.levelsMenu.Visible = false
@@ -120,6 +125,7 @@ function DebugView:initialize(player)
                 self.levelsMenu.Visible = true
                 self.levelsMenu:Focus()
                 self.subMenuOpen = true
+                self.gotoPlanetLevelTextElement.Text = "\x13 Go to level \x10 Unlock level"
             end
         },
         {
@@ -199,7 +205,11 @@ function DebugView:initialize(player)
     end
     
     self.mainMenu.Visible = false
-    
+
+    self.gotoPlanetLevelTextElement = TextElement(380, 390, "")
+    self.gotoPlanetLevelTextElement.Visible = false
+
+    self:AddElement(self.gotoPlanetLevelTextElement)
     self:AddElement(self.coordsTextArea)
     self:AddElement(self.mainMenu)
     self:AddElement(self.levelsMenu)
@@ -220,26 +230,33 @@ function DebugView:OnControllerInputPressed(input)
         self.mainMenu:Focus()
         self.debugMenuOpen = true
     elseif self.debugMenuOpen and IsButton(input, Gamepad.L3) then
-        self.mainMenu:Focus()
-        self.mainMenu.Visible = false
-        self.levelsMenu.Visible = false
-        self.itemsMenu.Visible = false
-        
-        self.player.state = 0
-        self.debugMenuOpen = false
+        self:CloseDebugMenu()
+    end
+
+    if self.levelsMenu.Visible and IsButton(input, Gamepad.Square) then
+        self.player:LoadLevel(self.levelSelected)
+        self:CloseDebugMenu()
     end
 
     if self.debugMenuOpen and IsButton(input, Gamepad.Triangle) and self.subMenuOpen then
-        self:CloseDebugMenu()
+        self.levelsMenu.Visible = false
+        self.itemsMenu.Visible = false
+        self.mainMenu:Focus()
+        self.gotoPlanetLevelTextElement.Text = ""
+
+        self.subMenuOpen = false
     end
 end
 
 function DebugView:CloseDebugMenu()
+    self.mainMenu:Focus()
+    self.mainMenu.Visible = false
     self.levelsMenu.Visible = false
     self.itemsMenu.Visible = false
-    self.mainMenu:Focus()
+    self.gotoPlanetLevelTextElement.Text = ""
 
-    self.subMenuOpen = false
+    self.player.state = 0
+    self.debugMenuOpen = false
 end
 
 function DebugView:OnTick()
