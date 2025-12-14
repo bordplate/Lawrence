@@ -8,6 +8,8 @@ function DebugView:initialize(player)
     self.subMenuOpen = false
     self.showCoords = true
     self.itemsMenuPage = 1
+    
+    self.debugCam = false
 
     self.giveBoltsInput = InputElement()
     self.giveBoltsInput.Prompt = "Enter amount of bolts"
@@ -151,6 +153,23 @@ function DebugView:initialize(player)
             name = "Unlock all gold bolts",
             callback = function(item)
                 self.player:UnlockAllGoldBolts()
+            end
+        },
+        {
+            name = "Freecam",
+            accessory = "Off",
+            callback = function(item)
+                if not self.debugCam then
+                    self.player:SetAddressValue(0x95c5d4, 1, 4)
+                    self.player:SetAddressValue(0x95c5c8, 6, 4)
+                    self.debugCam = true
+                else
+                    self.player:SetAddressValue(0x95c5d4, 0, 4)
+                    self.player:SetAddressValue(0x95c5c8, 0xf, 4)
+                    self.debugCam = false
+                end
+
+                item.Accessory = self.debugCam and "On" or "Off"
             end
         },
         {
