@@ -26,7 +26,9 @@ Player.offset = {
     challenge_mode = 0x96c9fc,
     
     bullshit_item_array = 0xb00002,
-    bullshit_level_array = 0xb00100
+    bullshit_level_array = 0xb00100,
+    
+    level_transitions = 0xb00040,
 }
 
 Player.communicationFlags = {
