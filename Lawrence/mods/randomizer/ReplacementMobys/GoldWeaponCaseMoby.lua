@@ -46,13 +46,15 @@ function GoldWeaponCaseMoby:Triangle(player, universe)
 end
 
 function GoldWeaponCaseMoby:Disable(universe)
-    self.disabled = true
-    if self.weapon then
-        self.weapon:Delete()
-        self.weapon = nil
+    if not self.disabled then
+        self.disabled = true
+        if self.weapon then
+            self.weapon:Delete()
+            self.weapon = nil
+        end
+        universe.used_gold_bolts = universe.used_gold_bolts + 4
+        universe:DistributeGoldBoltValue()
     end
-    universe.used_gold_bolts = universe.used_gold_bolts + 4 
-    universe:DistributeGoldBoltValue()
 end 
 
 function GoldWeaponCaseMoby:AttachWeapon(weapon_oclass, level)
