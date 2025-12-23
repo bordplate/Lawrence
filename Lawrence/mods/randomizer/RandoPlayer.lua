@@ -60,8 +60,13 @@ function RandoPlayer:Start()
     self.AddLabel(self, self.GoldBoltCountLabel)
     
     self.lobby.universe:AddEntity(self)
-    --self:LoadLevel(self.lobby.startPlanet)
-    self:LoadLevel(0)
+
+    if self.lobby.universe.completed_veldin_1 then
+        self:LoadLevel(self.lobby.startPlanet)
+    else
+        self:LoadLevel(0)
+    end
+    
 end
 
 function RandoPlayer:OnCollectedGoldBolt(planet, number)
@@ -221,6 +226,7 @@ function RandoPlayer:OnRespawned()
         self:UpdateHPAmount()
     end
     self:SetBolts(self.lobby.universe.totalBolts)
+    self.lobby.universe:PlayerLoadedPlanet(self, self:Level():GetName())
     self:UpdateVendorContents()
     FixPlanetsForPlayer(self.lobby.universe, self)
     self:UpdateHPAmount()

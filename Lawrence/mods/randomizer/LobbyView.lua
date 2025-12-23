@@ -237,7 +237,7 @@ function LobbyView:OnTick()
     
     self.archipelagoConnectingStatusText.Text = self.lobby.archipelagoConnectingStatus
     
-    if self.lobby.connected  and not self.lobby.started then
+    if self.lobby.connected and self.lobby.ap_datastore_retrieved and not self.lobby.started then
         self.lobby.started = true
         print("Starting lobby for: ")
         for i, player in ipairs(self.lobby.players) do
