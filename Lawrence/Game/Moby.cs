@@ -65,6 +65,11 @@ public class Moby : Entity
     /// This is used when a moby is attached to a bone of another moby, like helmets, gear, backpack, etc. 
     /// </summary>
     public Moby? AttachedTo;
+
+    /// <summary>
+    /// Used for mobys that players and other mobys should stick to when they move around.
+    /// </summary>
+    public bool MovablePlatform = false;
     
     /// <summary>
     /// Which bone we are attached to that decides the position on the body.
@@ -164,6 +169,9 @@ public class Moby : Entity
     ///     that behavior, so we can disable it by setting this to false.
     /// </summary>
     public bool ShouldRefreshPeriodically = true;
+
+    private List<Moby> _playersStandingOn = new();
+    public List<Moby> PlayersStandingOn => _playersStandingOn;
 
     public void ResetChanged()
     {
@@ -384,5 +392,17 @@ public class Moby : Entity
 
     public virtual void OnAttack(Moby attacked, ushort sourceOClass, float damage) {
         CallLuaFunction("OnAttack", LuaEntity(), attacked.LuaEntity(), sourceOClass, damage);
+    }
+
+    public void RegisterStandingPlayer(Moby player) {
+        _playersStandingOn.Add(player);
+        
+        CallLuaFunction("OnStandingPlayer", LuaEntity(), player);
+    }
+
+    public void RemoveStandingPlayer(Moby player) {
+        _playersStandingOn.Remove(player);
+        
+        CallLuaFunction("OnRemovedStandingPlayer", LuaEntity(), player);
     }
 }

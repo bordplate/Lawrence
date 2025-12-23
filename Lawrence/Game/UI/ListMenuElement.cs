@@ -64,6 +64,10 @@ public class ListMenuElement: ViewElement {
     public void RemoveItem(int index) {
         Items.Value[index].Remove();
     }
+
+    public void ClearItems() {
+        Items.Value.Clear();
+    }
     
     public ListMenuItem GetItem(int index) {
         return Items.Value[index];
