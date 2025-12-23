@@ -68,6 +68,7 @@ public enum MPStateType : ushort
     MP_STATE_SET_COMMUNICATION_FLAGS = 17,
     MP_STATE_START_IN_LEVEL_MOVIE = 18,
     MP_STATE_SAVE_FILE_OPERATION = 19,
+    MP_STATE_STANDING_ON_MOBY = 20,
 }
 
 public enum MPDamageFlags : uint {
@@ -87,6 +88,7 @@ public enum MPMobyFlags : byte
     MP_MOBY_NO_COLLISION = 0x2,
     MP_MOBY_FLAG_ORIG_UDPATE_FUNC = 0x4,
     MP_MOBY_FLAG_ATTACHED_TO = 0x8,
+    MP_MOBY_MOVABLE_PLATFORM = 0x10,
 }
 
 public enum MPControllerInputFlags : ushort
@@ -833,6 +835,7 @@ public partial class Packet {
         var flags = MPMobyFlags.MP_MOBY_FLAG_ACTIVE;
         flags |= moby.CollisionEnabled ? 0 : MPMobyFlags.MP_MOBY_NO_COLLISION;
         flags |= moby.MpUpdateFunc ? 0 : MPMobyFlags.MP_MOBY_FLAG_ORIG_UDPATE_FUNC;
+        flags |= moby.MovablePlatform ? MPMobyFlags.MP_MOBY_MOVABLE_PLATFORM : 0;
         flags |= moby.AttachedTo != null ? MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO : 0;
 
         MPPacketMobyCreate mobyCreate = new MPPacketMobyCreate {

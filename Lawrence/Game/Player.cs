@@ -41,6 +41,10 @@ public partial class Player : Moby {
     
     private bool _useNametag = true;
 
+    private Moby? _standingOnMoby = null;
+
+    public Moby? StandingOnMoby => _standingOnMoby;
+
     public bool UseNametag {
         get => _useNametag;
         set {
@@ -995,6 +999,16 @@ partial class Player : IClientHandler
         }
     }
 
+    public void OnPlayerStandingOnMoby(Moby? moby) {
+        if (moby != null) {
+            moby.RegisterStandingPlayer(this);
+        } else {
+            _standingOnMoby?.RemoveStandingPlayer(this);
+        }
+
+        _standingOnMoby = moby;
+    }
+    
     public void SendFile(Client.File file) {
         _client.SendFile(file);
     }

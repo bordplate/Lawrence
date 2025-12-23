@@ -47,6 +47,7 @@ public interface IClientHandler {
     bool HasMoby(Moby moby);
     void DeleteMoby(Moby moby);
     void UIEvent(MPUIElementEventType eventType, ushort elementId, uint data, byte[] extraData);
+    void OnPlayerStandingOnMoby(Moby? moby);
 }
 
 public partial class Client {
@@ -640,6 +641,15 @@ public partial class Client {
 
                     if (state.StateType == MPStateType.MP_STATE_START_IN_LEVEL_MOVIE) {
                         _clientHandler?.OnStartInLevelMovie(state.Value, state.Offset);
+                    }
+
+                    if (state.StateType == MPStateType.MP_STATE_STANDING_ON_MOBY) {
+                        Moby? moby = null;
+                        if (state.Value > 0) {
+                            moby = GetMobyByInternalId((ushort)state.Value);
+                        }
+                        
+                        _clientHandler?.OnPlayerStandingOnMoby(moby);
                     }
 
                     break;
