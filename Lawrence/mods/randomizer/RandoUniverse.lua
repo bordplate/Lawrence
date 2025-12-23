@@ -363,8 +363,6 @@ function RandoUniverse:PlayerLoadedPlanet(player, planet_name)
     if planet_name ~= "Veldin1" and not self.completed_veldin_1 then
         self.completed_veldin_1 = true
         self.ap_client:Veldin1Completed()
-    else
-        print(planet_name)
     end
 end
 
