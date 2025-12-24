@@ -99,6 +99,11 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
             print(string.format("got %d bolts from datastore", map["bolts"]))
             universe:GiveBolts(map["bolts"], false)
         end
+        if map["completed_veldin_1"] ~= nil then
+            print("veldin 1 was already completed, proceeding to starting planet")
+            universe.completed_veldin_1 = true
+        end
+        universe.lobby:ap_retrieved_completed()
     end
 
     function on_print_json(msg, extra)
@@ -131,8 +136,12 @@ function APClient:SetBolts(totalBolts)
     self.ap:Set("bolts", 0, false, {{"replace", totalBolts}})
 end
 
-function APClient:GetBolts()
-    self.ap:Get({"bolts"})
+function APClient:Veldin1Completed()
+    self.ap:Set("completed_veldin_1", false, false, {{"replace", true}})
+end
+
+function APClient:RetrieveDataStore()
+    self.ap:Get({"bolts", "completed_veldin_1"})
 end
 
 function APClient:SendHint(location_id)

@@ -34,8 +34,8 @@ function Lobby:initialize(host, password)
             accessory = {"On", "Off"}
         },
         debugStart = {
-            name = "Debug Start",
-            description = "Starts the game with 150k bolts and all levels, weapons, and items unlocked.",
+            name = "Debug",
+            description = "Lets you open a debug menu by pressing the left stick (L3).",
             handler = function(option, view, item) option:set(not option.value) end,
             value = false,
             accessory = {"On", "Off"}

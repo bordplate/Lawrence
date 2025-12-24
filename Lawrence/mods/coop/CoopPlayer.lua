@@ -1,4 +1,5 @@
 require 'TestMoby'
+require 'DebugView'
 
 CoopPlayer = class("CoopPlayer", Player)
 
@@ -41,6 +42,8 @@ function CoopPlayer:Made()
     self.respawnsThisLevel = 0
     self.lastRespawnLevel = -1
     self.allowRespawn = false
+    
+    self.debugView = nil
 end
 
 function CoopPlayer:Save()
@@ -54,58 +57,8 @@ function CoopPlayer:Start()
     self.ready = true
 
     if self.lobby.options.debugStart.value then
-        self:GiveItem(Item.GetByName("Heli-pack").id)
-        self:GiveItem(Item.GetByName("Thruster-pack").id)
-        self:GiveItem(Item.GetByName("Hydro-pack").id)
-        self:GiveItem(Item.GetByName("Sonic Summoner").id)
-        self:GiveItem(Item.GetByName("O2 Mask").id)
-        self:GiveItem(Item.GetByName("Pilot's Helmet").id)
-        self:GiveItem(Item.GetByName("Swingshot").id)
-        self:GiveItem(Item.GetByName("Hydrodisplacer").id)
-        self:GiveItem(Item.GetByName("Trespasser").id)
-        self:GiveItem(Item.GetByName("Metal Detector").id)
-        self:GiveItem(Item.GetByName("Hologuise").id)
-        self:GiveItem(Item.GetByName("PDA").id)
-        self:GiveItem(Item.GetByName("Magneboots").id)
-        self:GiveItem(Item.GetByName("Grindboots").id)
-        self:GiveItem(Item.GetByName("Devastator").id)
-        self:GiveItem(Item.GetByName("Visibomb").id)
-        self:GiveItem(Item.GetByName("Taunter").id)
-        self:GiveItem(Item.GetByName("Blaster").id)
-        self:GiveItem(Item.GetByName("Pyrociter").id)
-        self:GiveItem(Item.GetByName("Mine Glove").id)
-        self:GiveItem(Item.GetByName("Walloper").id)
-        self:GiveItem(Item.GetByName("Tesla Claw").id)
-        self:GiveItem(Item.GetByName("Glove of Doom").id)
-        self:GiveItem(Item.GetByName("Drone Device").id)
-        self:GiveItem(Item.GetByName("Decoy Glove").id)
-        self:GiveItem(Item.GetByName("Bomb Glove").id)
-        self:GiveItem(Item.GetByName("Suck Cannon").id)
-        self:GiveItem(Item.GetByName("Morph-o-Ray").id)
-        self:GiveItem(Item.GetByName("R.Y.N.O.").id)
-        self:GiveItem(Item.GetByName("Hoverboard").id)
-        
-        self:SetBolts(150000)
-
-        self:UnlockLevel(1)
-        self:UnlockLevel(2)
-        self:UnlockLevel(3)
-        self:UnlockLevel(4)
-        self:UnlockLevel(5)
-        self:UnlockLevel(6)
-        self:UnlockLevel(7)
-        self:UnlockLevel(8)
-        self:UnlockLevel(9)
-        self:UnlockLevel(10)
-        self:UnlockLevel(11)
-        self:UnlockLevel(12)
-        self:UnlockLevel(13)
-        self:UnlockLevel(14)
-        self:UnlockLevel(15)
-        self:UnlockLevel(16)
-        self:UnlockLevel(17)
-        self:UnlockLevel(18)
-        self:UnlockAllGoldBolts()
+        self.debugView = DebugView(self)
+        self:AddEntity(self.debugView)
     end
 
     if not self.lobby.started then

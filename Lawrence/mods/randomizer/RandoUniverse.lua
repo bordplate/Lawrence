@@ -66,6 +66,8 @@ function RandoUniverse:initialize(lobby)
     self.unlock_count = {}
     
     self.using_outdated_AP = false
+
+    self.completed_veldin_1 = false
     
     self.button = Button(self:GetLevelByName("Veldin2"), 415)
 end
@@ -227,7 +229,7 @@ end
 function RandoUniverse:OnPlayerJoin(player)
     print("player joined!")
     player:SetAddressValue(0xB00000, self.metal_detector_multiplier, 1) -- metal detector multiplier
-    player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
+    --player:SetAddressValue(0xB00001, 1, 1) -- disable skid self delete
     player.level_unlock_queue = self.level_unlock_queue
     player.item_unlock_queue = self.item_unlock_queue
     player.special_unlock_queue = self.special_unlock_queue
@@ -354,6 +356,13 @@ function RandoUniverse:SendVendorHints()
     for _, item_id in ipairs(self.buyable_weapons) do
         location_id = ItemToLocation(item_id)
         self.ap_client:SendHint(location_id)
+    end
+end
+
+function RandoUniverse:PlayerLoadedPlanet(player, planet_name)
+    if planet_name ~= "Veldin1" and not self.completed_veldin_1 then
+        self.completed_veldin_1 = true
+        self.ap_client:Veldin1Completed()
     end
 end
 
