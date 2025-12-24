@@ -98,13 +98,18 @@ end
 
 function Lobby:ap_connected()
     self.connected = true
-    self.universe.ap_client:GetBolts()
+    self.universe.ap_client:RetrieveDataStore()
 end
 
 function Lobby:ap_refused()
     print("ap_refused")
     self.archipelagoConnectingStatus = "Connection Failed"
     self.waiting_on_connection = false
+end
+
+function Lobby:ap_retrieved_completed()
+    print("ap_retrieved_completed")
+    self.ap_datastore_retrieved = true
 end
 
 function Lobby:Join(player)

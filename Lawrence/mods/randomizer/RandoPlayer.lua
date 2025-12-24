@@ -39,9 +39,9 @@ function RandoPlayer:Made()
 --     end
     
     self:MonitorAddress(Player.offset.goldBolts + 16 * 4 + 1, 1)
-    self:MonitorAddress(Player.offset.has_zoomerator, 1)
-    self:MonitorAddress(Player.offset.rilgar_race_pb, 4)
-    self:MonitorAddress(Player.offset.race_position, 4)
+    --self:MonitorAddress(Player.offset.has_zoomerator, 1)
+    --self:MonitorAddress(Player.offset.rilgar_race_pb, 4)
+    --self:MonitorAddress(Player.offset.race_position, 4)
     self.hasCollectedKaleboGrindrailBolt = false
     
     self.syncItemsDebounce = false
@@ -60,7 +60,13 @@ function RandoPlayer:Start()
     self.AddLabel(self, self.GoldBoltCountLabel)
     
     self.lobby.universe:AddEntity(self)
-    self:LoadLevel(self.lobby.startPlanet)
+
+    if self.lobby.universe.completed_veldin_1 then
+        self:LoadLevel(self.lobby.startPlanet)
+    else
+        self:LoadLevel(0)
+    end
+    
 end
 
 function RandoPlayer:OnCollectedGoldBolt(planet, number)
@@ -161,22 +167,22 @@ function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
         self.hasCollectedKaleboGrindrailBolt = true
     end
     
-    if address == Player.offset.has_zoomerator and newValue == 1 and self.lobby.universe.has_zoomerator == false then
-        self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
-    end
+    --if address == Player.offset.has_zoomerator and newValue == 1 and self.lobby.universe.has_zoomerator == false then
+    --    self:SetAddressValue(Player.offset.has_zoomerator, 0, 1)
+    --end
 
-    if address == Player.offset.rilgar_race_pb and newValue ~= 0 and self.lobby.universe.has_zoomerator == true then
-        if self.race_position == 1 then
-            self:OnUnlockItem(0x30, false)
-        else
-            print("finished race but did not win... setting PB back to 0")
-            self:SetAddressValue(Player.offset.rilgar_race_pb, 0, 4)
-        end
-    end
+    --if address == Player.offset.rilgar_race_pb and newValue ~= 0 and self.lobby.universe.has_zoomerator == true then
+    --    if self.race_position == 1 then
+    --        self:OnUnlockItem(0x30, false)
+    --    else
+    --        print("finished race but did not win... setting PB back to 0")
+    --        self:SetAddressValue(Player.offset.rilgar_race_pb, 0, 4)
+    --    end
+    --end
 
-    if address == Player.offset.race_position then
-        self.race_position = newValue
-    end
+    --if address == Player.offset.race_position then
+    --    self.race_position = newValue
+    --end
 end
 
 function RandoPlayer:OnGiveBolts(boltDiff, totalBolts)
@@ -214,10 +220,13 @@ function RandoPlayer:OnRespawned()
         if not self.lobby.universe.using_outdated_AP then
             self:SetAddressValue(Player.offset.challenge_mode, 1, 1)
         end
+        self:SetAddressValue(Player.offset.level_transitions + 0, self.lobby.startPlanet, 1)
+        self:SetAddressValue(Player.offset.level_transitions + 1, self.lobby.startPlanet, 1) -- umbris travels to starting planet. idk where else it would even go
         PlayerResync(self.lobby.universe, self, self.lobby.universe.ap_client.ap.checked_locations)
         self:UpdateHPAmount()
     end
     self:SetBolts(self.lobby.universe.totalBolts)
+    self.lobby.universe:PlayerLoadedPlanet(self, self:Level():GetName())
     self:UpdateVendorContents()
     FixPlanetsForPlayer(self.lobby.universe, self)
     self:UpdateHPAmount()
