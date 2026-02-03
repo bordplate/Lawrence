@@ -386,8 +386,8 @@ public class Moby : Entity
         CallLuaFunction("OnCollision", LuaEntity(), collidee.LuaEntity());
     }
 
-    public virtual void OnHit(Moby attacker) {
-        CallLuaFunction("OnHit", LuaEntity(), attacker.LuaEntity());
+    public virtual void OnHit(Moby attacker, ushort sourceOClass, float damage) {
+        CallLuaFunction("OnHit", LuaEntity(), attacker.LuaEntity(), sourceOClass, damage);
     }
 
     public virtual void OnAttack(Moby attacked, ushort sourceOClass, float damage) {

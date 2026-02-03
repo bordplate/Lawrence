@@ -695,7 +695,7 @@ partial class Player : IClientHandler
             target.AddCollider(source);
         }
         else {
-            target.OnHit(source);
+            target.OnHit(source, sourceOClass, damage);
             source.OnAttack(target, sourceOClass, damage);
         }
     }
