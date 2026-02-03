@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Lawrence.Game;
 using NLua;
 
@@ -127,6 +128,31 @@ public class Moby : Entity
     
     protected float _rotZ = 0.0f;
     public virtual float rotZ { get => _rotZ; set { if (_rotZ != value) { _rotZ = value; HasChanged = true; } } }
+
+    public virtual Vector3 Forward {
+        get {
+            double pitch = double.DegreesToRadians(_rotY);
+            double yaw = double.DegreesToRadians(_rotZ);
+            
+            double x = Math.Cos(pitch) * Math.Cos(yaw);
+            double y = Math.Cos(pitch) * Math.Sin(yaw);
+            double z = Math.Sin(pitch);
+            
+            return new Vector3((float)x, (float)y, (float)z);
+        }
+    }
+
+    public virtual Vector3 Right {
+        get {
+            double yaw = double.DegreesToRadians(_rotZ);
+            
+            double x = -Math.Sin(yaw);
+            double y = Math.Cos(yaw);
+            double z = 0;
+            
+            return new Vector3((float)x, (float)y, (float)z);
+        }
+    } 
     
     private float _scale = 1.0f;
     public float scale { get => _scale; set { if (_scale != value) { _scale = value; HasChanged = true; } } }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using KeraLua;
 using NLua;
@@ -350,6 +351,11 @@ public class Game {
             _state["NativeTextAreaElement"] = () => new TextAreaElement();
             _state["NativeTextElement"] = () => new TextElement();
             _state["NativeInputElement"] = () => new InputElement();
+
+            _state["VectorSub"] = (Vector3 left, Vector3 right) => left - right;
+            _state["VectorAdd"] = (Vector3 left, Vector3 right) => left + right;
+            _state["VectorMul"] = (Vector3 left, Vector3 right) => left * right;
+            _state["VectorScale"] = (Vector3 vec, double scale) => vec * (float)scale;
             
             _state["GetTypeName"] = (object? obj) => {
                 return obj?.GetType().Name;
