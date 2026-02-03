@@ -16,6 +16,9 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     self.running = true  -- set this to false to kill the coroutine
     self.first_socket_error = true
     self.game_name = game_name
+    
+    self.slot_string_datastore_prefix = tostring(slot) .. "_"
+    
     function on_socket_connected()
         print("Socket connected")
     end
@@ -95,11 +98,11 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
     end
 
     function on_retrieved(map)
-        if map["bolts"] ~= nil then
-            print(string.format("got %d bolts from datastore", map["bolts"]))
-            universe:GiveBolts(map["bolts"], false)
+        if map[self.slot_string_datastore_prefix.."bolts"] ~= nil then
+            print(string.format("got %d bolts from datastore", map[self.slot_string_datastore_prefix.."bolts"]))
+            universe:GiveBolts(map[self.slot_string_datastore_prefix.."bolts"], false)
         end
-        if map["completed_veldin_1"] ~= nil then
+        if map[self.slot_string_datastore_prefix.."completed_veldin_1"] ~= nil then
             print("veldin 1 was already completed, proceeding to starting planet")
             universe.completed_veldin_1 = true
         end
@@ -133,15 +136,15 @@ function APClient:getLocation(location_id)
 end
 
 function APClient:SetBolts(totalBolts)
-    self.ap:Set("bolts", 0, false, {{"replace", totalBolts}})
+    self.ap:Set(self.slot_string_datastore_prefix .. "bolts", 0, false, {{"replace", totalBolts}})
 end
 
 function APClient:Veldin1Completed()
-    self.ap:Set("completed_veldin_1", false, false, {{"replace", true}})
+    self.ap:Set(self.slot_string_datastore_prefix .. "completed_veldin_1", false, false, {{"replace", true}})
 end
 
 function APClient:RetrieveDataStore()
-    self.ap:Get({"bolts", "completed_veldin_1"})
+    self.ap:Get({self.slot_string_datastore_prefix .. "bolts", self.slot_string_datastore_prefix .. "completed_veldin_1"})
 end
 
 function APClient:SendHint(location_id)
