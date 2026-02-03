@@ -265,6 +265,16 @@ public class Moby : Entity
         this.z = z;
     }
 
+    public Vector3 Position() {
+        return new Vector3(x, y, z);
+    }
+
+    public void SetPosition(Vector3 position) {
+        x = position.X;
+        y = position.Y;
+        z = position.Z;
+    }
+
     public void MonitorAttribute(ushort offset, ushort size, bool isFloat = false) {
         MonitoredAttributes.Add(new MonitoredValue {
             Offset = offset,
