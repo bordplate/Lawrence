@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using Lawrence.Game;
@@ -357,11 +358,14 @@ public partial class Client {
 
     [PacketHandler(MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED)]
     public static void HandleLevelFlagChanged(PacketContext context) {
+        var body = context.Body.ToList();
         var flagChanged = context.Get<MPPacketLevelFlagsChanged>();
         
         for (var i = 0; i < flagChanged.Flags; i++) {
             var offset = Marshal.SizeOf<MPPacketLevelFlagsChanged>() + Marshal.SizeOf<MPPacketLevelFlag>() * i;
-            var levelFlag = context.Get<MPPacketLevelFlag>();
+            if (Packet.BytesToStruct<MPPacketLevelFlag>(body.Skip(offset).ToArray(), context.Client._endianness) is not {} levelFlag) {
+                throw new NetworkParsingException($"Failed to parse level flag {i} of {flagChanged.Flags}.");
+            }
             
             context.GetHandler()?.OnLevelFlagChanged(
                 flagChanged.Type,

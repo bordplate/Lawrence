@@ -20,6 +20,8 @@ public class Server {
     private DateTime _lastAverageUpdateTime = DateTime.UtcNow;
     private long _ticksPerSecond = 0;
     
+    public PacketPipeline Pipeline { get; private set; }
+    
     private readonly Mutex _clientMutex = new();
 
     private readonly List<Client> _clients = new();
@@ -45,6 +47,12 @@ public class Server {
         IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), port);
         _udpServer = new UdpClient(ipep);
         _tcpListener = new TcpListener(ipep);
+        
+        UseMiddleware(new ExceptionGuardMiddleware());
+        UseMiddleware(new SessionGateMiddleware());
+        UseMiddleware(new AckMiddleware());
+
+        Pipeline = new PacketPipeline(_middlewares);
         
         _serverName = serverName;
         _maxPlayers = maxPlayers;
@@ -83,10 +91,6 @@ public class Server {
     /// </summary>
     public void Start() {
         PacketRouter.ResolveHandlers();
-        
-        UseMiddleware(new ExceptionGuardMiddleware());
-        UseMiddleware(new SessionGateMiddleware());
-        UseMiddleware(new AckMiddleware());
         
         _clientThread = new Thread(AcceptClients);
         _clientThread.Start();
