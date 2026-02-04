@@ -33,4 +33,8 @@ public class PacketPipeline(List<IMiddleware> middlewares) {
 
         return current;
     }
+
+    public void InvalidateAll() {
+        _cachedPipelines.Clear();
+    }
 }

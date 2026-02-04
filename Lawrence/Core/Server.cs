@@ -47,19 +47,14 @@ public class Server {
         IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), port);
         _udpServer = new UdpClient(ipep);
         _tcpListener = new TcpListener(ipep);
-        
-        UseMiddleware(new ExceptionGuardMiddleware());
-        UseMiddleware(new SessionGateMiddleware());
-        UseMiddleware(new AckMiddleware());
-
         Pipeline = new PacketPipeline(_middlewares);
-        
         _serverName = serverName;
         _maxPlayers = maxPlayers;
     }
 
     public void UseMiddleware(IMiddleware middleware) {
         _middlewares.Add(middleware);
+        Pipeline.InvalidateAll();
     }
     
     public void SetProcessTicks(bool processTicks) {
@@ -91,6 +86,10 @@ public class Server {
     /// </summary>
     public void Start() {
         PacketRouter.ResolveHandlers();
+        
+        UseMiddleware(new ExceptionGuardMiddleware());
+        UseMiddleware(new SessionGateMiddleware());
+        UseMiddleware(new AckMiddleware());
         
         _clientThread = new Thread(AcceptClients);
         _clientThread.Start();
