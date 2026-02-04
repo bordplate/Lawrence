@@ -78,18 +78,5 @@ public class PacketHandler(MPPacketType packetType) : Attribute {
 
         var pipeline = client.Server.Pipeline.Get(_handler);
         pipeline(context);
-
-        // Action<PacketContext> current = ctx => {
-        //     _handler(ctx);
-        // };
-        //
-        // var middlewares = client.Server.Middlewares;
-        // for (var i = middlewares.Count - 1; i >= 0; i--) {
-        //     var next = current;
-        //     var middleware = middlewares[i];
-        //     current = ctx => middleware.Execute(ctx, next);
-        // }
-        //
-        // current(context);
     }
 }
