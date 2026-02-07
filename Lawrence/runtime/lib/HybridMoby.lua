@@ -16,6 +16,14 @@ function HybridMoby:ChangeAttributeForOtherPlayers(player, offset, size, newValu
     end
 end
 
+function HybridMoby:ChangeAttribute(offset, size, newValue, isFloat)
+    isFloat = isFloat or false
+
+    for _, player in pairs(self:Level():FindChildren("Player")) do
+        player:ChangeMobyAttribute(self.UID, offset, size, newValue, isFloat)
+    end
+end
+
 function HybridMoby:ChangePVarForOtherPlayers(player, offset, size, newValue, isFloat)
     isFloat = isFloat or false
     

@@ -44,6 +44,8 @@ function CoopPlayer:Made()
     self.allowRespawn = false
     
     self.debugView = nil
+    
+    self.wrenchThrowTime = 0
 end
 
 function CoopPlayer:Save()
@@ -55,6 +57,15 @@ end
 function CoopPlayer:Start()
     self.ingame = true
     self.ready = true
+    
+    --self:GiveItem(Item.GetByName("O2 Mask").id)
+    --self:GiveItem(Item.GetByName("Heli-pack").id)
+    --self:GiveItem(Item.GetByName("Magneboots").id)
+    --self:GiveItem(Item.GetByName("Devastator").id)
+    --self:GiveItem(Item.GetByName("Suck Cannon").id)
+    --self:GiveItem(Item.GetByName("PDA").id)
+    --self:GiveItem(Item.GetByName("Decoy Glove").id)
+    --self:GiveItem(Item.GetByName("Glove of Doom").id)
 
     if self.lobby.options.debugStart.value then
         self.debugView = DebugView(self)
@@ -113,6 +124,33 @@ function CoopPlayer:OnCollectedGoldBolt(planet, number)
 end
 
 function CoopPlayer:OnRespawned()
+    self:DeleteAllChildrenWithOClass(31)
+    --self:DeleteAllChildrenWithOClass(28)
+    self:DeleteAllChildrenWithOClass(252)
+
+    --self:DeleteAllChildrenWithUID(238)
+    --self:DeleteAllChildrenWithUID(239)
+    --self:DeleteAllChildrenWithUID(240)
+    --self:DeleteAllChildrenWithUID(241)
+
+    --self:DeleteAllChildrenWithUID(277)
+    --self:DeleteAllChildrenWithUID(278)
+    --self:DeleteAllChildrenWithUID(279)
+    --self:DeleteAllChildrenWithUID(280)
+
+    --self:DeleteAllChildrenWithUID(285)
+    --self:DeleteAllChildrenWithUID(286)
+    --self:DeleteAllChildrenWithUID(287)
+    --self:DeleteAllChildrenWithUID(288)
+    --self:DeleteAllChildrenWithUID(289)
+    
+    --self:DeleteAllChildrenWithUID(294)
+    --self:DeleteAllChildrenWithUID(295)
+    --self:DeleteAllChildrenWithUID(296)
+    --self:DeleteAllChildrenWithUID(297)
+    --self:DeleteAllChildrenWithUID(298)
+    --self:DeleteAllChildrenWithUID(299)
+
     if self.lobby.options.deathLink.value then
         if not self.allowRespawn then
             print("Seems like a player died. Killing everyone.")
@@ -186,6 +224,10 @@ function CoopPlayer:MonitoredAddressChanged(address, oldValue, newValue)
 end
 
 function CoopPlayer:OnAttack(moby, sourceOClass, damage)
+    print("Attacked with " .. damage)
+    
+    self.lastDamageDealt = damage
+    
     if moby == nil then
         return
     end
@@ -204,7 +246,38 @@ function CoopPlayer:Unfreeze()
     self.state = 0
 end
 
+--function CoopPlayer:TeleportTheGuy()
+--    local uid = 190
+--    
+--    the_guy_state = the_guy_state + 1
+--    print("the guy state " .. the_guy_state)
+--    
+--    self:ChangeMobyAttribute(uid, 0x10, 4, self.x, true)
+--    self:ChangeMobyAttribute(uid, 0x14, 4, self.y, true)
+--    self:ChangeMobyAttribute(uid, 0x18, 4, self.z, true)
+--
+--    self:ChangeMobyAttribute(uid, 0x20, 1, the_guy_state, true)
+--end
+
 function CoopPlayer:OnTick()
+    if self.AnimationId == 26 then
+        self.wrenchThrowTime = self.wrenchThrowTime + 1
+
+        if self.wrenchThrowTime > 20 then
+            self.state = 0
+        end
+    else
+        self.wrenchThrowTime = 0
+    end
+
+    if self.forceGhostRatchet and self:Ticks() % 4 == 0 then
+        self:SetGhostRatchet(150)
+    end
+
+    if self.infiniteHealth then
+        self:SetAddressValue(0x96BF88, 4, 4)
+    end
+    
     if self.saveMessageCountdown >= 0 then
         self.saveMessageCountdown = self.saveMessageCountdown - 1
 
@@ -245,11 +318,21 @@ function CoopPlayer:OnControllerInputTapped(input)
     --        self.debugCam = false
     --    end
     --end
+
+    --if IsButton(input, Gamepad.L2) then
+    --    self:TeleportTheGuy()
+    --end
     
-    --if self.gameState == 3 and input & 0x20 ~= 0 then
+    --if self.gameState == 3 and IsButton(input, Gamepad.Circle) then
     --    self:SetPosition(0, 0, -10000)
     --    --self:SetAddressValue(0x969EAC, 100, 4)
     --end
+    
+    --if self.gameState == 3 and IsButton(input, Gamepad.Square) then
+    --    self:SetPosition(252, 138, 82.5)
+    --    --self:SetAddressValue(0x969EAC, 100, 4)
+    --end
+    
     
     --if self.gameState == 3 and input & 0x80 ~= 0 then
     --    if self:Username() == "bordplate3" then

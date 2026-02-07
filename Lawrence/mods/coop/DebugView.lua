@@ -29,6 +29,12 @@ function DebugView:initialize(player)
     self.mainMenu = ListMenuElement(0, 30, 250, 310)
     self.levelsMenu = ListMenuElement(260, 10, 250, 370)
     self.itemsMenu = ListMenuElement(260, 30, 250, 330)
+
+    self.debugUpdateOptionsAddr = 0x95c5c8
+    self.debugModeControlAddr   = 0x95c5d4
+
+    self.debugUpdateOptions = 0xF
+    self.debugModeControl   = 0
     
     self.levelNames = {
         "Novalis",
@@ -172,20 +178,22 @@ function DebugView:initialize(player)
             end
         },
         {
-            name = "Freecam",
+            name = "Infinite Health",
             accessory = "Off",
             callback = function(item)
-                if not self.debugCam then
-                    self.player:SetAddressValue(0x95c5d4, 1, 4)
-                    self.player:SetAddressValue(0x95c5c8, 6, 4)
-                    self.debugCam = true
-                else
-                    self.player:SetAddressValue(0x95c5d4, 0, 4)
-                    self.player:SetAddressValue(0x95c5c8, 0xf, 4)
-                    self.debugCam = false
-                end
-
-                item.Accessory = self.debugCam and "On" or "Off"
+                self.player.infiniteHealth = not self.player.infiniteHealth
+                item.Accessory = self.player.infiniteHealth and "On" or "Off"
+            end
+        },
+        {
+            name = "Debug options",
+            accessory = ">",
+            callback = function(item)
+                self:RebuildDebugOptionsMenu()
+                self.debugOptionsMenu.Visible = true
+                self.debugOptionsMenu:Focus()
+                self.subMenuOpen = true
+                self.gotoPlanetLevelTextElement.Text = "\x13 Toggle option \x10 Back"
             end
         },
         {
@@ -216,6 +224,33 @@ function DebugView:initialize(player)
     
     self.mainMenu.Visible = false
 
+    self.debugOptionsMenu = ListMenuElement(260, 30, 250, 330)
+    self.debugOptionsMenu.Visible = false
+
+    self.debugOptionsMenu.ItemActivated = function(index)
+        if index == 0 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x1)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x1, on)
+        elseif index == 1 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x2)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x2, on)
+        elseif index == 2 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x4)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x4, on)
+        elseif index == 3 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x8)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x8, on)
+        elseif index == 4 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x10)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x10, on)
+        elseif index == 5 then
+            self.debugModeControl = (self.debugModeControl + 1) % 3
+        end
+
+        self:WriteDebugFlags()
+        self:RebuildDebugOptionsMenu()
+    end
+
     self.gotoPlanetLevelTextElement = TextElement(380, 390, "")
     self.gotoPlanetLevelTextElement.Visible = false
 
@@ -225,6 +260,7 @@ function DebugView:initialize(player)
     self:AddElement(self.levelsMenu)
     self:AddElement(self.itemsMenu)
     self:AddElement(self.giveBoltsInput)
+    self:AddElement(self.debugOptionsMenu)
 end
 
 function DebugView:OnPresent()
@@ -233,14 +269,23 @@ end
 
 function DebugView:OnControllerInputPressed(input)
     --print("Button! " .. input)
+
+    local openDebugMenu = input & Gamepad.L3 ~= 0
     
-    if not self.debugMenuOpen and input & Gamepad.L3 ~= 0 then
+    if self.debugUpdateOptions & 0x10 ~= 0 then
+        openDebugMenu = input & Gamepad.L3 ~= 0 and input & Gamepad.R3 ~= 0
+    end
+    
+    if not self.debugMenuOpen and openDebugMenu then
         self.player.state = 114
         self.mainMenu.Visible = true
         self.mainMenu:Focus()
         self.debugMenuOpen = true
     elseif self.debugMenuOpen and IsButton(input, Gamepad.L3) then
         self:CloseDebugMenu()
+        if self.debugUpdateOptions & 0x10 ~= 0 then
+            self.player:ToastMessage("Press both L3 and R3 to re-open the debug menu", 120)
+        end
     end
 
     if self.levelsMenu.Visible and IsButton(input, Gamepad.Square) then
@@ -251,6 +296,7 @@ function DebugView:OnControllerInputPressed(input)
     if self.debugMenuOpen and IsButton(input, Gamepad.Triangle) and self.subMenuOpen then
         self.levelsMenu.Visible = false
         self.itemsMenu.Visible = false
+        self.debugOptionsMenu.Visible = false
         self.mainMenu:Focus()
         self.gotoPlanetLevelTextElement.Text = ""
 
@@ -262,6 +308,7 @@ function DebugView:CloseDebugMenu()
     self.mainMenu:Focus()
     self.mainMenu.Visible = false
     self.levelsMenu.Visible = false
+    self.debugOptionsMenu.Visible = false
     self.itemsMenu.Visible = false
     self.gotoPlanetLevelTextElement.Text = ""
 
@@ -332,4 +379,36 @@ function DebugView:SetItemsPage(page)
     else
         self.itemsMenu:AddItem("Previous...")
     end
+end
+
+function DebugView:IsBitSet(v, bit)
+    return (v & bit) ~= 0
+end
+
+function DebugView:SetBit(v, bit, on)
+    if on then return (v | bit) end
+    return (v & (~bit))
+end
+
+function DebugView:ModeName(mode)
+    if mode == 0 then return "Normal" end
+    if mode == 1 then return "Freecam" end
+    if mode == 2 then return "Freecam Character" end
+    return tostring(mode)
+end
+
+function DebugView:WriteDebugFlags()
+    self.player:SetAddressValue(self.debugUpdateOptionsAddr, self.debugUpdateOptions, 4)
+    self.player:SetAddressValue(self.debugModeControlAddr, self.debugModeControl, 4)
+end
+
+function DebugView:RebuildDebugOptionsMenu()
+    self.debugOptionsMenu:ClearItems()
+
+    self.debugOptionsMenu:AddItem("Update Ratchet",   "", self:IsBitSet(self.debugUpdateOptions, 0x1) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Update Mobys",     "", self:IsBitSet(self.debugUpdateOptions, 0x2) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Update Particles", "", self:IsBitSet(self.debugUpdateOptions, 0x4) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Update Camera",    "", self:IsBitSet(self.debugUpdateOptions, 0x8) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Enable stepping",  "", self:IsBitSet(self.debugUpdateOptions, 0x10) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Camera Mode",      "", self:ModeName(self.debugModeControl))
 end

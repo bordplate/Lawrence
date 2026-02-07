@@ -33,6 +33,13 @@ function Lobby:initialize(host, password)
             value = false,
             accessory = {"On", "Off"}
         },
+        trueCoop = {
+            name = "Co-op Fusion (beta)",
+            description = "Adds elements to game traversal and puzzles that require at least 2 players to progress.",
+            handler = function (option, view, item) option:set(not option.value) end,
+            value = true,
+            accessory = {"On", "Off"}
+        },
         debugStart = {
             name = "Debug",
             description = "Lets you open a debug menu by pressing the left stick (L3).",
@@ -70,7 +77,8 @@ function Lobby:initialize(host, password)
     })
     
     self.optionsList = { 
-        self.options.password, 
+        self.options.password,
+        self.options.trueCoop,
         self.options.friendlyFire, 
         self.options.deathLink, 
         self.options.debugStart, 
@@ -104,6 +112,10 @@ function Lobby:Start()
         print("  " .. player:Username())
         
         player:Start()
+    end
+
+    if self.options.trueCoop.value then
+        self.universe:InitTrueCoop()
     end
 
     self.started = true

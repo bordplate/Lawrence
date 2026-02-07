@@ -26,6 +26,14 @@ function Moby:initialize(mobyEntity)
     Entity.initialize(self, mobyEntity)
 end
 
+function Moby:Right()
+    return self._internalEntity.Right
+end
+
+function Moby:Forward()
+    return self._internalEntity.Forward
+end
+
 function Moby:Universe()
     local universeEntity = self._internalEntity:Universe()
     
