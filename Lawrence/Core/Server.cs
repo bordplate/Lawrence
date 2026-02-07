@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Lawrence.Core.Middleware;
 
 namespace Lawrence.Core; 
 
@@ -18,6 +19,8 @@ public class Server {
     private long _tickCount = 0;             // Total number of ticks
     private DateTime _lastAverageUpdateTime = DateTime.UtcNow;
     private long _ticksPerSecond = 0;
+    
+    public PacketPipeline Pipeline { get; private set; }
     
     private readonly Mutex _clientMutex = new();
 
@@ -36,14 +39,22 @@ public class Server {
     private bool _processTicks = true;
 
     private static ulong _time;
+    
+    private List<IMiddleware> _middlewares = new();
+    public List<IMiddleware> Middlewares => _middlewares;
 
     public Server(string listenAddress, int port, string serverName = "<Empty server name>", int maxPlayers = 20) {
         IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(listenAddress), port);
         _udpServer = new UdpClient(ipep);
         _tcpListener = new TcpListener(ipep);
-        
+        Pipeline = new PacketPipeline(_middlewares);
         _serverName = serverName;
         _maxPlayers = maxPlayers;
+    }
+
+    public void UseMiddleware(IMiddleware middleware) {
+        _middlewares.Add(middleware);
+        Pipeline.InvalidateAll();
     }
     
     public void SetProcessTicks(bool processTicks) {
@@ -74,6 +85,12 @@ public class Server {
     /// Starts the two threads that run the server. One for accepting new clients and one for running the game loop.
     /// </summary>
     public void Start() {
+        PacketRouter.ResolveHandlers();
+        
+        UseMiddleware(new ExceptionGuardMiddleware());
+        UseMiddleware(new SessionGateMiddleware());
+        UseMiddleware(new AckMiddleware());
+        
         _clientThread = new Thread(AcceptClients);
         _clientThread.Start();
 

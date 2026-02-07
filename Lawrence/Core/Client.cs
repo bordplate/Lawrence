@@ -14,7 +14,7 @@ using Lawrence.Game;
 namespace Lawrence.Core;
 
 // Metadata structure for packet acknowledgement data
-public struct AckedMetadata {
+public record struct AckedMetadata {
     public byte AckCycle;
     public byte AckIndex;
     public byte[] Packet;
@@ -51,21 +51,9 @@ public interface IClientHandler {
 }
 
 public partial class Client {
-    /// <summary>
-    /// Packet types in this list are allowed to be sent before a handshake
-    /// </summary>
-    private static readonly List<MPPacketType> AllowedAnonymous = new List<MPPacketType> {
-        MPPacketType.MP_PACKET_CONNECT,
-        MPPacketType.MP_PACKET_SYN_LE,
-        MPPacketType.MP_PACKET_SYN,
-        MPPacketType.MP_PACKET_QUERY_GAME_SERVERS, // Only used in directory mode.
-        MPPacketType.MP_PACKET_REGISTER_SERVER,
-        MPPacketType.MP_PACKET_TIME_SYNC
-    };
-    
     // Which API version we're currently on and which is the minimum version we support. 
-    private uint API_VERSION = 12;
-    private uint API_VERSION_MIN = 12;
+    private static uint API_VERSION = 12;
+    private static uint API_VERSION_MIN = 12;
     
     /// <summary>
     /// When true, this client is waiting to connect, and is not yet part of the regular OnTick loop
@@ -74,34 +62,41 @@ public partial class Client {
 
     public uint? DataStreamKey;
 
-    IClientHandler? _clientHandler;
+    private IClientHandler? _clientHandler;
+    public IClientHandler? ClientHandler => _clientHandler;
 
     private string? _username = null;
     private int _userid = 0;
 
-    readonly IPEndPoint _endpoint;
-    bool _handshakeCompleted = false;
+    private readonly IPEndPoint _endpoint;
+    private bool _handshakeCompleted = false;
+    public bool HandshakeCompleted => _handshakeCompleted;
 
     public uint ID = 0;
 
-    long _lastContact = 0;
+    private long _lastContact = 0;
 
-    bool _disconnected = true;
+    private bool _disconnected = true;
     private bool _processedFirstPacket = false;
     
     private Packet.Endianness _endianness = Packet.Endianness.BigEndian;
+    public Packet.Endianness Endianness => _endianness;
     
-    byte _ackCycle = 1;
-    byte _ackIndex = 1;
-    private readonly AckedMetadata[] _acked = new AckedMetadata[256];
+    private byte _ackCycle = 1;
+    private byte _ackIndex = 1;
+    public readonly AckedMetadata[] Acked = new AckedMetadata[256];
     private readonly List<AckedMetadata> _unacked = new();
 
     private readonly Server _server;
+    public Server Server => _server;
+    
+    private readonly PacketRouter _router;
     
     public Client(IPEndPoint endpoint, uint id, Server server) {
-        this.ID = id;
+        ID = id;
         _endpoint = endpoint;
         _server = server;
+        _router = new PacketRouter(this);
         
         _lastContact = DateTimeOffset.Now.ToUnixTimeSeconds();
         _disconnected = false;
@@ -179,14 +174,14 @@ public partial class Client {
 
         // Cache ack response packets
         if (packetHeader.PacketType == MPPacketType.MP_PACKET_ACK && packetHeader.RequiresAck != 0) {
-            var ack = _acked[packetHeader.RequiresAck];
+            var ack = Acked[packetHeader.RequiresAck];
             if (ack.AckCycle != packetHeader.AckCycle) {
                 ack.AckCycle = packetHeader.AckCycle;
                 ack.Packet = packet;
                 ack.ResendTimer = 120;
             }
 
-            _acked[packetHeader.RequiresAck] = ack;
+            Acked[packetHeader.RequiresAck] = ack;
         }
 
         // Cache unacked request packets
@@ -272,8 +267,7 @@ public partial class Client {
                 }
             }
             
-            byte[] packetBody = packet.Skip(index).Take((int)packetHeader.Size)
-                .ToArray();
+            byte[] packetBody = packet.Skip(index).Take((int)packetHeader.Size).ToArray();
 
             index += (int)packetHeader.Size;
             
@@ -285,533 +279,7 @@ public partial class Client {
             
             _lastTimeSent = packetHeader.TimeSent;
 
-            // Check if handshake is complete, otherwise start completing it. 
-
-            // TODO: Implement some sort of protection against anyone spoofing others.
-            //       Ideally the handshake should start a session that the client can
-            //          easily use to identify itself. Ideally without much computational
-            //          overhead. 
-            if ((!_handshakeCompleted || WaitingToConnect) && !AllowedAnonymous.Contains(packetHeader.PacketType)) {
-                // Client has sent a packet that is not a handshake packet.
-                // We tell the client we don't know it and it should reset state and
-                // start handshake. 
-                SendPacket(new MPPacketHeader { PacketType = MPPacketType.MP_PACKET_IDKU }, null);
-                return;
-            }
-
-            // Get size of packet body 
-            var packetSize = 0;
-            if (packetHeader.Size > 0 && packetHeader.Size < 1024 * 8) {
-                packetSize = (int)packetHeader.Size;
-            }
-
-            // If this packet requires ack and is not RPC, we send ack before processing.
-            // If this is RPC we only send ack here if a previous ack has been sent and cached.
-            if (packetHeader.PacketType != MPPacketType.MP_PACKET_ACK && packetHeader.RequiresAck != 0) {
-                // We don't ack ack messages
-                // If this is an RPC packet and we've already processed and cached it, we use the cached response. 
-                if ((packetHeader.Flags & MPPacketFlags.MP_PACKET_FLAG_RPC) != 0 &&
-                    _acked[packetHeader.RequiresAck].AckCycle == packetHeader.AckCycle) {
-                    _server.SendTo(_acked[packetHeader.RequiresAck].Packet, _endpoint);
-                } else if ((packetHeader.Flags & MPPacketFlags.MP_PACKET_FLAG_RPC) == 0) {
-                    // If it's not RPC, we just ack the packet and process the packet
-                    MPPacketHeader ack = new MPPacketHeader {
-                        PacketType = MPPacketType.MP_PACKET_ACK,
-                        Flags = 0,
-                        Size = 0,
-                        RequiresAck = packetHeader.RequiresAck,
-                        AckCycle = packetHeader.AckCycle
-                    };
-
-                    SendPacket(ack, null);
-                }
-            }
-
-            switch (packetHeader.PacketType) {
-                case MPPacketType.MP_PACKET_CONNECT: {
-                    if (!WaitingToConnect) {
-                        Logger.Error("Player tried to connect twice.");
-                        return;
-                    }
-                    
-                    var responsePacket = new Packet(MPPacketType.MP_PACKET_ACK, packetHeader.RequiresAck,
-                        packetHeader.AckCycle);
-                    
-                    if (packetSize < (uint)Marshal.SizeOf<MPPacketConnect>()) {
-                        // Legacy client, we tell it to fuck off with an unknown error code, since it doesn't know about
-                        //  the "outdated version" return code. 
-                        Logger.Log("Legacy client tried to connect.");
-                        
-                        MPPacketConnectResponse connectResponse = new MPPacketConnectResponse {
-                            status = MPPacketConnectResponseStatus.ERROR_UNKNOWN
-                        };
-                        
-                        responsePacket.AddBodyPart(connectResponse);
-                        
-                        SendPacket(responsePacket);
-                        
-                        Disconnect();
-                        return; 
-                    }
-
-                    // Decode the packet
-                    if (Packet.BytesToStruct<MPPacketConnect>(packetBody, _endianness) is not { } connectPacket) {
-                        throw new NetworkParsingException("Failed to parse connect packet.");
-                    }
-                    
-                    string username = connectPacket.GetUsername(packetBody);
-                    
-                    // Check that the API versions are compatible
-                    if (connectPacket.Version < API_VERSION_MIN) {
-                        Logger.Log($"{username} tried to connect with old version {connectPacket.Version}. Minimum version: {API_VERSION_MIN}. Latest: {API_VERSION}");
-                        // Client is outdated, tell them to update.
-                        MPPacketConnectResponse connectResponse = new MPPacketConnectResponse {
-                            status = connectPacket.Version == 0 ? 
-                                MPPacketConnectResponseStatus.ERROR_UNKNOWN : // Legacy alpha doesn't support ERROR_OUTDATED
-                                MPPacketConnectResponseStatus.ERROR_OUTDATED
-                        };
-                        
-                        responsePacket.AddBodyPart(connectResponse);
-
-                        SendPacket(responsePacket);
-                        
-                        Disconnect();
-                        
-                        return; 
-                    }
-
-                    foreach (Client c in _server.Clients()) {
-                        if (c != this && c.GetUsername() == connectPacket.GetUsername(packetBody)) {
-                            if (c.GetUserid() == connectPacket.UserId && c.GetEndpoint().Address.Equals(GetEndpoint().Address)) {
-                                c.Disconnect();
-                                break;
-                            }
-                        
-                            MPPacketConnectResponse connectResponse = new MPPacketConnectResponse {
-                                status = MPPacketConnectResponseStatus.ERROR_USER_ALREADY_CONNECTED
-                            };
-                            
-                            responsePacket.AddBodyPart(connectResponse);
-                            
-                            SendPacket(responsePacket);
-                            
-                            Disconnect();
-                            
-                            return;
-                        }
-                    }
-
-                    MPPacketConnectResponse responseBody = new MPPacketConnectResponse {
-                        status = MPPacketConnectResponseStatus.SUCCESS
-                    };
-                    
-                    responsePacket.AddBodyPart(responseBody);
-
-                    _username = username;
-                    _userid = connectPacket.UserId;
-                    
-                    SendPacket(responsePacket);
-                    
-                    Game.Game.Shared().OnPlayerConnect(this);
-
-                    WaitingToConnect = false;
-
-                    Logger.Log($"New player {username} connected!");
-                    Lawrence.ForceDirectorySync();
-
-                    DataStreamKey = (uint)Guid.NewGuid().GetHashCode();
-                    SendPacket(Packet.MakeOpenDataStreamPacket(DataStreamKey.Value));
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_DISCONNECTED: {
-                    Disconnect();
-
-                    Logger.Log("Player disconnected.");
-                    Lawrence.ForceDirectorySync();
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_SYN_LE:
-                    if (!_processedFirstPacket) {
-                        _endianness = Packet.Endianness.LittleEndian;
-
-                        Logger.Log($"Player is little endian.");
-
-                        goto case MPPacketType.MP_PACKET_SYN;
-                    }
-                    
-                    Logger.Log("Player tried to change endianness after handshake.");
-                    
-                    Disconnect();
-
-                    break;
-                case MPPacketType.MP_PACKET_SYN: {
-                    var response = Packet.MakeAckPacket();
-                    
-                    if (!_handshakeCompleted) {
-                        _handshakeCompleted = true;
-                    }
-                    else {
-                        response.Header.AckCycle = 0;
-                        response.Header.RequiresAck = 0;
-                    }
-
-                    SendPacket(response);
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_ACK:
-                    foreach (var unacked in _unacked.ToArray()) {
-                        if (unacked.AckCycle == packetHeader.AckCycle &&
-                            unacked.AckIndex == packetHeader.RequiresAck) {
-                            _unacked.Remove(unacked);
-                            unacked.AckCallback?.Invoke();
-                            break;
-                        }
-                    }
-
-                    break;
-                case MPPacketType.MP_PACKET_TIME_SYNC: {
-                    MPPacketTimeResponse response = new MPPacketTimeResponse() {
-                        ClientSendTime = (ulong)packetHeader.TimeSent,
-                        ServerSendTime = Server.Time()
-                    };
-
-                    MPPacketHeader header = new MPPacketHeader {
-                        PacketType = MPPacketType.MP_PACKET_ACK,
-                        Size = (uint)Marshal.SizeOf<MPPacketTimeResponse>(),
-                        RequiresAck = packetHeader.RequiresAck,
-                        AckCycle = packetHeader.AckCycle
-                    };
-
-                    SendPacket(header,
-                        Packet.StructToBytes(response, _endianness));
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_MOBY_UPDATE: {
-                    if (Packet.BytesToStruct<MPPacketMobyUpdate>(packetBody, _endianness) is { } update) {
-                        _clientHandler?.UpdateMoby(update);
-                    }
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_MOBY_CREATE: {
-                    if (Packet.BytesToStruct<MPPacketMobyCreate>(packetBody, _endianness) is not { } create) {
-                        throw new NetworkParsingException("Failed to parse moby create packet.");
-                    }
-                    
-                    var newMoby = _clientHandler?.CreateMoby(create.OClass, create.SpawnId);
-                    
-                    if (newMoby == null) {
-                        Logger.Error($"Client({ID}) failed to create moby [oClass:{create.OClass}].");
-                        return;
-                    }
-                    
-                    newMoby.modeBits = create.ModeBits;
-
-                    if (create.Flags.HasFlag(MPMobyFlags.MP_MOBY_FLAG_ATTACHED_TO)) {
-                        var parent = create.ParentUuid == 0 ?
-                            _clientHandler?.Moby() :
-                            GetSyncMobyByInternalId(create.ParentUuid);
-                        
-                        if (parent != null) {
-                            newMoby.AttachedTo = parent;
-                            newMoby.PositionBone = create.PositionBone;
-                            newMoby.TransformBone = create.TransformBone;
-
-                            if (create.OClass == 173) {
-                                newMoby.PositionBone = (byte)(create.PositionBone == 6 ? 22 : 23);
-                                newMoby.TransformBone = (byte)(create.PositionBone == 6 ? 22 : 23);
-                            }
-                        } else {
-                            Logger.Error($"Player({ID}) tried to attach moby [oClass:{create.OClass}] to a parent [{create.ParentUuid}] that doesn't exist.");
-                        }
-                    }
-
-                    if (_clientHandler?.Moby() is { } moby) {
-                        newMoby.MakeSynced(moby);
-                    }
-
-                    var internalId = CreateSyncMoby(newMoby);
-                    
-                    SendPacket(Packet.MakeMobyCreateResponsePacket(internalId, packetHeader.RequiresAck, packetHeader.AckCycle));
-                    
-                    // Logger.Log($"Player({ID}) created moby (oClass: {create.OClass}) with internal ID {internalId}.");
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_MOBY_CREATE_FAILURE: {
-                    if (Packet.BytesToStruct<MPPacketMobyCreateFailure>(packetBody, _endianness) is not {} createFailure) {
-                        throw new NetworkParsingException("Failed to parse moby create failure packet.");
-                    }
-
-                    switch (createFailure.Reason) {
-                        case MPMobyCreateFailureReason.UNKNOWN:
-                            Logger.Error($"Couldn't create moby for Player({ID}): unknown error.");
-                            break;
-                        case MPMobyCreateFailureReason.NOT_READY: return;
-                        case MPMobyCreateFailureReason.ALREADY_EXISTS:
-                            Logger.Error($"Couldn't create moby for Player({ID}): already exists.");
-                            break;
-                        case MPMobyCreateFailureReason.MAX_MOBYS:
-                            Logger.Error($"Couldn't create moby for Player({ID}): out of moby space.");
-                            break;
-                        case MPMobyCreateFailureReason.UPDATE_NON_EXISTENT:
-                            Logger.Error($"Couldn't create moby for Player({ID}): tried to update a moby that doesn't exist.");
-                            break;
-                        case MPMobyCreateFailureReason.SUCCESS:
-                            SetMobyCreated(createFailure.Uuid);
-                            return;
-                    }
-                    
-                    ClearMoby(createFailure.Uuid);
-                    
-                    break;
-                }
-                case MPPacketType.MP_PACKET_MOBY_DELETE: {
-                    if (Packet.BytesToStruct<MPPacketMobyDelete>(packetBody, _endianness) is not { } delete) {
-                        throw new NetworkParsingException("Failed to parse moby delete packet.");
-                    }
-
-                    var moby = GetSyncMobyByInternalId((ushort)delete.Uuid);
-                    if (moby != null) {
-                        _clientHandler?.DeleteMoby(moby);
-                    } else {
-                        Logger.Error($"Player [{ID}] tried to delete a moby that doesn't exist in its moby table.");
-                    }
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_MOBY_DAMAGE: {
-                    if (Packet.BytesToStruct<MPPacketMobyDamage>(packetBody, _endianness) is not {} damage) {
-                        throw new NetworkParsingException("Failed to parse moby damage packet.");
-                    }
-
-                    var collider = damage.Uuid == 0
-                        ? _clientHandler?.Moby()
-                        : GetMobyByInternalId(damage.Uuid);
-
-                    var collidee = damage.CollidedWithUuid == 0
-                        ? _clientHandler?.Moby()
-                        : GetMobyByInternalId(damage.CollidedWithUuid);
-
-                    if (!damage.Flags.HasFlag(MPDamageFlags.GameMoby)) {
-                        // This is an attack against a server-spawned moby, like another player or other entity.
-                        if (collider is {} _ && collidee is {} __) {
-                            _clientHandler?.OnDamage(collider, collidee, damage.SourceOClass, damage.Damage);
-                        }
-                    }
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_SET_STATE: {
-                    if (Packet.BytesToStruct<MPPacketSetState>(packetBody, _endianness) is not { } state) {
-                        throw new NetworkParsingException("Failed to parse set state packet.");
-                    }
-
-                    if (state.StateType == MPStateType.MP_STATE_TYPE_GAME) {
-                        _clientHandler?.GameStateChanged((GameState)state.Value);
-                    }
-
-                    if (state.StateType == MPStateType.MP_STATE_TYPE_COLLECTED_GOLD_BOLT) {
-                        _clientHandler?.CollectedGoldBolt((int)state.Offset, (int)state.Value);
-                    }
-
-                    if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_ITEM) {
-                        // TODO: Clean up this bitwise magic into readable flags
-                        uint item = state.Value & 0xFFFF;
-                        bool equip = (state.Value >> 16) == 1;
-                        
-                        _clientHandler?.UnlockItem((int)item, equip);
-                    }
-
-                    if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_LEVEL) {
-                        _clientHandler?.OnUnlockLevel((int)state.Value);
-                    }
-
-                    if (state.StateType == MPStateType.MP_STATE_TYPE_GIVE_BOLTS) {
-                        _clientHandler?.OnGiveBolts((int)state.Value, state.Offset);
-                    }
-                        
-                    if (state.StateType == MPStateType.MP_STATE_TYPE_UNLOCK_SKILLPOINT) {
-                        _clientHandler?.OnUnlockSkillpoint((byte)state.Value);
-                    }
-
-                    if (state.StateType == MPStateType.MP_STATE_START_IN_LEVEL_MOVIE) {
-                        _clientHandler?.OnStartInLevelMovie(state.Value, state.Offset);
-                    }
-
-                    if (state.StateType == MPStateType.MP_STATE_STANDING_ON_MOBY) {
-                        Moby? moby = null;
-                        if (state.Value > 0) {
-                            moby = GetMobyByInternalId((ushort)state.Value);
-                        }
-                        
-                        _clientHandler?.OnPlayerStandingOnMoby(moby);
-                    }
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_QUERY_GAME_SERVERS: {
-                    if (Lawrence.DirectoryMode()) {
-                        if (packetHeader.Size < Marshal.SizeOf<MPPacketQueryGameServers>()) {
-                            Logger.Error(
-                                $"(Player {ID}) tried to query us with outdated version.");
-
-                            packetHeader.PacketType = MPPacketType.MP_PACKET_ACK;
-                            packetHeader.Size = 0x2d;
-                            packetHeader.TimeSent = (long)Server.Time();
-                            
-                            // We didn't use to have a version field on the query packet, and also no way to tell a
-                            // querying client that it is outdated. The byte array is a query response with 1 server named
-                            // "Your multiplayer mod is outdated." for the old client. 
-                            SendPacket(packetHeader, [
-                                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x21,0x59,0x6f,0x75,0x72,0x20,
-                                0x6d,0x75,0x6c,0x74,0x69,0x70,0x6c,0x61,0x79,0x65,0x72,0x20,0x6d,0x6f,0x64,0x20,0x69,
-                                0x73,0x20,0x6f,0x75,0x74,0x64,0x61,0x74,0x65,0x64,0x2e
-                            ]);
-                            
-                            return;
-                        }
-
-                        if (Lawrence.Directory()?.Servers() is { } servers) {
-                            SendPacket(Packet.MakeQueryServerResponsePacket(servers, packetHeader.RequiresAck,
-                                packetHeader.AckCycle));
-                        }
-                    }
-                    else {
-                        Logger.Error(
-                            $"(Player {ID}) tried to query us as directory, but we're not a directory server.");
-                    }
-
-                    Disconnect();
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_REGISTER_SERVER: {
-                    if (Lawrence.DirectoryMode()) {
-                        if (Packet.BytesToStruct<MPPacketRegisterServer>(packetBody, _endianness) is not
-                            { } serverInfo) {
-                            throw new NetworkParsingException("Failed to parse register server packet.");
-                        }
-
-                        string name = serverInfo.GetName(packetBody);
-
-                        uint ip = serverInfo.Ip != 0 ? serverInfo.Ip : (uint)GetEndpoint().Address.Address;
-
-                        IPAddress address = new IPAddress(ip);
-
-                        Lawrence.Directory()?.RegisterServer(
-                            address.ToString(), 
-                            serverInfo.Port, 
-                            name, 
-                            serverInfo.MaxPlayers, 
-                            serverInfo.PlayerCount, 
-                            serverInfo.GetDescription(packetBody), 
-                            serverInfo.GetOwner(packetBody)
-                        );
-                    }
-                    
-                    Disconnect();
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_CONTROLLER_INPUT: {
-                    // FIXME: Should react properly to held and released buttons. Only handles held and tapped buttons right now, not released buttons.
-                    if (Packet.BytesToStruct<MPPacketControllerInput>(packetBody, _endianness) is not { } input) {
-                        throw new NetworkParsingException("Failed to parse controller input packet.");
-                    }
-                    
-                    if ((input.Flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_HELD) != 0) {
-                        _clientHandler?.ControllerInputHeld((ControllerInput)input.Input);
-                    }
-
-                    if ((input.Flags & MPControllerInputFlags.MP_CONTROLLER_FLAGS_PRESSED) != 0) {
-                        ControllerInput pressedButtons = (ControllerInput)input.Input;
-
-                        _clientHandler?.ControllerInputTapped(pressedButtons);
-                    }
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_PLAYER_RESPAWNED: {
-                    if (Packet.BytesToStruct<MPPacketSpawned>(packetBody, _endianness) is { } spawned) {
-                        _clientHandler?.PlayerRespawned(spawned.SpawnId, spawned.LevelId);
-                    }
-
-                    break;
-                }
-                case MPPacketType.MP_PACKET_MONITORED_VALUE_CHANGED: {
-                    if (Packet.BytesToStruct<MPPacketMonitoredValueChanged>(packetBody, _endianness) is not {} valueChanged) {
-                        throw new NetworkParsingException("Failed to parse monitored value changed packet.");
-                    }
-                    
-                    _clientHandler?.OnHybridMobyValueChange(
-                        valueChanged.Uid,
-                        valueChanged.Flags == 1 ? MonitoredValueType.Attribute : MonitoredValueType.PVar,
-                        valueChanged.Offset,
-                        valueChanged.Size,
-                        BitConverter.GetBytes(valueChanged.OldValue),
-                        BitConverter.GetBytes(valueChanged.NewValue)
-                    );
-                    
-                    break;
-                }
-                case MPPacketType.MP_PACKET_MONITORED_ADDRESS_CHANGED: {
-                    if (Packet.BytesToStruct<MPPacketMonitoredAddressChanged>(packetBody, _endianness) is not
-                        { } addressChanged) {
-                        throw new NetworkParsingException("Failed to parse monitored address changed packet.");
-                    }
-                    
-                    _clientHandler?.OnMonitoredAddressChanged(
-                        addressChanged.Address,
-                        (byte)addressChanged.Size,
-                        BitConverter.GetBytes(addressChanged.OldValue),
-                        BitConverter.GetBytes(addressChanged.NewValue)
-                    );
-                    break;
-                }
-                case MPPacketType.MP_PACKET_LEVEL_FLAG_CHANGED: {
-                    if (Packet.BytesToStruct<MPPacketLevelFlagsChanged>(packetBody, _endianness) is not {} flagChanged) {
-                        throw new NetworkParsingException("Failed to parse level flag changed packet.");
-                    }
-
-                    for (var i = 0; i < flagChanged.Flags; i++) {
-                        var offset = Marshal.SizeOf<MPPacketLevelFlagsChanged>() + Marshal.SizeOf<MPPacketLevelFlag>() * i;
-                        if (Packet.BytesToStruct<MPPacketLevelFlag>(packetBody.Skip(offset).ToArray(), _endianness) is not {} levelFlag) {
-                            throw new NetworkParsingException($"Failed to parse level flag {i} of {flagChanged.Flags}.");
-                        }
-                        
-                        _clientHandler?.OnLevelFlagChanged(
-                            flagChanged.Type,
-                            flagChanged.Level,
-                            levelFlag.Size,
-                            levelFlag.Index,
-                            levelFlag.Value
-                        );
-                    }
-                    
-                    break;
-                }
-                case MPPacketType.MP_PACKET_UI_EVENT: {
-                    if (Packet.BytesToStruct<MPPacketUIEvent>(packetBody, _endianness) is not {} uiEvent) {
-                        throw new NetworkParsingException("Failed to parse UI event packet.");
-                    }
-                    
-                    byte[] extraData = uiEvent.GetExtraData(packetBody);
-
-                    _clientHandler?.UIEvent(uiEvent.EventType, uiEvent.ElementId, uiEvent.Data, extraData);
-                    
-                    break;
-                }
-                default: {
-                    Logger.Error(
-                        $"(Player {ID}) sent unknown (possibly malformed) packet {packetHeader.PacketType} with size: {packetSize}.");
-                    break;
-                }
-            }
+            _router.RoutePacket(packetHeader, packetBody);
         }
     }
 

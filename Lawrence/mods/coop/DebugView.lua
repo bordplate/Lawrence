@@ -25,7 +25,7 @@ function DebugView:initialize(player)
         self.player:GiveBolts(bolts)
     end
 
-    self.coordsTextArea = TextAreaElement(0, 350, 220, 60)
+    self.coordsTextArea = TextAreaElement(0, 340, 150, 70)
     self.mainMenu = ListMenuElement(0, 30, 250, 310)
     self.levelsMenu = ListMenuElement(260, 10, 250, 370)
     self.itemsMenu = ListMenuElement(260, 30, 250, 330)
@@ -121,6 +121,7 @@ function DebugView:initialize(player)
     self.mainMenuItems = {
         {
             name = "Levels",
+            accessory = ">",
             callback = function(item)
                 self.levelsMenu.Visible = true
                 self.levelsMenu:Focus()
@@ -130,6 +131,7 @@ function DebugView:initialize(player)
         },
         {
             name = "Items",
+            accessory = ">",
             callback = function(item)
                 self.itemsMenu.Visible = true
                 self.itemsMenu:Focus()
@@ -159,6 +161,14 @@ function DebugView:initialize(player)
             name = "Unlock all gold bolts",
             callback = function(item)
                 self.player:UnlockAllGoldBolts()
+            end
+        },
+        {
+            name = "Ghost Ratchet",
+            accessory = "Off",
+            callback = function(item)
+                self.player.forceGhostRatchet = not self.player.forceGhostRatchet
+                item.Accessory = self.player.forceGhostRatchet and "On" or "Off"
             end
         },
         {
@@ -261,7 +271,7 @@ end
 
 function DebugView:OnTick()
     if self.showCoords then
-        self.coordsTextArea.Text = "X: " .. self.player.x .. "\1Y: " .. self.player.y .. "\1Z: " .. self.player.z
+        self.coordsTextArea.Text = string.format("Rot: %.4f\1X: %.5f\1Y: %.5f\1Z: %.5f", self.player.rotZ, self.player.x, self.player.y, self.player.z)
     end 
 end
 
