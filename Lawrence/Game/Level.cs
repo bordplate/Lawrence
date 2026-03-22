@@ -240,3 +240,14 @@ public class Level : Entity {
         base.Delete();
     }
 }
+
+public class LevelConfigurationOption {
+    public LevelConfigurationType Type { get; set; }
+    public uint Value { get; set; }
+}
+
+public enum LevelConfigurationType {
+    Unknown = 0,
+    BlockMobyUID = 1,
+    BlockMobyOClass = 2,
+}
