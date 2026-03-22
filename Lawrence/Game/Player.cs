@@ -126,6 +126,7 @@ public partial class Player : Moby {
         MonitorAddress(0xa10704, 4, false, o => {  // Destination level
             var destination = Convert.ToUInt16(o);
             if (destination != 0 && Universe()?.GetLevelByGameID(destination) is {} level) {
+                SendLevelConfiguration(level);
                 SetLevelFlags(level);
             }
         });
@@ -358,6 +359,10 @@ partial class Player {
         }
         
         SetLevelFlags(level);
+    }
+
+    public void SendLevelConfiguration(Level level) {
+        SendPacket(Packet.MakeLevelConfigurationPacket((byte)level.GameID(), level.LevelConfigurationOptions));
     }
 
     public void SetLevelFlags(Level level) {
