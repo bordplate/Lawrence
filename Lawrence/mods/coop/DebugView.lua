@@ -24,11 +24,25 @@ function DebugView:initialize(player)
         
         self.player:GiveBolts(bolts)
     end
+    
+    self.startILMInput = InputElement()
+    self.startILMInput.Prompt = "Enter ILM ID"
+    self.startILMInput.InputCallback = function(input)
+        self.player:StartInLevelMovie(tonumber(input))
+        self:CloseDebugMenu()
+    end
+
 
     self.coordsTextArea = TextAreaElement(0, 340, 150, 70)
     self.mainMenu = ListMenuElement(0, 30, 250, 310)
     self.levelsMenu = ListMenuElement(260, 10, 250, 370)
     self.itemsMenu = ListMenuElement(260, 30, 250, 330)
+
+    self.debugUpdateOptionsAddr = 0x95c5c8
+    self.debugModeControlAddr   = 0x95c5d4
+
+    self.debugUpdateOptions = 0xF
+    self.debugModeControl   = 0
     
     self.levelNames = {
         "Novalis",
@@ -36,8 +50,8 @@ function DebugView:initialize(player)
         "Kerwan",
         "Eudora",
         "Rilgar",
-        "Umbris",
         "BlargStation",
+        "Umbris",
         "Batalia",
         "Gaspar",
         "Orxon",
@@ -145,6 +159,12 @@ function DebugView:initialize(player)
             end
         },
         {
+            name = "Start ILM",
+            callback = function(item)
+                self.startILMInput:Activate()
+            end
+        },
+        {
             name = "Teleport to ship",
             callback = function(item)
                 self:TeleportToShip()
@@ -172,20 +192,14 @@ function DebugView:initialize(player)
             end
         },
         {
-            name = "Freecam",
-            accessory = "Off",
+            name = "Debug options",
+            accessory = ">",
             callback = function(item)
-                if not self.debugCam then
-                    self.player:SetAddressValue(0x95c5d4, 1, 4)
-                    self.player:SetAddressValue(0x95c5c8, 6, 4)
-                    self.debugCam = true
-                else
-                    self.player:SetAddressValue(0x95c5d4, 0, 4)
-                    self.player:SetAddressValue(0x95c5c8, 0xf, 4)
-                    self.debugCam = false
-                end
-
-                item.Accessory = self.debugCam and "On" or "Off"
+                self:RebuildDebugOptionsMenu()
+                self.debugOptionsMenu.Visible = true
+                self.debugOptionsMenu:Focus()
+                self.subMenuOpen = true
+                self.gotoPlanetLevelTextElement.Text = "\x13 Toggle option \x10 Back"
             end
         },
         {
@@ -215,6 +229,33 @@ function DebugView:initialize(player)
     end
     
     self.mainMenu.Visible = false
+    
+    self.debugOptionsMenu = ListMenuElement(260, 30, 250, 330)
+    self.debugOptionsMenu.Visible = false
+
+    self.debugOptionsMenu.ItemActivated = function(index)
+        if index == 0 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x1)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x1, on)
+        elseif index == 1 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x2)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x2, on)
+        elseif index == 2 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x4)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x4, on)
+        elseif index == 3 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x8)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x8, on)
+        elseif index == 4 then
+            local on = not self:IsBitSet(self.debugUpdateOptions, 0x10)
+            self.debugUpdateOptions = self:SetBit(self.debugUpdateOptions, 0x10, on)
+        elseif index == 5 then
+            self.debugModeControl = (self.debugModeControl + 1) % 3
+        end
+
+        self:WriteDebugFlags()
+        self:RebuildDebugOptionsMenu()
+    end
 
     self.gotoPlanetLevelTextElement = TextElement(380, 390, "")
     self.gotoPlanetLevelTextElement.Visible = false
@@ -225,6 +266,8 @@ function DebugView:initialize(player)
     self:AddElement(self.levelsMenu)
     self:AddElement(self.itemsMenu)
     self:AddElement(self.giveBoltsInput)
+    self:AddElement(self.startILMInput)
+    self:AddElement(self.debugOptionsMenu)
 end
 
 function DebugView:OnPresent()
@@ -262,6 +305,7 @@ function DebugView:CloseDebugMenu()
     self.mainMenu:Focus()
     self.mainMenu.Visible = false
     self.levelsMenu.Visible = false
+    self.debugOptionsMenu.Visible = false
     self.itemsMenu.Visible = false
     self.gotoPlanetLevelTextElement.Text = ""
 
@@ -332,4 +376,36 @@ function DebugView:SetItemsPage(page)
     else
         self.itemsMenu:AddItem("Previous...")
     end
+end
+
+function DebugView:IsBitSet(v, bit)
+    return (v & bit) ~= 0
+end
+
+function DebugView:SetBit(v, bit, on)
+    if on then return (v | bit) end
+    return (v & (~bit))
+end
+
+function DebugView:ModeName(mode)
+    if mode == 0 then return "Normal" end
+    if mode == 1 then return "Freecam" end
+    if mode == 2 then return "Freecam Character" end
+    return tostring(mode)
+end
+
+function DebugView:WriteDebugFlags()
+    self.player:SetAddressValue(self.debugUpdateOptionsAddr, self.debugUpdateOptions, 4)
+    self.player:SetAddressValue(self.debugModeControlAddr, self.debugModeControl, 4)
+end
+
+function DebugView:RebuildDebugOptionsMenu()
+    self.debugOptionsMenu:ClearItems()
+
+    self.debugOptionsMenu:AddItem("Update Ratchet",   "", self:IsBitSet(self.debugUpdateOptions, 0x1) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Update Mobys",     "", self:IsBitSet(self.debugUpdateOptions, 0x2) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Update Particles", "", self:IsBitSet(self.debugUpdateOptions, 0x4) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Update Camera",    "", self:IsBitSet(self.debugUpdateOptions, 0x8) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Enable stepping",  "", self:IsBitSet(self.debugUpdateOptions, 0x10) and "On" or "Off")
+    self.debugOptionsMenu:AddItem("Camera Mode",      "", self:ModeName(self.debugModeControl))
 end
