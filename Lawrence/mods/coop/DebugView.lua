@@ -184,6 +184,14 @@ function DebugView:initialize(player)
             end
         },
         {
+            name = "Infinite Health",
+            accessory = "Off",
+            callback = function(item)
+                self.player.infiniteHealth = not self.player.infiniteHealth
+                item.Accessory = self.player.infiniteHealth and "On" or "Off"
+            end
+        },
+        {
             name = "Ghost Ratchet",
             accessory = "Off",
             callback = function(item)
