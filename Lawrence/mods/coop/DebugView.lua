@@ -283,15 +283,21 @@ function DebugView:OnPresent()
 end
 
 function DebugView:OnControllerInputPressed(input)
-    --print("Button! " .. input)
+    local menuButtonPressed = IsButton(input, Gamepad.L3)
+    if (self:IsBitSet(self.debugUpdateOptions, 0x10)) then
+        menuButtonPressed = IsButton(input, Gamepad.L3) and IsButton(input, Gamepad.L2)
+    end
     
-    if not self.debugMenuOpen and input & Gamepad.L3 ~= 0 then
+    if not self.debugMenuOpen and menuButtonPressed then
         self.player.state = 114
         self.mainMenu.Visible = true
-        self.mainMenu:Focus()
         self.debugMenuOpen = true
+        self.mainMenu:Focus()
     elseif self.debugMenuOpen and IsButton(input, Gamepad.L3) then
         self:CloseDebugMenu()
+        if (self:IsBitSet(self.debugUpdateOptions, 0x10)) then
+            self.player:ToastMessage("Stepping on: Use L3 and L2 to reopen the debug menu", 240)
+        end
     end
 
     if self.levelsMenu.Visible and IsButton(input, Gamepad.Square) then
@@ -302,6 +308,7 @@ function DebugView:OnControllerInputPressed(input)
     if self.debugMenuOpen and IsButton(input, Gamepad.Triangle) and self.subMenuOpen then
         self.levelsMenu.Visible = false
         self.itemsMenu.Visible = false
+        self.debugMenuOpen = false
         self.mainMenu:Focus()
         self.gotoPlanetLevelTextElement.Text = ""
 

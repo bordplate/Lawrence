@@ -121,6 +121,4 @@ function Pokitaru:LoadHybrids()
     self.bridgeButton = Button(self, 185)
     
     self.thruserPackLock = ThrusterPackLock(self, 630)
-    
-    self.fred = Fred(self, 652)
 end

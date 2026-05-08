@@ -1,8 +1,6 @@
 Helga = class("Helga", HybridMoby)
 
 function Helga:initialize(level, uid)
-    print("Initializing Helga")
-    
     HybridMoby.initialize(self, level, uid)
 end
 
