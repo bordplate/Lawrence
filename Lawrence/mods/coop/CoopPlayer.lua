@@ -205,6 +205,14 @@ function CoopPlayer:Unfreeze()
 end
 
 function CoopPlayer:OnTick()
+    if self.forceGhostRatchet and self:Ticks() % 4 == 0 then
+        self:SetGhostRatchet(150)
+    end
+
+    if self.infiniteHealth then
+        self:SetAddressValue(0x96BF88, 4, 4)
+    end
+    
     if self.saveMessageCountdown >= 0 then
         self.saveMessageCountdown = self.saveMessageCountdown - 1
 

@@ -11,7 +11,6 @@ function BlargStation:initialize(internalEntity)
 end
 
 function BlargStation:LoadHybrids()
-    self.spaceShuttle = SpaceShuttle(self, 158)
     self.redButton = RedButton(self, 159)
     
     self.snapper1 = AlienSnapper(self, 68)

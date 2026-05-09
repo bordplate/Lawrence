@@ -15,6 +15,9 @@ public class Level : Entity {
     public byte[] LevelFlags2 = new byte[0x100];
     
     private List<Moby> _hybridMobys = new();
+    
+    private List<LevelConfigurationOption> _levelConfigurationOptions = new();
+    public List<LevelConfigurationOption> LevelConfigurationOptions => _levelConfigurationOptions;
 
     public bool ShouldPropagateLevelFlags = true;
     
@@ -212,6 +215,20 @@ public class Level : Entity {
             }
         }
     }
+    
+    public void BlockMobyUID(ushort uid) {
+        _levelConfigurationOptions.Add(new LevelConfigurationOption {
+            Type = LevelConfigurationType.BlockMobyUID,
+            Value = uid,
+        });
+    }
+    
+    public void BlockMobyOClass(int oClass) {
+        _levelConfigurationOptions.Add(new LevelConfigurationOption {
+            Type = LevelConfigurationType.BlockMobyOClass,
+            Value = (uint)oClass,
+        });
+    }
 
     public override void Delete() {
         foreach (var hybridMoby in _hybridMobys) {
@@ -222,4 +239,15 @@ public class Level : Entity {
         
         base.Delete();
     }
+}
+
+public class LevelConfigurationOption {
+    public LevelConfigurationType Type { get; set; }
+    public uint Value { get; set; }
+}
+
+public enum LevelConfigurationType {
+    Unknown = 0,
+    BlockMobyUID = 1,
+    BlockMobyOClass = 2,
 }

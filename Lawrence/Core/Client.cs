@@ -52,8 +52,8 @@ public interface IClientHandler {
 
 public partial class Client {
     // Which API version we're currently on and which is the minimum version we support. 
-    private static uint API_VERSION = 12;
-    private static uint API_VERSION_MIN = 12;
+    private static uint API_VERSION = 13;
+    private static uint API_VERSION_MIN = 13;
     
     /// <summary>
     /// When true, this client is waiting to connect, and is not yet part of the regular OnTick loop

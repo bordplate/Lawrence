@@ -45,6 +45,7 @@ public enum MPPacketType : ushort
     MP_PACKET_UI_EVENT = 30,
     MP_PACKET_OPEN_DATA_STREAM = 31,
     MP_PACKET_UPLOAD_FILE = 32,
+    MP_PACKET_LEVEL_CONFIGURATION = 33,
 }
 
 public enum MPStateType : ushort
@@ -493,6 +494,18 @@ public struct MPPacketOpenDataStream : MPPacket {
 public struct MPPacketFileUpload : MPPacket {
     public MPFileType FileType;
     public uint FileSize;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketLevelConfiguration : MPPacket {
+    public byte Level;
+    public byte Count;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct MPPacketLevelConfigurationOption : MPPacket {
+    public byte Type;
+    public uint Value;
 }
 
 [Flags]
@@ -1385,6 +1398,28 @@ public static Packet MakeMobyUpdatePacket(ushort id, Moby moby) {
         return packet;
     }
 
+    public static Packet MakeLevelConfigurationPacket(byte level, List<LevelConfigurationOption> options) {
+        var packet = new Packet(MPPacketType.MP_PACKET_LEVEL_CONFIGURATION);
+        
+        MPPacketLevelConfiguration levelConfiguration = new MPPacketLevelConfiguration {
+            Level = level,
+            Count = (byte)options.Count,
+        };
+        
+        packet.AddBodyPart(levelConfiguration);
+        
+        foreach (var option in options) {
+            MPPacketLevelConfigurationOption optionPacket = new MPPacketLevelConfigurationOption {
+                Type = (byte)option.Type,
+                Value = option.Value,
+            };
+            
+            packet.AddBodyPart(optionPacket);
+        }
+        
+        return packet;
+    }
+    
     public static MPPacketHeader? MakeHeader(byte[] bytes, Endianness endianness = Endianness.BigEndian) {
         return BytesToStruct<MPPacketHeader>(bytes, endianness);
     }
