@@ -85,7 +85,7 @@ function ReplacementMobys:initialize(universe)
 
     self.replacedMobys.MorphORayCase:SetPosition(252.468, 145.282, 54.497)
     self.replacedMobys.MorphORayCase.rotZ = -161.230
-    self.replacedMobys.MorphORayCase.bolt_cost = 60000
+    self.replacedMobys.MorphORayCase.bolt_cost = 10000
     self.replacedMobys.MorphORayCase.gold_bolt_cost = 4
     self.replacedMobys.MorphORayCase.item_name = "Golden Morph O Ray"
     self.replacedMobys.MorphORayCase.item_id = 408

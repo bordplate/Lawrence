@@ -272,6 +272,10 @@ end
 function RandoPlayer:TeleportToShip()
     level = self:Level():GetName()
 
+    if self.oClass ~= 0 and level ~= "Orxon" then -- not ratchet and not on Orxon
+        return
+    end
+    
     if level == "Veldin1" then
         self:SetPosition(132.09, 115.480, 31.430)
     elseif level == "Novalis" then
@@ -285,9 +289,7 @@ function RandoPlayer:TeleportToShip()
     elseif level == "Rilgar" then
         self:SetPosition(338.32, 110.8, 62.7)
     elseif level == "BlargStation" then
-        if self.oClass == 0 then -- if not clank
-            self:SetPosition(247.950, 148.68, 138.3)
-        end
+        self:SetPosition(247.950, 148.68, 138.3)
     elseif level == "Umbris" then
         self:SetPosition(264.55, 72.13, 45.77)
     elseif level == "Batalia" then
