@@ -194,25 +194,26 @@ function RandoUniverse:DistributeSetLevelFlags(_type, level, index, value)
     end
 end
 
-function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
+function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location, ap_slot)
     if ap_item == nil then
         return
     end
-    print("RandoUniverse:GiveAPItemToPlayers. item: " .. tostring(ap_item))
+    print("RandoUniverse:GiveAPItemToPlayers. item: " .. tostring(ap_item) .. " from location: " .. tostring(ap_location) .. " in slot: " .. tostring(ap_slot))
     ap_item_type = GetAPItemType(ap_item)
     
     if ap_item_type == "item" then
         self:DistributeGiveItem(APItemToItem(ap_item))
     elseif ap_item_type == "special" then
         if self.progressive_weapons == 1 and not (ap_item == 48 or ap_item == 49 or ap_item == 50 or ap_item == 52 or ap_item == 53) then -- normal (give both base and gold)
-            self:GiveAPItemToPlayers(APGoldWeaponToAPBaseWeapon(ap_item), ap_location)
+            self:GiveAPItemToPlayers(APGoldWeaponToAPBaseWeapon(ap_item), ap_location, ap_slot)
         end
         self:DistributeUnlockSpecial(APItemToSpecial(ap_item))
     elseif ap_item_type == "planet" then
         self:DistributeUnlockPlanet(APItemToPlanet(ap_item))
     elseif ap_item_type == "gold bolt" then
-        if self.received_gold_bolts[ap_location] == nil then
-            self.received_gold_bolts[ap_location] = ap_location
+        local unique_location = tostring(ap_location) .. "+" .. tostring(ap_slot)
+        if self.received_gold_bolts[unique_location] == nil then
+            self.received_gold_bolts[unique_location] = unique_location
             self.num_received_gold_bolts = self.num_received_gold_bolts + self.gold_bolt_pack_size
         end
         self:DistributeGoldBoltValue()
@@ -220,7 +221,7 @@ function RandoUniverse:GiveAPItemToPlayers(ap_item, ap_location)
         self.num_used_bolt_packs = self.num_used_bolt_packs + 1
         self:GiveBolts(self.boltPackSize, false)
     elseif ap_item_type == "progressive" then
-        self:GiveAPItemToPlayers(ProgressiveAPItemToNormalAPItem(ap_item, self.slot_data, self.unlock_count), ap_location)
+        self:GiveAPItemToPlayers(ProgressiveAPItemToNormalAPItem(ap_item, self.slot_data, self.unlock_count), ap_location, ap_slot)
     else
         print("Unknown item: " .. tostring(ap_item))
     end
