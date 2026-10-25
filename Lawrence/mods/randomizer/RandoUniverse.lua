@@ -280,6 +280,12 @@ function RandoUniverse:OnPlayerGetLocation(player, location_id)
     self.ap_client:getLocation(location_id)
 end
 
+function RandoUniverse:OnPlayerGetSkillpoint(player, skillpoint)
+    print(string.format("skillpoint received: %d", skillpoint))
+     location_id = SkillpointToLocation(skillpoint)
+     self:OnPlayerGetLocation(player, location_id)
+end
+
 function RandoUniverse:NotifyPlayersLocationCollected(location_id, exclude_player)
     for _, _player in ipairs(self:LuaEntity():FindChildren("Player")) do
         if _player ~= exclude_player then

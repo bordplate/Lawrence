@@ -224,6 +224,41 @@ local planetVendorItems = {
     [14] = 0x13,
 }
 
+local skillpointLocations = {
+    [0] = 105,
+    [1] = 106,
+    --"Novalis: Skillpoint: Take Aim": 105,
+    --"Aridia: Skillpoint: Swing it!": 106,
+    --"Aridia: Skillpoint: Transported": 107,
+    --"Kerwan: Skillpoint: Strike a pose": 108,
+    --"Kerwan: Skillpoint: Blimpy": 109,
+    --"Kerwan: Skillpoint: Qwarktastic": 110,
+    --"Eudora: Skillpoint: Any Ten": 111,
+    --"Hoverboard: Skillpoint: Tricky": 112,
+    --"Rilgar: Skillpoint: Cluck, Cluck": 113,
+    --"Rilgar: Skillpoint: Speedy": 114,
+    --"Blarg Station: Skillpoint: Girl Trouble": 115,
+    --"Batalia: Skillpoint: Jumper": 116,
+    --"Batalia: Skillpoint: Accuracy Counts": 117,
+    --"Batalia: Skillpoint: Eat Lead": 118,
+    --"Gaspar: Skillpoint: Destroyed": 119,
+    --"Gaspar: Skillpoint: Gunner": 120,
+    --"Orxon: Skillpoint: Sniper": 121,
+    --"Orxon: Skillpoint: Hey, Over Here!": 122,
+    --"Pokitaru: Skillpoint: Alien Invasion": 123,
+    --"Pokitaru: Skillpoint: Buried Treasure": 124,
+    --"Hoven: Skillpoint: Pest Control": 125,
+    --"Hoven: Skillpoint: Whirlybirds": 126,
+    --"Gemlik Base: Skillpoint: Sitting Ducks": 127,
+    --"Oltanis: Skillpoint: Shattered Glass": 128,
+    --"Oltanis: Skillpoint: Blast Em!": 129,
+    --"Kalebo III: Skillpoint: Heavy Traffic": 130,
+    --"Kalebo III: Skillpoint: Magician": 131,
+    --"Drek's Fleet: Skillpoint: Sneaky": 132,
+    --"Drek's Fleet: Skillpoint: Careful Cruise": 133,
+    --"Veldin: Skillpoint: Going Commando": 134
+}
+
 function ItemToLocation(item_id)
     if itemLocations[item_id] ~= nil then
         return itemLocations[item_id]
@@ -252,4 +287,9 @@ end
 
 function GetPlanetVendorItem(planet_id) 
     return planetVendorItems[planet_id]
+end
+
+function SkillpointToLocation(skillpoint)
+    return skillpoint + 105 -- confirmed correct. assuming the location_id order is never changed in apworld
+    --return skillpointLocations[skillpoint]
 end
