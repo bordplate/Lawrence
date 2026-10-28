@@ -74,6 +74,10 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
         else
             universe.using_outdated_AP = true
         end
+
+        if slot_data["shuffle_skill_points"] ~= nil then
+            universe.skillpoints_enabled = slot_data["shuffle_skill_points"]
+        end
                 
         for k,v in ipairs(slot_data) do
           print(string.format("%s: %d", k ,v))

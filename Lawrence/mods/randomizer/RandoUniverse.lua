@@ -55,6 +55,7 @@ function RandoUniverse:initialize(lobby)
     self.num_used_bolt_packs = 0
 
     self.progressive_weapons = 0
+    self.skillpoints_enabled = false
     
     self.metal_detector_multiplier = 50
     
@@ -282,9 +283,11 @@ function RandoUniverse:OnPlayerGetLocation(player, location_id)
 end
 
 function RandoUniverse:OnPlayerGetSkillpoint(player, skillpoint)
-    print(string.format("skillpoint received: %d", skillpoint))
-     location_id = SkillpointToLocation(skillpoint)
-     self:OnPlayerGetLocation(player, location_id)
+    if self.skillpoints_enabled then
+        print(string.format("skillpoint received: %d", skillpoint))
+        location_id = SkillpointToLocation(skillpoint)
+        self:OnPlayerGetLocation(player, location_id)
+    end
 end
 
 function RandoUniverse:NotifyPlayersLocationCollected(location_id, exclude_player)
