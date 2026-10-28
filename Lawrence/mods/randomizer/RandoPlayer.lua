@@ -151,13 +151,10 @@ function RandoPlayer:OnUnlockLevel(level)
     self.lobby.universe:OnPlayerGetPlanet(self, level)
 end
 
--- function RandoPlayer:OnUnlockSkillpoint(skillpoint)
--- --     self.lobby:AddUnlockedSkillpoint(skillpoint)
---     
---     for _, player in ipairs(self:Universe():LuaEntity():FindChildren("Player")) do
---         player:UnlockSkillpoint(skillpoint)
---     end
--- end
+function RandoPlayer:OnUnlockSkillpoint(skillpoint)
+    self:UnlockSkillpoint(skillpoint)
+    self.lobby.universe:OnPlayerGetSkillpoint(self, skillpoint)
+end
 
 function RandoPlayer:MonitoredAddressChanged(address, oldValue, newValue)
     --print("Address " .. address .. " changed from " .. oldValue .. " to " .. newValue)

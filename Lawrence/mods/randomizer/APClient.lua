@@ -87,7 +87,7 @@ function APClient:initialize(universe, game_name, items_handling, uuid, host, sl
         self.ap = nil
         self.running = false
         collectgarbage("collect")
-        universe.lobby:ap_refused()
+        universe.lobby:ap_refused(tostring(reasons[1]))
     end
 
     function on_items_received(items)

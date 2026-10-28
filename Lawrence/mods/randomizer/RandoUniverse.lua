@@ -7,13 +7,9 @@ require 'runtime.levels.Common.Button'
 RandoUniverse = class("RandoUniverse", Universe)
 
 -- global to this mod
-local game_name = "Ratchet & Clank"
+local game_name = "Ratchet and Clank"
+local legacy_game_name = "Ratchet & Clank" -- here to not break ongoing seeds
 local items_handling = 7  -- full remote
-
--- TODO: user input
-local host = "localhost"
-local slot = "Player1"
-local password = ""
 
 function RandoUniverse:initialize(lobby)
     Universe.initialize(self)
@@ -80,8 +76,13 @@ function RandoUniverse:Connect()
     end
 
     local uuid = "ee4ff193-f687-45f4-806d-c7ad6778c743"
+
+    if self.lobby.legacy_name_mode == true then
+        self.ap_client = APClient(self, legacy_game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
+    else
+        self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
+    end    
     
-    self.ap_client = APClient(self, game_name, items_handling, uuid, self.host, self.lobby.slot, self.lobby.ap_password)
     self.ap_client_initialized = true
 end
 
@@ -278,6 +279,12 @@ end
 function RandoUniverse:OnPlayerGetLocation(player, location_id)
     LocationSync(self, player, location_id)
     self.ap_client:getLocation(location_id)
+end
+
+function RandoUniverse:OnPlayerGetSkillpoint(player, skillpoint)
+    print(string.format("skillpoint received: %d", skillpoint))
+     location_id = SkillpointToLocation(skillpoint)
+     self:OnPlayerGetLocation(player, location_id)
 end
 
 function RandoUniverse:NotifyPlayersLocationCollected(location_id, exclude_player)
