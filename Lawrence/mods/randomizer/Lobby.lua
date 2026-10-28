@@ -69,6 +69,7 @@ function Lobby:initialize(host, lobby_password)
     
     self.connected = false
     self.waiting_on_connection = false
+    self.legacy_name_mode = false
     self.startPlanet = 1
     self.universe = RandoUniverse(self)
 end
@@ -101,10 +102,18 @@ function Lobby:ap_connected()
     self.universe.ap_client:RetrieveDataStore()
 end
 
-function Lobby:ap_refused()
-    print("ap_refused")
-    self.archipelagoConnectingStatus = "Connection Failed"
+function Lobby:ap_refused(reason)
+    print("ap_refused. Reason: " .. reason)
     self.waiting_on_connection = false
+
+    if reason == "InvalidGame" and self.legacy_name_mode ~= true then
+        print("InvalidGame detected, retrying with legacy name...")
+        collectgarbage("collect")
+        self.legacy_name_mode = true
+        self:Start()
+    else
+        self.archipelagoConnectingStatus = "Connection Failed"
+    end
 end
 
 function Lobby:ap_retrieved_completed()
