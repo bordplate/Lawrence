@@ -64,8 +64,8 @@ function ProgressiveAPItemToNormalAPItem(ap_item, slot_data, unlock_count)
     
     if ap_item == 80 then -- Progressive Pack
         return slot_data["progressive_packs_order"][unlock_count[ap_item]]
-    --elseif ap_item == 81 then -- Progressive Helmet
-    --    return slot_data["progressive_helmets_order"][unlock_count[ap_item]]
+    elseif ap_item == 81 then -- Progressive Helmet
+        return slot_data["progressive_helmets_order"][unlock_count[ap_item]]
     elseif ap_item == 82 then -- Progressive Suck Cannon
         return slot_data["progressive_suck_cannon_order"][unlock_count[ap_item]]
     elseif ap_item == 83 then -- Progressive Bomb glove
@@ -86,12 +86,12 @@ function ProgressiveAPItemToNormalAPItem(ap_item, slot_data, unlock_count)
         return slot_data["progressive_morph_o_ray_order"][unlock_count[ap_item]]
     elseif ap_item == 91 then -- Progressive Decoy glove
         return slot_data["progressive_decoy_glove_order"][unlock_count[ap_item]]
-    --elseif ap_item == 92 then -- Progressive Boots
-    --    return slot_data["progressive_boots_order"][unlock_count[ap_item]]
-    --elseif ap_item == 93 then -- Progressive Hoverboard
-    --    return slot_data["progressive_hoverboard_order"][unlock_count[ap_item]]
-    --elseif ap_item == 94 then -- Progressive Raritanium
-    --    return slot_data["progressive_raritanium_order"][unlock_count[ap_item]]
+    elseif ap_item == 92 then -- Progressive Boots
+        return slot_data["progressive_boots_order"][unlock_count[ap_item]]
+    elseif ap_item == 93 then -- Progressive Hoverboard
+        return slot_data["progressive_hoverboard_order"][unlock_count[ap_item]]
+    elseif ap_item == 94 then -- Progressive Raritanium
+        return slot_data["progressive_raritanium_order"][unlock_count[ap_item]]
     elseif ap_item == 95 then -- Progressive Nanotech
         return slot_data["progressive_nanotech_order"][unlock_count[ap_item]]
     else
